@@ -9,7 +9,7 @@ Filename → programming-language detection for a 217-case catalog of source, ma
 ## Module map
 
 - `Enums/` — enums with no behaviour beyond their cases and labels: HighlightFamily, Language
-- `Extensions/` — extensions on Foundation / stdlib / other types: Language+Detection, Language+Metadata
+- `Extensions/` — extensions on Foundation / stdlib / other types: Language+Detection, Language+Metadata, Language+Names (`names(for:)`: every extension and exact filename the detector answers a language from, for a caller that needs to enumerate them — a corpus check asking "is there a fixture for every name we claim?")
 - `Models/` — value types — the shape of a thing, nothing else: BlockComment
 
 ## Rules
