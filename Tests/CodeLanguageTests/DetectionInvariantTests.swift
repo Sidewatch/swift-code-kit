@@ -156,7 +156,7 @@ final class DetectionInvariantTests: XCTestCase {
             ("CLAUDE.md", .markdown),
             (".gitignore", .gitignore),
             ("bundle.sh", .bash),
-            ("Info.plist", .xml),
+            ("Info.plist", .plist),
             ("skills.json", .json),
             ("project.yml", .yaml),
         ]
