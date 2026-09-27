@@ -1,11 +1,12 @@
 //
 //  Language.swift
-//  SwiftCodeLanguage
+//  CodeLanguage
 //
 //  The set of source, markup, and config languages this package recognizes.
 //  GENERATED from a curated language catalog — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

@@ -1,10 +1,11 @@
 //
 //  CodeLanguageTests.swift
-//  Tests for SwiftCodeLanguage
+//  CodeLanguageTests
 //
 //  Tests for `Language` detection by extension and filename over the common cases.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

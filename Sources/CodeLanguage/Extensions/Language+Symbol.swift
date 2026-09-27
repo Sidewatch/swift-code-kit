@@ -6,6 +6,7 @@
 //  stylesheet, data, config, build, shell, prose, query, diagram, hardware, maths, git…).
 //
 //  Created by David Sherlock on 9/24/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

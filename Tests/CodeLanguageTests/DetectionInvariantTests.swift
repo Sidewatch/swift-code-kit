@@ -1,5 +1,7 @@
 //
 //  DetectionInvariantTests.swift
+//  CodeLanguageTests
+//
 //  Tests for CodeLanguage — the structural rules detection depends on.
 //
 //  The existing suite checks that particular filenames map to particular languages. These
@@ -9,6 +11,7 @@
 //  malformed entry breaks a feature rather than a lookup.
 //
 //  Created by David Sherlock on 8/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

@@ -1,11 +1,12 @@
 //
 //  Language+Metadata.swift
-//  SwiftCodeLanguage
+//  CodeLanguage
 //
 //  Display name, comment tokens, and highlight family per language.
 //  GENERATED — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

@@ -5,6 +5,7 @@
 //  The names a language is detected from, enumerated — and every one of them detects back to it.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

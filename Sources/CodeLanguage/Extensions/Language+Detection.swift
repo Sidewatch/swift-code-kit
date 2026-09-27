@@ -1,11 +1,12 @@
 //
 //  Language+Detection.swift
-//  SwiftCodeLanguage
+//  CodeLanguage
 //
 //  Filename/extension → Language detection.
 //  GENERATED tables — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

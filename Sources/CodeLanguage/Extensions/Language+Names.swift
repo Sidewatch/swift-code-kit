@@ -5,6 +5,7 @@
 //  The names the detector answers a language from — for a coverage check to enumerate.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation
