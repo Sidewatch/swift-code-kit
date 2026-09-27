@@ -38,11 +38,11 @@ YAMLStructure.value(of: "version: \"3.9\"\nports: [80, 443]\n")
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Sidewatch/swift-code-highlighting.git", from: "0.1.0")
+    .package(url: "https://github.com/Sidewatch/swift-code-kit.git", from: "0.1.0")
 ]
 ```
 
-> **Dependencies:** swift-code-language (the language table) and swift-data-converter (the `StructuredValue` model the structure readers produce). Both are path siblings in the Sidewatch family.
+> **Dependencies:** CodeLanguage (the language table) and swift-data-converter (the `StructuredValue` model the structure readers produce). Both are path siblings in the Sidewatch family.
 
 > **Bundles note:** the grammar query files are SwiftPM resource bundles — the host app must ship the built `.bundle`s next to its executable (Sidewatch's `bundle.sh` does this) or `TreeSitterHighlighter` loads no grammars and `supports(_:)` is false for everything; fall back to `SyntaxHighlighter`.
 
