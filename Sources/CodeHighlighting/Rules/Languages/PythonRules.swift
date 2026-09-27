@@ -1,0 +1,37 @@
+//
+//  PythonRules.swift
+//  CodeHighlighting
+//
+//  The regex rule table for Python.
+//
+//  Created by David Sherlock on 9/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
+//
+
+import Foundation
+
+/// The regex rule table for Python.
+/// Later rules repaint earlier ones; strings and comments paint last.
+extension RuleTables {
+    static let python: [(String, TokenKind)] = [
+        tripleDoubleQuoted,
+        tripleSingleQuoted,
+        hashComment,
+        doubleQuoted,
+        singleQuoted,
+        keywords([
+            "import", "from", "class", "def", "return", "if", "elif", "else", "for", "while",
+            "break", "continue", "pass", "raise", "try", "except", "finally", "with", "as", "yield",
+            "lambda", "global", "nonlocal", "assert", "del", "in", "not", "and", "or", "is",
+            "async", "await", "match", "case",
+        ]),
+        constants(["True", "False", "None"]),
+        types([
+            "int", "float", "str", "bool", "list", "dict", "set", "tuple", "range", "print",
+            "len", "super", "type", "object",
+        ]),
+        decimal,
+        call,
+        ("@\\w[\\w.]*", .attribute),
+    ]
+}

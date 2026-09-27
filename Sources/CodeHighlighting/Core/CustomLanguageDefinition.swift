@@ -1,0 +1,289 @@
+//
+//  CustomLanguageDefinition.swift
+//  CodeHighlighting
+//
+//  A user-authored, JSON-decodable description of a niche language, compiled
+//  into the regex highlighter's rule tables — so an app can support languages
+//  the package has never heard of (JSFX, some in-house DSL, …) from a single
+//  hand-written JSON file.
+//
+//  Created by David Sherlock on 7/16/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
+//
+
+import Foundation
+import FoundationExtensions
+
+/// A user-authored language, decoded from a hand-written JSON file and consumed by
+/// ``SyntaxHighlighter/init(custom:colors:)``. Structured fields compile to the built-in tables'
+/// regex forms; ``patterns`` is the raw-regex escape hatch. Only `name` and `extensions` are
+/// required. Precedence: ``patterns`` in array order, then word lists, then numbers and calls;
+/// comments and strings always win and resolve in one left-to-right scan. A bad regex is
+/// skipped at build time, but an unknown pattern `kind` fails the decode, loudly.
+public struct CustomLanguageDefinition: Codable, Equatable, Sendable {
+
+    /// Display name of the language (e.g. `"JSFX"`). Required, non-empty.
+    public var name: String
+
+    /// File extensions this language claims, without leading dots
+    /// (e.g. `["jsfx"]`). Required, non-empty. Matching files to definitions
+    /// is the host app's job; the package only carries the data.
+    public var extensions: [String]
+
+    /// Exact filenames (no path) this language also claims
+    /// (e.g. `["Jenkinsfile"]`), for extension-less files.
+    public var filenames: [String]?
+
+    /// Line-comment marker (e.g. `"//"` or `"#"`): everything from the marker
+    /// to the end of the line is a comment. Escaped literally — not a regex.
+    public var lineComment: String?
+
+    /// Block-comment opener (e.g. `"/*"`). Only used when
+    /// ``blockCommentEnd`` is also set. Escaped literally — not a regex.
+    public var blockCommentStart: String?
+
+    /// Block-comment closer (e.g. `"*/"`). Only used when
+    /// ``blockCommentStart`` is also set. Escaped literally — not a regex.
+    public var blockCommentEnd: String?
+
+    /// String-literal delimiters (e.g. `["\""]` or `["\"", "'"]`). Each
+    /// builds the standard escaped-string regex — the span runs from one
+    /// delimiter to the next, with backslash-escapes (`\"`, `\\`) skipped.
+    public var stringDelimiters: [String]?
+
+    /// Keyword words (`if`, `function`, …). Joined into one word-boundary
+    /// alternation; each word is regex-escaped, so plain text is safe.
+    public var keywords: [String]?
+
+    /// Type-name words. Same alternation treatment as ``keywords``,
+    /// painted with the `type` role.
+    public var types: [String]?
+
+    /// Built-in constant words (`true`, `srate`, …). Same alternation
+    /// treatment; painted with the number-literal role, matching how the
+    /// built-in tables color `true`/`false`/`nil`.
+    public var constants: [String]?
+
+    /// Highlight numeric literals (decimal and `0x…` hex) with the standard
+    /// number regex. Defaults to `true` when omitted.
+    public var numbers: Bool?
+
+    /// Highlight identifiers directly before a `(` as function calls.
+    /// Defaults to `true` when omitted.
+    public var functionCalls: Bool?
+
+    /// Raw-regex escape hatch, applied before the structured word lists.
+    /// Later patterns repaint earlier ones where they overlap; patterns with
+    /// `comment`/`string` kinds join the comment/string precedence scan.
+    /// A pattern that fails to compile is skipped, never fatal.
+    public var patterns: [CustomPattern]?
+
+    /// When `true`, every built regex matches case-insensitively (word lists,
+    /// comment/string markers, and raw patterns alike). Defaults to `false`.
+    public var caseInsensitive: Bool?
+
+    /// Memberwise initializer, mostly for building definitions in code
+    /// (tests, programmatic registration). JSON authors never see this.
+    public init(
+        name: String,
+        extensions: [String],
+        filenames: [String]? = nil,
+        lineComment: String? = nil,
+        blockCommentStart: String? = nil,
+        blockCommentEnd: String? = nil,
+        stringDelimiters: [String]? = nil,
+        keywords: [String]? = nil,
+        types: [String]? = nil,
+        constants: [String]? = nil,
+        numbers: Bool? = nil,
+        functionCalls: Bool? = nil,
+        patterns: [CustomPattern]? = nil,
+        caseInsensitive: Bool? = nil
+    ) {
+        self.name = name
+        self.extensions = extensions
+        self.filenames = filenames
+        self.lineComment = lineComment
+        self.blockCommentStart = blockCommentStart
+        self.blockCommentEnd = blockCommentEnd
+        self.stringDelimiters = stringDelimiters
+        self.keywords = keywords
+        self.types = types
+        self.constants = constants
+        self.numbers = numbers
+        self.functionCalls = functionCalls
+        self.patterns = patterns
+        self.caseInsensitive = caseInsensitive
+    }
+}
+
+public extension CustomLanguageDefinition {
+
+    /// Decodes and validates a definition, with errors written for the file's author (missing
+    /// field, offending pattern index, valid kinds) instead of `DecodingError` coding paths.
+    /// Beyond `Codable`: `name` and `extensions` must be non-empty and every pattern `kind` must
+    /// be in ``CustomPattern/validKinds``. An invalid regex still decodes; the highlighter skips it.
+    static func decode(from data: Data) -> Result<CustomLanguageDefinition, Error> {
+        let definition: CustomLanguageDefinition
+        do {
+            definition = try JSONDecoder().decode(CustomLanguageDefinition.self, from: data)
+        } catch let error as DecodingError {
+            return .failure(Self.friendlyError(from: error))
+        } catch {
+            return .failure(CustomLanguageDefinitionError.invalidJSON(detail: error.localizedDescription))
+        }
+        if let validationError = definition.validationError {
+            return .failure(validationError)
+        }
+        return .success(definition)
+    }
+
+    /// The first validation problem in an already-decoded definition,
+    /// or `nil` when it's fully valid. ``decode(from:)`` calls this;
+    /// exposed so programmatically-built definitions can be checked too.
+    var validationError: CustomLanguageDefinitionError? {
+        if name.trimmed.isEmpty {
+            return .emptyName
+        }
+        if extensions.allSatisfy({ $0.trimmed.isEmpty }) {
+            return .emptyExtensions
+        }
+        for (index, pattern) in (patterns ?? []).enumerated() where pattern.tokenKind == nil {
+            return .unknownPatternKind(kind: pattern.kind, index: index)
+        }
+        return nil
+    }
+
+    /// Rewrites a `DecodingError` into a ``CustomLanguageDefinitionError``
+    /// a JSON author can act on.
+    private static func friendlyError(from error: DecodingError) -> CustomLanguageDefinitionError {
+        switch error {
+        case .keyNotFound(let key, _):
+            return .missingField(key.stringValue)
+        case .typeMismatch(let type, let context):
+            return .wrongType(field: Self.fieldPath(context.codingPath), expected: Self.typeName(type))
+        case .valueNotFound(let type, let context):
+            return .wrongType(field: Self.fieldPath(context.codingPath), expected: Self.typeName(type))
+        case .dataCorrupted(let context):
+            let underlying = (context.underlyingError as NSError?)?.userInfo[NSDebugDescriptionErrorKey] as? String
+            return .invalidJSON(detail: underlying ?? context.debugDescription)
+        @unknown default:
+            return .invalidJSON(detail: String(describing: error))
+        }
+    }
+
+    /// Renders a coding path as a readable field path (`patterns[2].kind`).
+    private static func fieldPath(_ path: [CodingKey]) -> String {
+        var result = ""
+        for key in path {
+            if let index = key.intValue {
+                result += "[\(index)]"
+            } else {
+                result += result.isEmpty ? key.stringValue : ".\(key.stringValue)"
+            }
+        }
+        return result.isEmpty ? "(top level)" : result
+    }
+
+    /// A JSON-author-friendly name for a Swift type a decoder expected.
+    private static func typeName(_ type: Any.Type) -> String {
+        switch type {
+        case is String.Type: return "a string"
+        case is Bool.Type: return "true or false"
+        case is [String].Type: return "an array of strings"
+        case is [CustomPattern].Type, is CustomPattern.Type: return "an array of {pattern, kind} objects"
+        case is Double.Type, is Int.Type: return "a number"
+        default: return "\(type)"
+        }
+    }
+}
+
+extension CustomLanguageDefinition {
+
+    /// The `NSRegularExpression` options every built rule compiles with:
+    /// per-line anchoring (like the built-in tables), plus case-insensitivity
+    /// when ``caseInsensitive`` is `true`.
+    var regexOptions: NSRegularExpression.Options {
+        var options: NSRegularExpression.Options = [.anchorsMatchLines]
+        if caseInsensitive == true { options.insert(.caseInsensitive) }
+        return options
+    }
+
+    /// Compiles the definition into the same `(pattern, kind)` table shape
+    /// `RuleTables.table(for:)` produces for built-in languages,
+    /// so the highlighter's existing group-routing and precedence merge apply
+    /// unchanged. Order: comments/strings (group-routed, order-independent),
+    /// raw patterns (most specific), keywords/types/constants, then the
+    /// number and function-call rules.
+    func ruleDefinitions() -> [(String, TokenKind)] {
+        var defs: [(String, TokenKind)] = []
+
+        // Comments and strings: routed into the comment/string groups by the
+        // highlighter, where the left-to-right scan resolves their precedence.
+        if let marker = lineComment, !marker.isEmpty {
+            defs.append((NSRegularExpression.escapedPattern(for: marker) + ".*$", .comment))
+        }
+        if let start = blockCommentStart, let end = blockCommentEnd, !start.isEmpty, !end.isEmpty {
+            defs.append((NSRegularExpression.escapedPattern(for: start)
+                + "[\\s\\S]*?"
+                + NSRegularExpression.escapedPattern(for: end), .comment))
+        }
+        for delimiter in stringDelimiters ?? [] where !delimiter.isEmpty {
+            defs.append((Self.stringPattern(delimiter: delimiter), .string))
+        }
+
+        // Raw patterns first — the most specific rules. Later array entries
+        // repaint earlier ones where they overlap (comment/string kinds are
+        // group-routed instead, like the structured fields above).
+        for custom in patterns ?? [] {
+            if let kind = custom.tokenKind {
+                defs.append((custom.pattern, kind))
+            }
+        }
+
+        // Word lists.
+        if let words = keywords, !words.isEmpty { defs.append((Self.wordAlternation(words), .keyword)) }
+        if let words = types, !words.isEmpty { defs.append((Self.wordAlternation(words), .type)) }
+        if let words = constants, !words.isEmpty { defs.append((Self.wordAlternation(words), .number)) }
+
+        // Standard literals, on by default.
+        if numbers ?? true {
+            defs.append(("\\b0x[0-9a-fA-F]+\\b|\\b\\d+(?:\\.\\d+)?\\b", .number))
+        }
+        if functionCalls ?? true {
+            defs.append(("\\b([A-Za-z_]\\w*)\\s*\\(", .function))
+        }
+        return defs
+    }
+
+    /// The standard escaped-string regex for one delimiter: for a single-char
+    /// delimiter `"` this is the classic `"(?:[^"\\]|\\.)*"` (backslash
+    /// escapes skipped, no spill past the closer); multi-char delimiters
+    /// (`"""`, `<<<`) get a non-greedy span with the same escape handling.
+    static func stringPattern(delimiter: String) -> String {
+        let escaped = NSRegularExpression.escapedPattern(for: delimiter)
+        guard delimiter.count == 1, let scalar = delimiter.unicodeScalars.first else {
+            return escaped + "(?:\\\\.|[^\\\\])*?" + escaped
+        }
+        // Escape the delimiter for use inside a character class as well.
+        let needsClassEscape = "\\]^-[&".unicodeScalars.contains(scalar)
+        let classEscaped = needsClassEscape ? "\\\(delimiter)" : delimiter
+        return escaped + "(?:[^" + classEscaped + "\\\\]|\\\\.)*" + escaped
+    }
+
+    /// Joins a word list into a single word-boundary alternation
+    /// (`\b(?:for|while|loop)\b`), regex-escaping every word.
+    static func wordAlternation(_ words: [String]) -> String {
+        "\\b(?:" + words.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|") + ")\\b"
+    }
+}
+
+public extension SyntaxHighlighter {
+
+    /// Builds a regex highlighter from a custom language definition, on the same rule-table
+    /// machinery as the built-in languages. Comments and strings join the precedence merge, so
+    /// a comment marker inside a string can't repaint the line; uncompilable patterns are skipped.
+    convenience init(custom: CustomLanguageDefinition, colors: TokenColorProviding) {
+        self.init(defs: custom.ruleDefinitions(), regexOptions: custom.regexOptions, colors: colors)
+    }
+}

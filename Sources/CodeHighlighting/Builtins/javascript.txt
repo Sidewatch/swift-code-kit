@@ -1,0 +1,195 @@
+# JavaScript / TypeScript built-ins & methods — identifier<TAB>signature (tab optional).
+# Method receivers vary; signatures show the common (Array/String/Promise) shape.
+map	map(callback: (value, index, array) => U, thisArg?): U[]
+filter	filter(predicate: (value, index, array) => boolean, thisArg?): T[]
+reduce	reduce(callback: (acc, value, index, array) => U, initial?): U
+reduceRight	reduceRight(callback: (acc, value, index, array) => U, initial?): U
+forEach	forEach(callback: (value, index, array) => void, thisArg?): void
+find	find(predicate: (value, index, array) => boolean): T | undefined
+findIndex	findIndex(predicate: (value, index, array) => boolean): number
+some	some(predicate: (value, index, array) => boolean): boolean
+every	every(predicate: (value, index, array) => boolean): boolean
+includes	includes(searchElement, fromIndex?): boolean
+indexOf	indexOf(searchElement, fromIndex?): number
+slice	slice(start?, end?): T[]
+splice	splice(start, deleteCount?, ...items): T[]
+concat	concat(...items): T[]
+join	join(separator?): string
+push	push(...items): number
+pop	pop(): T | undefined
+shift	shift(): T | undefined
+unshift	unshift(...items): number
+sort	sort(compareFn?: (a, b) => number): T[]
+reverse	reverse(): T[]
+flat	flat(depth?): T[]
+flatMap	flatMap(callback: (value, index, array) => U): U[]
+fill	fill(value, start?, end?): T[]
+at	at(index): T | undefined
+keys	keys(): IterableIterator
+values	values(): IterableIterator
+entries	entries(): IterableIterator
+split	split(separator, limit?): string[]
+replace	replace(pattern, replacement): string
+replaceAll	replaceAll(pattern, replacement): string
+trim	trim(): string
+padStart	padStart(targetLength, padString?): string
+padEnd	padEnd(targetLength, padString?): string
+startsWith	startsWith(searchString, position?): boolean
+endsWith	endsWith(searchString, endPosition?): boolean
+repeat	repeat(count): string
+substring	substring(start, end?): string
+toLowerCase	toLowerCase(): string
+toUpperCase	toUpperCase(): string
+charAt	charAt(index): string
+match	match(regexp): RegExpMatchArray | null
+then	then(onFulfilled?, onRejected?): Promise
+catch	catch(onRejected?): Promise
+finally	finally(onFinally?): Promise
+assign	Object.assign(target, ...sources): object
+stringify	JSON.stringify(value, replacer?, space?): string
+parse	JSON.parse(text, reviver?): any
+setTimeout	setTimeout(callback, delay?, ...args): number
+setInterval	setInterval(callback, delay?, ...args): number
+fetch	fetch(input, init?): Promise<Response>
+addEventListener	addEventListener(type, listener, options?): void
+querySelector	querySelector(selectors): Element | null
+querySelectorAll	querySelectorAll(selectors): NodeList
+getElementById	getElementById(id): Element | null
+# globals + names (no signature)
+console	console — log(), warn(), error(), info(), debug(), table(), time()/timeEnd(), group()
+log	console.log(...data: any[]): void
+warn	console.warn(...data: any[]): void
+error	console.error(...data: any[]): void
+info	console.info(...data: any[]): void
+debug	console.debug(...data: any[]): void
+Object	Object — keys(), values(), entries(), assign(), freeze(), create(), fromEntries(), hasOwn()
+Array	Array<T> — Array.isArray(), Array.from(), Array.of(); map/filter/reduce/find/some/every…
+String	String(value) — length, at(), slice(), split(), includes(), replace(), trim(), padStart()
+Number	Number(value) — isInteger(), isFinite(), isNaN(), parseFloat(), parseInt(), MAX_SAFE_INTEGER
+Math	Math — abs, ceil, floor, round, trunc, sign, min, max, pow, sqrt, random, PI, E
+JSON	JSON — parse(text, reviver?): any  ·  stringify(value, replacer?, space?): string
+Promise	Promise<T> — new Promise((resolve, reject) => …); then(), catch(), finally(); all/allSettled/race/any
+Map	Map<K, V> — get(key), set(key, value), has(key), delete(key), size, keys(), values(), entries()
+Set	Set<T> — add(value), has(value), delete(value), size, values(); keeps insertion order
+WeakMap	WeakMap<K extends object, V> — get/set/has/delete; keys held weakly, not iterable
+WeakSet	WeakSet<T extends object> — add/has/delete; members held weakly
+Symbol	Symbol(description?): symbol — unique primitive; Symbol.iterator, Symbol.asyncIterator, Symbol.for(key)
+Date	new Date(value | dateString | year, month, …) — Date.now(): number; getTime(), toISOString()
+RegExp	new RegExp(pattern, flags?) — test(str), exec(str); flags g i m s u y d
+isArray	Array.isArray(value: any): boolean
+from	Array.from(iterable | arrayLike, mapFn?, thisArg?): T[]
+of
+freeze	Object.freeze(obj: T): Readonly<T> — shallow
+create	Object.create(proto: object | null, propertiesObject?): any
+defineProperty	Object.defineProperty(obj, key, { value?, writable?, get?, set?, enumerable?, configurable? }): obj
+getPrototypeOf	Object.getPrototypeOf(obj): object | null
+fromEntries	Object.fromEntries(entries: Iterable<[key, value]>): object
+hasOwnProperty	obj.hasOwnProperty(key: PropertyKey): boolean — prefer Object.hasOwn(obj, key)
+isInteger	Number.isInteger(value: any): boolean
+isFinite	Number.isFinite(value: any): boolean — no coercion, unlike global isFinite
+isNaN	Number.isNaN(value: any): boolean — no coercion, unlike global isNaN
+parseFloat	parseFloat(string: string): number
+parseInt	parseInt(string: string, radix?: number): number — pass the radix
+toFixed	num.toFixed(fractionDigits?: number): string
+abs	Math.abs(x: number): number
+ceil	Math.ceil(x: number): number
+floor	Math.floor(x: number): number
+round	Math.round(x: number): number — halves round up
+trunc	Math.trunc(x: number): number
+sign	Math.sign(x: number): -1 | 0 | 1
+min	Math.min(...values: number[]): number
+max	Math.max(...values: number[]): number
+pow	Math.pow(base: number, exponent: number): number — same as base ** exponent
+sqrt	Math.sqrt(x: number): number
+random	Math.random(): number — in [0, 1)
+PI	Math.PI: number = 3.141592653589793
+resolve	Promise.resolve(value?: T | PromiseLike<T>): Promise<T>
+reject	Promise.reject(reason?: any): Promise<never>
+all	Promise.all(iterable: Iterable<Promise<T>>): Promise<T[]> — rejects on the first rejection
+allSettled	Promise.allSettled(iterable): Promise<{ status: 'fulfilled' | 'rejected', value?, reason? }[]>
+race	Promise.race(iterable): Promise<T> — settles with the first to settle
+any
+async
+await
+document	document: Document — querySelector(), querySelectorAll(), getElementById(), createElement(), body
+window	window: Window & typeof globalThis — location, document, addEventListener(), fetch(), setTimeout()
+location	location: Location — href, pathname, search, hash, origin; assign(), replace(), reload()
+history	history: History — pushState(state, '', url), replaceState(), back(), forward(), length
+navigator	navigator: Navigator — userAgent, language, clipboard, onLine, geolocation
+localStorage	localStorage: Storage — getItem(key), setItem(key, value), removeItem(key), clear(); persists per origin
+sessionStorage	sessionStorage: Storage — same API as localStorage; cleared when the tab closes
+createElement	document.createElement(tagName: string, options?): HTMLElement
+appendChild	node.appendChild(child: Node): Node — moves it if already in the tree
+removeChild	node.removeChild(child: Node): Node
+removeEventListener	target.removeEventListener(type: string, listener, options?): void — same listener reference
+setAttribute	element.setAttribute(name: string, value: string): void
+getAttribute	element.getAttribute(name: string): string | null
+classList	element.classList: DOMTokenList — add(), remove(), toggle(), contains(), replace()
+textContent	node.textContent: string | null — plain text; setting it replaces all children
+innerHTML	element.innerHTML: string — markup; setting it parses HTML (XSS risk with untrusted input)
+value	element.value: string — current value of an input, select or textarea
+alert	alert(message?: any): void — blocks until dismissed
+confirm	confirm(message?: string): boolean
+prompt	prompt(message?: string, defaultValue?: string): string | null
+structuredClone	structuredClone(value: T, options?): T — deep copy; no functions or DOM nodes
+encodeURIComponent	encodeURIComponent(uriComponent: string): string
+decodeURIComponent	decodeURIComponent(encoded: string): string
+URL	new URL(url: string, base?: string) — href, origin, pathname, searchParams, hash
+URLSearchParams	new URLSearchParams(init?: string | Record<string, string> | Iterable<[string, string]>) — get(), set(), append(), toString()
+FormData	new FormData(form?: HTMLFormElement) — append(name, value), get(name), entries()
+AbortController	new AbortController() — signal: AbortSignal, abort(reason?)
+requestAnimationFrame	requestAnimationFrame(callback: (time: DOMHighResTimeStamp) => void): number
+clearTimeout	clearTimeout(id: number | undefined): void
+clearInterval	clearInterval(id: number | undefined): void
+undefined	undefined — value of an unassigned variable or missing property; typeof 'undefined'
+null	null — intentional absence of a value; typeof null === 'object'
+NaN	NaN: number — not a number; NaN !== NaN, test with Number.isNaN()
+Infinity	Infinity: number — positive infinity; -Infinity
+globalThis	globalThis — the global object in any environment (window, self, global)
+# keywords / language constructs
+function
+class
+const
+let
+var
+return
+if
+else
+for
+while
+do
+switch
+case
+default
+break
+continue
+try
+throw
+new
+delete
+typeof
+instanceof
+in
+import
+export
+extends
+implements
+interface
+type
+enum
+namespace
+public
+private
+protected
+readonly
+get
+set
+this
+super
+yield
+static
+true
+false
+void
+never
+unknown

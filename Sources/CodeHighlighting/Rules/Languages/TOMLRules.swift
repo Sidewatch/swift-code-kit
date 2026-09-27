@@ -1,0 +1,26 @@
+//
+//  TOMLRules.swift
+//  CodeHighlighting
+//
+//  The regex rule table for TOML.
+//
+//  Created by David Sherlock on 9/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
+//
+
+import Foundation
+
+/// The regex rule table for TOML.
+/// Later rules repaint earlier ones; strings and comments paint last.
+extension RuleTables {
+    static let toml: [(String, TokenKind)] = [
+        hashComment,
+        tripleDoubleQuoted,
+        doubleQuoted,
+        singleQuotedPlain,
+        ("^\\s*\\[{1,2}[^\\]]*\\]{1,2}", .keyword),
+        ("^\\s*[a-zA-Z_][\\w.-]*\\s*=", .function),
+        constants(["true", "false"]),
+        decimal,
+    ]
+}

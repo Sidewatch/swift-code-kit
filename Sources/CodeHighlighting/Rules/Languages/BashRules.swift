@@ -1,0 +1,32 @@
+//
+//  BashRules.swift
+//  CodeHighlighting
+//
+//  The regex rule table for Bash.
+//
+//  Created by David Sherlock on 9/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
+//
+
+import Foundation
+
+/// The regex rule table for Bash.
+/// Later rules repaint earlier ones; strings and comments paint last.
+extension RuleTables {
+    static let bash: [(String, TokenKind)] = [
+        hashComment,
+        doubleQuoted,
+        singleQuotedPlain,
+        keywords([
+            "if", "then", "else", "elif", "fi", "for", "while", "do", "done", "case",
+            "esac", "in", "function", "return", "exit", "local", "export", "source", "alias", "read",
+            "set", "unset", "shift", "trap",
+        ]),
+        ("\\$\\{?[a-zA-Z_]\\w*\\}?", .type),
+        decimal,
+        functions([
+            "echo", "cd", "ls", "pwd", "mkdir", "rm", "cp", "mv", "cat", "grep",
+            "sed", "awk", "find", "sort", "chmod", "curl", "wget", "git",
+        ]),
+    ]
+}

@@ -1,0 +1,224 @@
+//
+//  CompletionProvider.swift
+//  CodeHighlighting
+//
+//  Candidate source for the editor's completion popup — both the as-you-type one (debounced)
+//  and the manual `complete(_:)` (Esc / F5).
+//
+//  Created by David Sherlock on 7/19/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
+//
+
+import Foundation
+import CodeLanguage
+
+/// Candidate source for the editor's completion popup, both as-you-type and manual (Esc / F5).
+/// No language server: prefix-matched tiers in rank order — current-file symbols, project
+/// symbols (``ProjectSymbolIndex``), language builtins, then identifier-shaped buffer words —
+/// deduped preserving rank and capped at `maxCandidates`. Pure logic, no AppKit.
+/// File symbols and buffer words are cached and only marked stale by `noteEdit()`; the project
+/// tier is an O(log n) query per trigger, so it is not cached.
+public final class CompletionProvider {
+
+    /// Creates a provider with both cached tiers stale.
+    public init() {}
+
+    /// Most candidates ever returned for one trigger.
+    public static let maxCandidates = 50
+    /// Buffer words shorter than this never become candidates.
+    public static let minWordLength = 3
+    /// Mirror of `EditorViewController.highlightDisabledThreshold` (UTF-16
+    /// units): the ceiling for the buffer-word scan, and for the symbol tier
+    /// ONLY on the static fallback (no `symbolsProvider`), whose full parse per
+    /// rebuild would beachball a multi-MB buffer. The editor always wires the
+    /// provider, so in the app this cap governs the word tier.
+    public static let wordScanThreshold = 3_000_000
+    /// Mirror of `EditorViewController.fullHighlightThreshold` (UTF-16 units): the ceiling for
+    /// the automatic popup only. Above it each rebuild (whole-document symbol query plus word
+    /// scan, ~8 ms at the cap) would be paid per typing pause; Esc/F5 still completes at any size.
+    public static let autoPopupThreshold = 100_000
+    /// Hard cap on the cached word set, so a pathological file (huge minified
+    /// blob under the size threshold) can't balloon memory.
+    private static let maxUniqueWords = 50_000
+    /// Identifier-shaped words longer than this (base64-ish blobs) are skipped.
+    private static let maxWordLength = 64
+
+    /// Sorted unique current-file symbols; nil = stale, rebuilt on demand.
+    private var cachedFileSymbols: [CompletionItem]?
+    /// Sorted unique buffer words; nil = stale, rebuilt on demand. Held as
+    /// strings, not items: this tier can hold `maxUniqueWords` entries and only
+    /// the handful that match a prefix ever need wrapping.
+    private var cachedBufferWords: [String]?
+
+    /// Optional override for the symbol-tier rebuild. When set (the editor
+    /// wires it to its highlight session's CACHED syntax tree — query-only,
+    /// no parse), it replaces the static `TreeSitterHighlighter.symbols`
+    /// path, whose fresh full parse per rebuild beachballs on huge files.
+    public var symbolsProvider: (() -> [Symbol])?
+
+    /// The project-symbol tier's prefix query (the editor wires it to
+    /// `ProjectSymbolIndex`). Takes the partial identifier, returns at most one
+    /// definition per matching name. Nil (or an unbuilt index) just yields an
+    /// empty tier — the other two still rank.
+    public var projectSymbolsProvider: ((String) -> [DefLocation])?
+
+    /// Marks both cached candidate tiers stale. Cheap enough for every
+    /// keystroke; must also be called on document swap/reload, language change,
+    /// and any buffer mutation that bypasses `textDidChange` (multi-edit batch
+    /// replace, Replace All).
+    public func noteEdit() {
+        cachedFileSymbols = nil
+        cachedBufferWords = nil
+    }
+
+    /// Ranked completion candidates for `partial` (the text the editor will
+    /// replace). Rebuilds whichever caches are stale from `text`, queries the
+    /// project tier, then ranks. Empty `partial` yields no candidates (no
+    /// popup). Main thread only — the caches install and invalidate there.
+    public func completions(for partial: String, text: String,
+                            language: CodeLanguage.Language) -> [CompletionItem] {
+        guard !partial.isEmpty else { return [] }
+        var fileSymbols = cachedFileSymbols
+        if fileSymbols == nil {
+            if let provider = symbolsProvider {
+                // Session-backed: reads the cached syntax tree, no parse. An
+                // empty result is used but NOT cached — the session yields []
+                // while its background warm-up parse is still running, and
+                // caching that would pin this tier empty for the unedited
+                // buffer (only noteEdit() clears the cache). Re-querying is a
+                // cached-tree query, cheap per trigger.
+                fileSymbols = Self.sortedUniqueItems(provider().map {
+                    CompletionItem(text: $0.name, kind: $0.kind, detail: nil)
+                })
+                if fileSymbols?.isEmpty == false { cachedFileSymbols = fileSymbols }
+            } else {
+                // Same cap as the word scan: symbols() runs a full synchronous
+                // tree-sitter parse — a main-thread hang on huge files (whose
+                // highlighting the editor already disables at this threshold).
+                cachedFileSymbols = text.utf16.count <= Self.wordScanThreshold
+                    ? Self.sortedUniqueItems(
+                        TreeSitterHighlighter.symbols(in: text, language: language).map {
+                            CompletionItem(text: $0.name, kind: $0.kind, detail: nil)
+                        })
+                    : []
+                fileSymbols = cachedFileSymbols
+            }
+        }
+        if cachedBufferWords == nil {
+            cachedBufferWords = Self.bufferWords(in: text)
+        }
+        let project = (projectSymbolsProvider?(partial) ?? []).map {
+            CompletionItem(text: $0.name, kind: $0.kind, detail: $0.url.lastPathComponent)
+        }
+        return Self.rank(partial: partial,
+                         fileSymbols: fileSymbols ?? [],
+                         projectSymbols: project,
+                         bufferWords: cachedBufferWords ?? [],
+                         builtins: LanguageBuiltins.completions(for: language))
+    }
+
+    // MARK: - Pure ranking / scanning (testable)
+
+    /// Case-insensitive prefix matches of `partial`, walking the tiers in rank
+    /// order (file symbols, project symbols, builtins, buffer words). Dedupes on the
+    /// inserted text preserving first (highest) rank, drops the candidate
+    /// identical to `partial` (completing to itself is noise), caps at `cap`.
+    /// Tiers are expected pre-sorted, so results are alphabetical within each
+    /// tier.
+    public static func rank(partial: String, fileSymbols: [CompletionItem],
+                            projectSymbols: [CompletionItem], bufferWords: [String],
+                            builtins: [CompletionItem] = [],
+                            cap: Int = maxCandidates) -> [CompletionItem] {
+        guard !partial.isEmpty, cap > 0 else { return [] }
+        let needle = partial.lowercased()
+        var seen = Set<String>()
+        var out: [CompletionItem] = []
+
+        /// Takes `item` unless it duplicates a higher tier, fails the prefix, or
+        /// completes to `partial` itself. False once `cap` is reached — stop.
+        func take(_ item: CompletionItem) -> Bool {
+            guard out.count < cap else { return false }
+            guard item.text != partial,
+                  item.text.lowercased().hasPrefix(needle),
+                  seen.insert(item.text).inserted else { return true }
+            out.append(item)
+            return out.count < cap
+        }
+
+        for tier in [fileSymbols, projectSymbols, builtins] {
+            for item in tier {
+                if !take(item) { return out }
+            }
+        }
+        // Wrapped only once matched — this tier can hold `maxUniqueWords`
+        // strings, and mapping it wholesale would allocate an item per word.
+        for word in bufferWords {
+            if !take(CompletionItem(text: word, kind: nil, detail: nil)) { return out }
+        }
+        return out
+    }
+
+    /// Unique identifier-shaped words in `text`, sorted: runs of identifier
+    /// characters (alphanumerics + `_` + `$` — the editor's `identifierRange`
+    /// charset) that don't start with a digit, `minWordLength...maxWordLength`
+    /// long. Empty above `wordScanThreshold` and after `maxUniqueWords` hits.
+    public static func bufferWords(in text: String) -> [String] {
+        guard text.utf16.count <= wordScanThreshold else { return [] }
+        var words = Set<String>()
+        let scalars = text.unicodeScalars
+        var i = scalars.startIndex
+        let end = scalars.endIndex
+        while i < end {
+            // Skip non-identifier scalars to the next word start.
+            while i < end, !isIdentifierScalar(scalars[i]) { i = scalars.index(after: i) }
+            guard i < end else { break }
+            let wordStart = i
+            let startsWithDigit = (0x30...0x39).contains(scalars[i].value)
+            var length = 0
+            while i < end, isIdentifierScalar(scalars[i]) {
+                i = scalars.index(after: i)
+                length += 1
+            }
+            if !startsWithDigit, length >= minWordLength, length <= maxWordLength {
+                words.insert(String(scalars[wordStart..<i]))
+                if words.count >= maxUniqueWords { break }
+            }
+        }
+        return sortedUnique(Array(words))
+    }
+
+    /// Identifier charset test with an ASCII fast path (the scan visits every
+    /// scalar of the buffer; `CharacterSet.contains` is only paid for non-ASCII).
+    private static func isIdentifierScalar(_ s: Unicode.Scalar) -> Bool {
+        switch s.value {
+        case 0x30...0x39, 0x41...0x5A, 0x61...0x7A, 0x5F /* _ */, 0x24 /* $ */:
+            return true
+        case ..<0x80:
+            return false
+        default:
+            return CharacterSet.alphanumerics.contains(s)
+        }
+    }
+
+    /// Dedupe (exact) then sort case-insensitively, case-sensitive tiebreak —
+    /// a stable, predictable popup order within each tier.
+    private static func sortedUnique(_ names: [String]) -> [String] {
+        var seen = Set<String>()
+        let unique = names.filter { seen.insert($0).inserted }
+        return unique.sorted {
+            let c = $0.caseInsensitiveCompare($1)
+            return c == .orderedSame ? $0 < $1 : c == .orderedAscending
+        }
+    }
+
+    /// `sortedUnique` for items — deduped on the inserted text, keeping the
+    /// first item for a name (its kind/detail), in the same order.
+    private static func sortedUniqueItems(_ items: [CompletionItem]) -> [CompletionItem] {
+        var seen = Set<String>()
+        let unique = items.filter { seen.insert($0.text).inserted }
+        return unique.sorted {
+            let c = $0.text.caseInsensitiveCompare($1.text)
+            return c == .orderedSame ? $0.text < $1.text : c == .orderedAscending
+        }
+    }
+}
