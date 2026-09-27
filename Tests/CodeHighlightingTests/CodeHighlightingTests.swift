@@ -45,19 +45,19 @@ final class CodeHighlightingTests: XCTestCase {
 
     func testDiffPatchRoles() {
         let text = """
-        commit 1234abcd
-        Author: Dev <d@example.com>
-        diff --git a/x.swift b/x.swift
-        index 1111111..2222222 100644
-        --- a/x.swift
-        +++ b/x.swift
-        @@ -1,2 +1,2 @@ func body
-         context line
-        -let a = 1
-        +let a = 2
-        --- deleted sql comment
-        +++ added sql comment
-        """
+            commit 1234abcd
+            Author: Dev <d@example.com>
+            diff --git a/x.swift b/x.swift
+            index 1111111..2222222 100644
+            --- a/x.swift
+            +++ b/x.swift
+            @@ -1,2 +1,2 @@ func body
+             context line
+            -let a = 1
+            +let a = 2
+            --- deleted sql comment
+            +++ added sql comment
+            """
         let s = highlighted(text, .diff)
         let ns = text as NSString
         XCTAssertEqual(colorAt(s, ns.range(of: "commit").location), .red, "commit header is chrome")
@@ -69,10 +69,12 @@ final class CodeHighlightingTests: XCTestCase {
         XCTAssertEqual(colorAt(s, ns.range(of: "+let a = 2").location), .cyan, "added line")
         XCTAssertEqual(colorAt(s, ns.range(of: " context line").location), .black, "context stays plain")
         // A removed/added line whose CONTENT starts with -- / ++ is not a file header.
-        XCTAssertEqual(colorAt(s, ns.range(of: "--- deleted sql comment").location), .yellow,
-                       "removed `-- …` line is a removal, not a header")
-        XCTAssertEqual(colorAt(s, ns.range(of: "+++ added sql comment").location), .cyan,
-                       "added `++ …` line is an addition, not a header")
+        XCTAssertEqual(
+            colorAt(s, ns.range(of: "--- deleted sql comment").location), .yellow,
+            "removed `-- …` line is a removal, not a header")
+        XCTAssertEqual(
+            colorAt(s, ns.range(of: "+++ added sql comment").location), .cyan,
+            "added `++ …` line is an addition, not a header")
     }
 
     func testSwiftKeywordCommentAndNumber() {
@@ -96,11 +98,11 @@ final class CodeHighlightingTests: XCTestCase {
         // `$vars` into ERROR nodes), so the dedicated rule set must cover
         // what the grammar tier can't.
         let text = """
-        // tokens
-        $primary: #336699;
-        .btn { color: $primary; }
-        @include flex(column);
-        """
+            // tokens
+            $primary: #336699;
+            .btn { color: $primary; }
+            @include flex(column);
+            """
         let s = highlighted(text, .scss)
         let ns = text as NSString
         XCTAssertEqual(colorAt(s, ns.range(of: "// tokens").location), .red, "line comment")
@@ -116,8 +118,9 @@ final class CodeHighlightingTests: XCTestCase {
         let s = highlighted(text, .less)
         let ns = text as NSString
         XCTAssertEqual(colorAt(s, ns.range(of: "@primary").location), .systemPink, "Less @variable")
-        XCTAssertEqual(colorAt(s, ns.range(of: "@media").location), .blue,
-                       "a known at-keyword repaints over the generic @var rule")
+        XCTAssertEqual(
+            colorAt(s, ns.range(of: "@media").location), .blue,
+            "a known at-keyword repaints over the generic @var rule")
     }
 
     func testIndentedSassVariablesColor() {
@@ -150,7 +153,7 @@ final class CodeHighlightingTests: XCTestCase {
     func testEmptyStorageDoesNotCrash() {
         let hl = SyntaxHighlighter(language: .swift, colors: MockColors())
         let storage = NSTextStorage(string: "")
-        hl.highlight(storage, in: NSRange(location: 0, length: 0))   // must be a no-op, not a crash
+        hl.highlight(storage, in: NSRange(location: 0, length: 0))  // must be a no-op, not a crash
     }
 
     func testOutOfBoundsEditedRangeIsClampedLikeTheTreeSitterTier() {
@@ -212,32 +215,36 @@ final class CodeHighlightingTests: XCTestCase {
         let text = "#include <stdio.h>\n#define MAX_USERS 10\nint init_users(void) {}\n"
         let ns = text as NSString
         let loc = ns.range(of: "int init_users").location
-        XCTAssertEqual(TreeSitterHighlighter.docComment(above: loc, in: ns, language: .c), "",
-                       "preprocessor directives are not documentation in C")
+        XCTAssertEqual(
+            TreeSitterHighlighter.docComment(above: loc, in: ns, language: .c), "",
+            "preprocessor directives are not documentation in C")
     }
 
     func testDocCommentReadsSlashDocsInC() {
         let text = "/// Initializes the user table.\nint init_users(void) {}\n"
         let ns = text as NSString
         let loc = ns.range(of: "int init_users").location
-        XCTAssertEqual(TreeSitterHighlighter.docComment(above: loc, in: ns, language: .c),
-                       "Initializes the user table.")
+        XCTAssertEqual(
+            TreeSitterHighlighter.docComment(above: loc, in: ns, language: .c),
+            "Initializes the user table.")
     }
 
     func testDocCommentReadsHashDocsInPython() {
         let text = "# Adds two numbers.\ndef add(a, b):\n    return a + b\n"
         let ns = text as NSString
         let loc = ns.range(of: "def add").location
-        XCTAssertEqual(TreeSitterHighlighter.docComment(above: loc, in: ns, language: .python),
-                       "Adds two numbers.")
+        XCTAssertEqual(
+            TreeSitterHighlighter.docComment(above: loc, in: ns, language: .python),
+            "Adds two numbers.")
     }
 
     func testDocCommentSkipsShebang() {
         let text = "#!/usr/bin/env python3\ndef main():\n    pass\n"
         let ns = text as NSString
         let loc = ns.range(of: "def main").location
-        XCTAssertEqual(TreeSitterHighlighter.docComment(above: loc, in: ns, language: .python), "",
-                       "a shebang is not documentation")
+        XCTAssertEqual(
+            TreeSitterHighlighter.docComment(above: loc, in: ns, language: .python), "",
+            "a shebang is not documentation")
     }
 
     // MARK: - ProjectSymbolIndex build supersession
@@ -257,7 +264,7 @@ final class CodeHighlightingTests: XCTestCase {
         let first = expectation(description: "first build completes")
         let second = expectation(description: "second build completes")
         idx.build(root: dirA) { first.fulfill() }
-        idx.invalidate()                          // switch projects mid-build
+        idx.invalidate()  // switch projects mid-build
         idx.build(root: dirB) { second.fulfill() }
         wait(for: [first, second], timeout: 10)
         XCTAssertTrue(idx.isBuilt, "the second build must install its index")
@@ -269,7 +276,7 @@ final class CodeHighlightingTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: dir) }
         let done = expectation(description: "superseded build still completes")
         idx.build(root: dir) { done.fulfill() }
-        idx.invalidate()                          // supersedes the in-flight build
+        idx.invalidate()  // supersedes the in-flight build
         wait(for: [done], timeout: 10)
         XCTAssertFalse(idx.isBuilt, "a superseded build must not install its stale results")
     }
@@ -289,14 +296,14 @@ final class CodeHighlightingTests: XCTestCase {
 
     func testGettextRoles() {
         let text = """
-        # translator note
-        #: includes/class-orders.php:42
-        #, php-format
-        msgctxt "admin"
-        msgid "One order"
-        msgid_plural "%d orders"
-        msgstr[0] "Une commande"
-        """
+            # translator note
+            #: includes/class-orders.php:42
+            #, php-format
+            msgctxt "admin"
+            msgid "One order"
+            msgid_plural "%d orders"
+            msgstr[0] "Une commande"
+            """
         let s = highlighted(text, .gettext)
         let ns = text as NSString
         XCTAssertEqual(colorAt(s, ns.range(of: "# translator").location), .red, "translator note is a comment")

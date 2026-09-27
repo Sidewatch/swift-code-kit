@@ -99,7 +99,9 @@ final class LocatedBuilder {
     /// The immutable ``LocatedValue`` this builder has grown into.
     var frozen: LocatedValue {
         switch kind {
-        case .mapping: return LocatedValue(node: .mapping(pairs.map { LocatedPair(key: $0.key, keyRange: $0.keyRange, value: $0.value.frozen) }), range: range)
+        case .mapping:
+            return LocatedValue(
+                node: .mapping(pairs.map { LocatedPair(key: $0.key, keyRange: $0.keyRange, value: $0.value.frozen) }), range: range)
         case .sequence: return LocatedValue(node: .sequence(items.map(\.frozen)), range: range)
         case .scalar: return LocatedValue(node: .scalar(scalar), range: range)
         }

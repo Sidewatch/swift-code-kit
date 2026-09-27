@@ -21,8 +21,14 @@ extension RuleTables {
         singleQuotedPlain,
         ("^\\s*[A-Za-z_.$][\\w.$]*:", .function),
         ("^\\s*\\.[a-z_]+\\b", .keyword),
-        ("(?i)\\b(section|segment|global|globl|extern|equ|db|dw|dd|dq|dt|resb|resw|resd|resq|times|org|bits|default|align|use32|use64|struc|endstruc|macro|endmacro|include|incbin|byte|word|dword|qword|ptr|offset|rel)\\b", .keyword),
-        ("(?i)\\b(r[abcd]x|e[abcd]x|[abcd][lhx]|r[sd]i|e[sd]i|[sd]il?|r[sb]p|e[sb]p|[sb]pl?|r(8|9|1[0-5])[dwb]?|[xyz]mm\\d{1,2}|st\\(?\\d\\)?|[cdefgs]s|rip|eip|eflags|x\\d{1,2}|w\\d{1,2}|sp|lr|pc|fp|xzr|wzr|v\\d{1,2})\\b", .variable),
+        (
+            "(?i)\\b(section|segment|global|globl|extern|equ|db|dw|dd|dq|dt|resb|resw|resd|resq|times|org|bits|default|align|use32|use64|struc|endstruc|macro|endmacro|include|incbin|byte|word|dword|qword|ptr|offset|rel)\\b",
+            .keyword
+        ),
+        (
+            "(?i)\\b(r[abcd]x|e[abcd]x|[abcd][lhx]|r[sd]i|e[sd]i|[sd]il?|r[sb]p|e[sb]p|[sb]pl?|r(8|9|1[0-5])[dwb]?|[xyz]mm\\d{1,2}|st\\(?\\d\\)?|[cdefgs]s|rip|eip|eflags|x\\d{1,2}|w\\d{1,2}|sp|lr|pc|fp|xzr|wzr|v\\d{1,2})\\b",
+            .variable
+        ),
         ("%[a-z]+[0-9a-z]*", .variable),
         ("^\\s+[a-zA-Z][a-zA-Z0-9.]*\\b", .keyword),
         ("\\[[^\\]]*\\]", .property),

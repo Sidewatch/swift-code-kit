@@ -17,7 +17,10 @@ extension RuleTables {
         hashComment,
         ("^\\S+", .function),
         ("[-!][\\w.-]+", .removed),
-        ("\\b(text|binary|diff|merge|filter|eol|export-ignore|export-subst|delta|encoding|ident|whitespace|working-tree-encoding|linguist-[\\w-]+|gitlab-[\\w-]+|conflict-marker-size)\\b", .keyword),
+        (
+            "\\b(text|binary|diff|merge|filter|eol|export-ignore|export-subst|delta|encoding|ident|whitespace|working-tree-encoding|linguist-[\\w-]+|gitlab-[\\w-]+|conflict-marker-size)\\b",
+            .keyword
+        ),
         ("=[\\w.-]+", .property),
     ]
 }

@@ -107,18 +107,22 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
     @MainActor
     private func paint(_ lang: Language, storage: NSTextStorage, ns: NSString, body: NSRange, clip: NSRange) {
         if let grammar = TreeSitterHighlighter.grammar(for: lang),
-           let tree = TreeSitterHighlighter.combinedParse(grammar, ns: ns, ranges: [body]) {
+            let tree = TreeSitterHighlighter.combinedParse(grammar, ns: ns, ranges: [body])
+        {
             // `combinedParse` restricts the parser to `body` via includedRanges,
             // so capture ranges come back in document coordinates already —
             // offset stays 0, exactly as in the injection pass.
             var base = 0
-            var hits = TreeSitterHighlighter.collectHits(grammar.highlights, tree: tree, source: ns,
-                                                         offset: 0, clip: clip, nextBase: &base)
-            hits += TreeSitterHighlighter.collectInjectionHits(grammar, tree: tree, source: ns,
-                                                               offset: 0, clip: clip, depth: 0,
-                                                               nextBase: &base)
-            TreeSitterHighlighter.applyResolved(hits: hits, clip: clip,
-                                                defaultColor: colors.foreground, into: storage)
+            var hits = TreeSitterHighlighter.collectHits(
+                grammar.highlights, tree: tree, source: ns,
+                offset: 0, clip: clip, nextBase: &base)
+            hits += TreeSitterHighlighter.collectInjectionHits(
+                grammar, tree: tree, source: ns,
+                offset: 0, clip: clip, depth: 0,
+                nextBase: &base)
+            TreeSitterHighlighter.applyResolved(
+                hits: hits, clip: clip,
+                defaultColor: colors.foreground, into: storage)
             return
         }
         fallback(for: lang).paint(storage, in: clip)
@@ -161,14 +165,14 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         var loc = NSMaxRange(opening)
         while loc < ns.length {
             let line = ns.lineRange(for: NSRange(location: loc, length: 0))
-            guard line.length > 0 else { break }   // no forward progress; bail rather than spin
+            guard line.length > 0 else { break }  // no forward progress; bail rather than spin
             if ns.substring(with: line).trimmed == "---" {
                 let start = NSMaxRange(opening)
                 return (NSRange(location: start, length: line.location - start), NSMaxRange(line))
             }
             loc = NSMaxRange(line)
         }
-        return nil   // unterminated fence: treat the whole file as markup
+        return nil  // unterminated fence: treat the whole file as markup
     }
 
     /// Opening `<script …>` / `<style …>` tags. Attributes can't contain `>`,
@@ -188,8 +192,10 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         var scanFrom = start
 
         while scanFrom < ns.length,
-              let match = openTag.firstMatch(in: text, options: [],
-                                             range: NSRange(location: scanFrom, length: ns.length - scanFrom)) {
+            let match = openTag.firstMatch(
+                in: text, options: [],
+                range: NSRange(location: scanFrom, length: ns.length - scanFrom))
+        {
             let name = ns.substring(with: match.range(at: 1)).lowercased()
             let attrs = match.range(at: 2).location == NSNotFound ? "" : ns.substring(with: match.range(at: 2))
             let bodyStart = NSMaxRange(match.range)
@@ -202,8 +208,9 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
             }
 
             // First close tag wins, exactly as an HTML tokenizer would treat it.
-            let closing = ns.range(of: "</\(name)", options: .caseInsensitive,
-                                   range: NSRange(location: bodyStart, length: ns.length - bodyStart))
+            let closing = ns.range(
+                of: "</\(name)", options: .caseInsensitive,
+                range: NSRange(location: bodyStart, length: ns.length - bodyStart))
             let bodyEnd = closing.location == NSNotFound ? ns.length : closing.location
 
             if bodyEnd > bodyStart, let lang = embeddedLanguage(tag: name, attributes: attrs, host: host) {
@@ -223,11 +230,11 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
 
         if tag == "style" {
             switch lang {
-            case "scss":            return .scss
-            case "sass":            return .sass
-            case "less":            return .less
-            case "stylus", "styl":  return nil
-            default:                return .css     // incl. postcss, text/css, unset
+            case "scss": return .scss
+            case "sass": return .sass
+            case "less": return .less
+            case "stylus", "styl": return nil
+            default: return .css  // incl. postcss, text/css, unset
             }
         }
 
@@ -251,8 +258,10 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         guard let attribute, !source.isEmpty else { return [:] }
         let ns = source as NSString
         var out: [String: String] = [:]
-        attribute.enumerateMatches(in: source, options: [],
-                                   range: NSRange(location: 0, length: ns.length)) { match, _, _ in
+        attribute.enumerateMatches(
+            in: source, options: [],
+            range: NSRange(location: 0, length: ns.length)
+        ) { match, _, _ in
             guard let match else { return }
             let name = ns.substring(with: match.range(at: 1)).lowercased()
             for group in 2...4 where match.range(at: group).location != NSNotFound {

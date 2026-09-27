@@ -46,17 +46,17 @@ public struct CustomPattern: Codable, Equatable, Sendable {
     /// rejects up front).
     var tokenKind: TokenKind? {
         switch kind {
-        case "comment":   return .comment
-        case "string":    return .string
-        case "keyword":   return .keyword
-        case "type":      return .type
-        case "number":    return .number
-        case "function":  return .function
+        case "comment": return .comment
+        case "string": return .string
+        case "keyword": return .keyword
+        case "type": return .type
+        case "number": return .number
+        case "function": return .function
         case "attribute": return .attribute
-        case "property":  return .property
-        case "variable":  return .variable
-        case "constant":  return .number   // constants share the literal color, like the built-in tables
-        default:          return nil
+        case "property": return .property
+        case "variable": return .variable
+        case "constant": return .number  // constants share the literal color, like the built-in tables
+        default: return nil
         }
     }
 }

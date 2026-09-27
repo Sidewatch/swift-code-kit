@@ -27,7 +27,8 @@ public enum SymbolOwners {
         var best: Symbol?
         for s in all where typeKinds.contains(s.kind) {
             guard let scope = s.scopeRange, NSLocationInRange(range.location, scope),
-                  scope != range else { continue }
+                scope != range
+            else { continue }
             if let b = best, let bScope = b.scopeRange, bScope.length <= scope.length { continue }
             best = s
         }

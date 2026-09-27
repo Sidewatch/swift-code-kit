@@ -20,10 +20,13 @@ final class OutlineTests: XCTestCase {
 
     /// A symbol whose name occupies `[loc, loc+len)`; `scope` (if given) is the region
     /// that can hold children.
-    private func sym(_ name: String, kind: SymbolKind = .function,
-                     loc: Int, len: Int = 1, line: Int = 1, scope: NSRange? = nil) -> Symbol {
-        Symbol(name: name, kind: kind, range: NSRange(location: loc, length: len),
-               line: line, scopeRange: scope)
+    private func sym(
+        _ name: String, kind: SymbolKind = .function,
+        loc: Int, len: Int = 1, line: Int = 1, scope: NSRange? = nil
+    ) -> Symbol {
+        Symbol(
+            name: name, kind: kind, range: NSRange(location: loc, length: len),
+            line: line, scopeRange: scope)
     }
 
     // MARK: - OutlineTree.build
@@ -91,7 +94,7 @@ final class OutlineTests: XCTestCase {
     func testHeadingsNestByLevelViaTree() {
         let md = "# Top\n## A\n### A1\n## B\n"
         let roots = OutlineTree.build(from: MarkdownOutline.headings(in: md))
-        XCTAssertEqual(roots.count, 1)                       // one H1 root
+        XCTAssertEqual(roots.count, 1)  // one H1 root
         XCTAssertEqual(roots[0].symbol.name, "Top")
         XCTAssertEqual(roots[0].children.map(\.symbol.name), ["A", "B"])
         XCTAssertEqual(roots[0].children[0].children.map(\.symbol.name), ["A1"])

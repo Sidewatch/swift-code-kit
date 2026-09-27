@@ -19,14 +19,14 @@ public enum OutlineTree {
     /// The top-level nodes of `symbols` folded by containment; `symbols` must be in document order.
     public static func build(from symbols: [Symbol]) -> [OutlineNode] {
         var roots: [OutlineNode] = []
-        var stack: [OutlineNode] = []   // currently-open scopes, innermost last
+        var stack: [OutlineNode] = []  // currently-open scopes, innermost last
         for sym in symbols {
             let node = OutlineNode(sym)
             while let top = stack.last, !contains(top.symbol.scopeRange, sym.range) {
                 stack.removeLast()
             }
             if let parent = stack.last { parent.children.append(node) } else { roots.append(node) }
-            if sym.scopeRange != nil { stack.append(node) }   // can hold children
+            if sym.scopeRange != nil { stack.append(node) }  // can hold children
         }
         return roots
     }

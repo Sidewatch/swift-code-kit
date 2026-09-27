@@ -20,9 +20,9 @@ extension RuleTables {
             "type", "query", "mutation", "subscription", "input", "enum", "interface", "union", "scalar", "fragment",
             "schema", "extend", "directive", "implements", "on",
         ]),
-        ("@\\w+", .attribute),   // @directives
-        ("\\$[A-Za-z_]\\w*", .property),   // $variables
-        ("\\b[A-Z]\\w*\\b", .type),   // Types
+        ("@\\w+", .attribute),  // @directives
+        ("\\$[A-Za-z_]\\w*", .property),  // $variables
+        ("\\b[A-Z]\\w*\\b", .type),  // Types
         decimal,
     ]
 }

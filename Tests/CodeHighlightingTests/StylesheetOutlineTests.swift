@@ -21,10 +21,10 @@ final class StylesheetOutlineTests: XCTestCase {
     /// import and the outline listed `@import url( .a` in place of `.a`.
     func testProtocolRelativeURLInSCSSIsNotALineComment() {
         let scss = """
-        @import url(//fonts.googleapis.com/css?family=Inter);
+            @import url(//fonts.googleapis.com/css?family=Inter);
 
-        .a { color: red; }
-        """
+            .a { color: red; }
+            """
         let symbols = StylesheetOutline.symbols(in: scss, language: .scss)
         XCTAssertEqual(symbols.map(\.name), [".a"])
         XCTAssertEqual(symbols.map(\.kind), [.selector])
@@ -35,37 +35,39 @@ final class StylesheetOutlineTests: XCTestCase {
     /// banner, so the shared tree builder nests the rules under them.
     func testBannersBecomeSectionsWithTheirRulesNested() {
         let css = """
-        /* Widgets */
-        .widgets-chooser li.widgets-chooser-selected {
-          background-color: #916745;
-          color: #fff;
-        }
+            /* Widgets */
+            .widgets-chooser li.widgets-chooser-selected {
+              background-color: #916745;
+              color: #fff;
+            }
 
-        .widgets-chooser li.widgets-chooser-selected:before,
-        .widgets-chooser li.widgets-chooser-selected:focus:before {
-          color: #fff;
-        }
+            .widgets-chooser li.widgets-chooser-selected:before,
+            .widgets-chooser li.widgets-chooser-selected:focus:before {
+              color: #fff;
+            }
 
-        /* Nav Menus */
-        .nav-menus-php .item-edit:focus:before {
-          box-shadow: 0 0 0 1px rgb(176.0046728972, 127.9205607477, 88.9953271028), 0 0 2px 1px #916745;
-        }
+            /* Nav Menus */
+            .nav-menus-php .item-edit:focus:before {
+              box-shadow: 0 0 0 1px rgb(176.0046728972, 127.9205607477, 88.9953271028), 0 0 2px 1px #916745;
+            }
 
-        /* Responsive Component */
-        div#wp-responsive-toggle a:before {
-          color: hsl(25.7142857143, 7%, 95%);
-        }
-        """
+            /* Responsive Component */
+            div#wp-responsive-toggle a:before {
+              color: hsl(25.7142857143, 7%, 95%);
+            }
+            """
         let symbols = StylesheetOutline.symbols(in: css, language: .css)
-        XCTAssertEqual(symbols.map(\.name), [
-            "Widgets",
-            ".widgets-chooser li.widgets-chooser-selected",
-            ".widgets-chooser li.widgets-chooser-selected:before, .widgets-chooser li.widgets-chooser-selected:focus:before",
-            "Nav Menus",
-            ".nav-menus-php .item-edit:focus:before",
-            "Responsive Component",
-            "div#wp-responsive-toggle a:before",
-        ])
+        XCTAssertEqual(
+            symbols.map(\.name),
+            [
+                "Widgets",
+                ".widgets-chooser li.widgets-chooser-selected",
+                ".widgets-chooser li.widgets-chooser-selected:before, .widgets-chooser li.widgets-chooser-selected:focus:before",
+                "Nav Menus",
+                ".nav-menus-php .item-edit:focus:before",
+                "Responsive Component",
+                "div#wp-responsive-toggle a:before",
+            ])
         XCTAssertEqual(symbols.map(\.kind), [.heading, .selector, .selector, .heading, .selector, .heading, .selector])
         XCTAssertEqual(symbols.map(\.line), [1, 2, 7, 12, 13, 17, 18], "1-based lines of the banner / the selector's first line")
 
@@ -78,17 +80,17 @@ final class StylesheetOutlineTests: XCTestCase {
     /// strip to the words; an inner single `-` is punctuation and survives.
     func testDecoratedBannersStripToTheirWords() {
         let css = """
-        /* ===== Header ===== */
-        .h {}
-        /*------------------------------------------------------------------------------
-          2.0 - Navigation
-        ------------------------------------------------------------------------------*/
-        .n {}
-        /**
-         * 3.0 - Footer
-         */
-        .f {}
-        """
+            /* ===== Header ===== */
+            .h {}
+            /*------------------------------------------------------------------------------
+              2.0 - Navigation
+            ------------------------------------------------------------------------------*/
+            .n {}
+            /**
+             * 3.0 - Footer
+             */
+            .f {}
+            """
         let headings = StylesheetOutline.symbols(in: css, language: .css).filter { $0.kind == .heading }
         XCTAssertEqual(headings.map(\.name), ["Header", "2.0 - Navigation", "3.0 - Footer"])
         XCTAssertEqual(headings.map(\.line), [1, 3, 7])
@@ -98,21 +100,21 @@ final class StylesheetOutlineTests: XCTestCase {
     /// paragraphs, `/*!` headers, tool pragmas, and SCSS `//` lines.
     func testNonBannerCommentsAreIgnored() {
         let scss = """
-        /*! Theme Name: Example — preserved by minifiers, not a section */
-        /* This paragraph explains the whole file in far more than sixty characters of prose text. */
-        /* stylelint-disable selector-max-id */
-        /* rtl:begin:ignore */
-        // Buttons are styled below.
-        // They share one base rule (a prose block, not a banner).
-        .btn { color: red; /* fallback */ }
-        .a { } /* trailing note on a code line */
-        .b {
-          /* Inside a rule */
-          color: blue;
-        }
-        /* has a semicolon; in it */
-        .c {}
-        """
+            /*! Theme Name: Example — preserved by minifiers, not a section */
+            /* This paragraph explains the whole file in far more than sixty characters of prose text. */
+            /* stylelint-disable selector-max-id */
+            /* rtl:begin:ignore */
+            // Buttons are styled below.
+            // They share one base rule (a prose block, not a banner).
+            .btn { color: red; /* fallback */ }
+            .a { } /* trailing note on a code line */
+            .b {
+              /* Inside a rule */
+              color: blue;
+            }
+            /* has a semicolon; in it */
+            .c {}
+            """
         let symbols = StylesheetOutline.symbols(in: scss, language: .scss)
         XCTAssertTrue(symbols.filter { $0.kind == .heading }.isEmpty, "none of these is a section: \(symbols.map(\.name))")
         XCTAssertEqual(symbols.map(\.name), [".btn", ".a", ".b", ".c"])
@@ -123,13 +125,13 @@ final class StylesheetOutlineTests: XCTestCase {
     /// contents.
     func testAtRulesScopeTheRulesInsideThem() {
         let scss = """
-        @mixin clearfix($x) { &:after { content: ""; } }
-        @media (max-width: 782px) {
-          .a { color: red; }
-          .b { .nested { color: blue; } }
-        }
-        .top { .inner { } }
-        """
+            @mixin clearfix($x) { &:after { content: ""; } }
+            @media (max-width: 782px) {
+              .a { color: red; }
+              .b { .nested { color: blue; } }
+            }
+            .top { .inner { } }
+            """
         let symbols = StylesheetOutline.symbols(in: scss, language: .scss)
         XCTAssertEqual(symbols.map(\.name), ["@mixin clearfix($x)", "@media (max-width: 782px)", ".a", ".b", ".top"])
         XCTAssertEqual(symbols[0].kind, .function)
@@ -138,18 +140,18 @@ final class StylesheetOutlineTests: XCTestCase {
         XCTAssertNil(symbols[2].scopeRange, "a selector never is")
         let tree = OutlineTree.build(from: symbols)
         XCTAssertEqual(tree.map(\.symbol.name), ["@mixin clearfix($x)", "@media (max-width: 782px)", ".top"])
-        XCTAssertEqual(tree.dropFirst().first?.children.map(\.symbol.name), [".a", ".b"])   // no crash on an empty tree
+        XCTAssertEqual(tree.dropFirst().first?.children.map(\.symbol.name), [".a", ".b"])  // no crash on an empty tree
     }
 
     /// Braces and semicolons inside strings, and a comment inside a selector list,
     /// must not open blocks, end preludes, or leak into names.
     func testStringsAndInlineCommentsAreInert() {
         let css = """
-        .q:before { content: "{"; }
-        .u { background: url("data:image/svg+xml;charset=utf8,%3Csvg%3E"); }
-        .x, /* legacy */ .y { color: red; }
-        .after {}
-        """
+            .q:before { content: "{"; }
+            .u { background: url("data:image/svg+xml;charset=utf8,%3Csvg%3E"); }
+            .x, /* legacy */ .y { color: red; }
+            .after {}
+            """
         let symbols = StylesheetOutline.symbols(in: css, language: .css)
         XCTAssertEqual(symbols.map(\.name), [".q:before", ".u", ".x, .y", ".after"])
         XCTAssertEqual(symbols.map(\.line), [1, 2, 3, 4])
@@ -173,41 +175,43 @@ final class StylesheetOutlineTests: XCTestCase {
     /// and `$variables` as the content — nested under their section.
     func testLineCommentBannersAndVariablesInSCSS() throws {
         let scss = """
-        // ==========================================================================
-        // WordPress Design System Tokens
-        // ==========================================================================
-        //
-        // These tokens are derived from the WordPress Design System in Figma:
-        // IMPORTANT: Do NOT expose these as CSS custom properties.
-        // - --wp-admin-theme-color
-        // ==========================================================================
+            // ==========================================================================
+            // WordPress Design System Tokens
+            // ==========================================================================
+            //
+            // These tokens are derived from the WordPress Design System in Figma:
+            // IMPORTANT: Do NOT expose these as CSS custom properties.
+            // - --wp-admin-theme-color
+            // ==========================================================================
 
 
-        // --------------------------------------------------------------------------
-        // Grid Units (Spacing)
-        // --------------------------------------------------------------------------
-        // Based on 4px base unit. Use for padding, margin, and gap values.
+            // --------------------------------------------------------------------------
+            // Grid Units (Spacing)
+            // --------------------------------------------------------------------------
+            // Based on 4px base unit. Use for padding, margin, and gap values.
 
-        $grid-unit-05: 4px;   // Scales/grid unit 05
-        $grid-unit-10: 8px;
-        $spacing: (small: $grid-unit-05, large: $grid-unit-10);
+            $grid-unit-05: 4px;   // Scales/grid unit 05
+            $grid-unit-10: 8px;
+            $spacing: (small: $grid-unit-05, large: $grid-unit-10);
 
-        // --------------------------------------------------------------------------
-        // Border Radius
-        // --------------------------------------------------------------------------
+            // --------------------------------------------------------------------------
+            // Border Radius
+            // --------------------------------------------------------------------------
 
-        $radius-xs: 1px;
-        .card { $local: 2px; border-radius: $local; }
+            $radius-xs: 1px;
+            .card { $local: 2px; border-radius: $local; }
 
-        // Buttons
-        .btn { color: red; }
-        """
+            // Buttons
+            .btn { color: red; }
+            """
         let symbols = StylesheetOutline.symbols(in: scss, language: .scss)
-        XCTAssertEqual(symbols.filter { $0.kind == .heading }.map(\.name),
-                       ["WordPress Design System Tokens", "Grid Units (Spacing)", "Border Radius", "Buttons"])
+        XCTAssertEqual(
+            symbols.filter { $0.kind == .heading }.map(\.name),
+            ["WordPress Design System Tokens", "Grid Units (Spacing)", "Border Radius", "Buttons"])
         XCTAssertEqual(symbols.filter { $0.kind == .heading }.map(\.line), [1, 11, 20, 27], "a banner starts at its opening row")
-        XCTAssertEqual(symbols.filter { $0.kind == .variable }.map(\.name),
-                       ["$grid-unit-05", "$grid-unit-10", "$spacing", "$radius-xs"], "top-level variables only — `$local` stays inside its rule")
+        XCTAssertEqual(
+            symbols.filter { $0.kind == .variable }.map(\.name),
+            ["$grid-unit-05", "$grid-unit-10", "$spacing", "$radius-xs"], "top-level variables only — `$local` stays inside its rule")
         XCTAssertEqual(symbols.first { $0.name == "$grid-unit-05" }?.line, 16)
         let tree = OutlineTree.build(from: symbols)
         XCTAssertEqual(tree.map(\.symbol.name), ["WordPress Design System Tokens", "Grid Units (Spacing)", "Border Radius", "Buttons"])
@@ -220,11 +224,11 @@ final class StylesheetOutlineTests: XCTestCase {
     /// `//` inside a URL is not a comment.
     func testLessVariablesAndUrls() {
         let less = """
-        @import 'base';
-        @brand: #916745;
-        @font: url(https://fonts.example/x.woff);
-        @media print { .p { } }
-        """
+            @import 'base';
+            @brand: #916745;
+            @font: url(https://fonts.example/x.woff);
+            @media print { .p { } }
+            """
         let symbols = StylesheetOutline.symbols(in: less, language: .less)
         XCTAssertEqual(symbols.map(\.name), ["@brand", "@font", "@media print", ".p"])
         XCTAssertEqual(symbols.map(\.kind), [.variable, .variable, .module, .selector])

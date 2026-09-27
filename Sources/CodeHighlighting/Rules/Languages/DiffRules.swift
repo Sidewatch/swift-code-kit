@@ -22,7 +22,10 @@ extension RuleTables {
         // line ("--- foo") stays a removal while both git and plain POSIX
         // headers render as headers. `diff.noprefix` headers are ambiguous with
         // that per-line rule; only a hunk-aware colouriser can tell them apart.
-        ("^(?:diff|index|new file|deleted file|old mode|new mode|rename|similarity|dissimilarity|copy|Binary files|commit|Merge:|Author:|AuthorDate:|Commit:|CommitDate:|Date:|\\\\ No newline).*$", .comment),
+        (
+            "^(?:diff|index|new file|deleted file|old mode|new mode|rename|similarity|dissimilarity|copy|Binary files|commit|Merge:|Author:|AuthorDate:|Commit:|CommitDate:|Date:|\\\\ No newline).*$",
+            .comment
+        ),
         ("^(?:\\+\\+\\+|---) (?:[abiwco]/|/dev/null|\"|[^\\t\\n]*\\t).*$", .comment),
         ("^@@[^\\n]*", .function),
         ("^\\+(?!\\+\\+ (?:[abiwco]/|/dev/null|\"|[^\\t\\n]*\\t)).*$", .added),

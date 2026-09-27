@@ -91,7 +91,9 @@ struct QuerySourceScanner {
                 k += 1
                 while k < s.count, !Self.isWS(s[k]), !"()[];".unicodeScalars.contains(s[k]) { k += 1 }
                 i = k
-            } else { return }
+            } else {
+                return
+            }
         }
     }
 }

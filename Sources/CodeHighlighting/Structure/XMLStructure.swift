@@ -44,7 +44,8 @@ public enum XMLStructure {
     static func located(_ text: String) -> LocatedValue? {
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .xml) else { return nil }
         let ns = text as NSString
-        guard let element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" }) else { return nil }
+        guard let element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" })
+        else { return nil }
         let (name, builder) = build(element, ns: ns)
         let document = LocatedBuilder(.mapping)
         document.pairs = [(name, nil, builder)]
@@ -60,10 +61,16 @@ public enum XMLStructure {
         var attributes: [(key: String, keyRange: NSRange?, value: LocatedBuilder)] = []
         for attribute in tagChildren where attribute.nodeType == "Attribute" {
             let parts = YAMLStructure.namedChildren(attribute)
-            guard let attrName = parts.first(where: { $0.nodeType == "Name" }), let attrValue = parts.first(where: { $0.nodeType == "AttValue" }) else { continue }
+            guard let attrName = parts.first(where: { $0.nodeType == "Name" }),
+                let attrValue = parts.first(where: { $0.nodeType == "AttValue" })
+            else { continue }
             let raw = YAMLStructure.text(attrValue, ns)
             let inner = raw.count >= 2 ? String(raw.dropFirst().dropLast()) : raw
-            attributes.append(("@" + YAMLStructure.text(attrName, ns), attrName.range, .scalar(.string(XMLEdit.decodedReferences(inner)), range: attrValue.range)))
+            attributes.append(
+                (
+                    "@" + YAMLStructure.text(attrName, ns), attrName.range,
+                    .scalar(.string(XMLEdit.decodedReferences(inner)), range: attrValue.range)
+                ))
         }
         // The content: text pieces and child elements in order.
         var text = ""
@@ -72,13 +79,18 @@ public enum XMLStructure {
         if let content = children.first(where: { $0.nodeType == "content" }) {
             for piece in YAMLStructure.namedChildren(content) {
                 switch piece.nodeType ?? "" {
-                case "CharData": text += YAMLStructure.text(piece, ns); textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
-                case "CharRef", "EntityRef": text += XMLEdit.decodedReferences(YAMLStructure.text(piece, ns)); textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
+                case "CharData":
+                    text += YAMLStructure.text(piece, ns); textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
+                case "CharRef", "EntityRef":
+                    text += XMLEdit.decodedReferences(YAMLStructure.text(piece, ns));
+                    textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
                 case "CDSect":
-                    if let data = YAMLStructure.namedChildren(piece).first(where: { $0.nodeType == "CData" }) { text += YAMLStructure.text(data, ns) }
+                    if let data = YAMLStructure.namedChildren(piece).first(where: { $0.nodeType == "CData" }) {
+                        text += YAMLStructure.text(data, ns)
+                    }
                     textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
                 case "element": elements.append(build(piece, ns: ns))
-                default: continue   // Comment, PI
+                default: continue  // Comment, PI
                 }
             }
         }
@@ -86,9 +98,13 @@ public enum XMLStructure {
         if attributes.isEmpty && elements.isEmpty {
             // A leaf: its text, at the trimmed span; an empty `<a></a>` between its tags; `<a/>` nowhere.
             let range: NSRange?
-            if let span = textSpan { range = trimmedRange(of: ns.substring(with: span), at: span.location) }
-            else if let open = tag, open.nodeType == "STag" { range = NSRange(location: NSMaxRange(open.range), length: 0) }
-            else { range = nil }
+            if let span = textSpan {
+                range = trimmedRange(of: ns.substring(with: span), at: span.location)
+            } else if let open = tag, open.nodeType == "STag" {
+                range = NSRange(location: NSMaxRange(open.range), length: 0)
+            } else {
+                range = nil
+            }
             return (name, .scalar(.string(trimmed), range: range))
         }
         let builder = LocatedBuilder(.mapping, range: element.range)
@@ -96,8 +112,11 @@ public enum XMLStructure {
         for (childName, value) in elements {
             if let i = builder.pairs.firstIndex(where: { $0.key == childName && $0.keyRange == nil }) {
                 let existing = builder.pairs[i].value
-                if existing.kind == .sequence { existing.items.append(value) }
-                else { let sequence = LocatedBuilder(.sequence); sequence.items = [existing, value]; builder.pairs[i].value = sequence }
+                if existing.kind == .sequence {
+                    existing.items.append(value)
+                } else {
+                    let sequence = LocatedBuilder(.sequence); sequence.items = [existing, value]; builder.pairs[i].value = sequence
+                }
             } else {
                 builder.pairs.append((childName, nil, value))
             }
@@ -114,7 +133,9 @@ public enum XMLStructure {
     static func trimmedRange(of s: String, at base: Int) -> NSRange {
         let ns = s as NSString
         var start = 0, end = ns.length
-        func white(_ i: Int) -> Bool { Unicode.Scalar(ns.character(at: i)).map { CharacterSet.whitespacesAndNewlines.contains($0) } ?? false }
+        func white(_ i: Int) -> Bool {
+            Unicode.Scalar(ns.character(at: i)).map { CharacterSet.whitespacesAndNewlines.contains($0) } ?? false
+        }
         while start < end, white(start) { start += 1 }
         while end > start, white(end - 1) { end -= 1 }
         return NSRange(location: base + start, length: end - start)

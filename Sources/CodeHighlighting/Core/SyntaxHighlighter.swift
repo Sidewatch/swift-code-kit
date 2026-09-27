@@ -53,8 +53,8 @@ public final class SyntaxHighlighter: CodeHighlighter {
             guard let regex = try? NSRegularExpression(pattern: pattern, options: regexOptions) else { continue }
             switch kind {
             case .comment: comments.append((regex, kind))
-            case .string:  strings.append((regex, kind))
-            default:       code.append((regex, kind))
+            case .string: strings.append((regex, kind))
+            default: code.append((regex, kind))
             }
         }
         codeRules = code
@@ -95,8 +95,9 @@ public final class SyntaxHighlighter: CodeHighlighter {
         let keyword = colors.color(for: .keyword)
         CommentKeywords.regex.enumerateMatches(in: storage.string, options: [], range: range) { m, _, _ in
             guard let r = m?.range, r.length > 0, NSMaxRange(r) <= storage.length,
-                  let c = storage.attribute(.foregroundColor, at: r.location, effectiveRange: nil) as? NSColor,
-                  c.isEqual(comment) else { return }
+                let c = storage.attribute(.foregroundColor, at: r.location, effectiveRange: nil) as? NSColor,
+                c.isEqual(comment)
+            else { return }
             storage.addAttribute(.foregroundColor, value: keyword, range: r)
         }
     }
@@ -152,7 +153,8 @@ public final class SyntaxHighlighter: CodeHighlighter {
                 }
                 guard let m = next[i], m.location != NSNotFound else { continue }
                 if best == nil || m.location < best!.range.location
-                    || (m.location == best!.range.location && m.length > best!.range.length) {
+                    || (m.location == best!.range.location && m.length > best!.range.length)
+                {
                     best = (m, rules[i].kind)
                 }
             }

@@ -26,15 +26,15 @@ public extension Language {
     static func symbolName(forKindExtension ext: String) -> String? {
         switch ext {
         case "png", "jpg", "jpeg", "gif", "webp", "ico", "bmp", "tiff", "heic": return "photo"
-        case "svg":                                                             return "square.on.circle"
-        case "mp3", "wav", "m4a", "flac", "aac", "ogg", "aiff", "aif":          return "waveform"
-        case "mp4", "mov", "m4v", "webm", "avi", "mkv":                         return "film"
-        case "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar":               return "archivebox"
-        case "db", "sqlite", "sqlite3":                                         return "cylinder"
-        case "ttf", "otf", "woff", "woff2":                                     return "textformat"
-        case "pdf":                                                             return "doc.fill"
-        case "lock":                                                            return "lock"
-        default:                                                                return nil
+        case "svg": return "square.on.circle"
+        case "mp3", "wav", "m4a", "flac", "aac", "ogg", "aiff", "aif": return "waveform"
+        case "mp4", "mov", "m4v", "webm", "avi", "mkv": return "film"
+        case "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar": return "archivebox"
+        case "db", "sqlite", "sqlite3": return "cylinder"
+        case "ttf", "otf", "woff", "woff2": return "textformat"
+        case "pdf": return "doc.fill"
+        case "lock": return "lock"
+        default: return nil
         }
     }
 

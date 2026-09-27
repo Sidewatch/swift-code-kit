@@ -14,49 +14,52 @@ import DataConverter
 
 final class PlistStructureTests: XCTestCase {
     let plist = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-    	<!-- the bundle -->
-    	<key>CFBundleName</key>
-    	<string>Inventory &amp; Co</string>
-    	<key>CFBundleVersion</key>
-    	<integer>42</integer>
-    	<key>Ratio</key>
-    	<real>0.5</real>
-    	<key>Sandboxed</key>
-    	<true/>
-    	<key>Debug</key>
-    	<false/>
-    	<key>Built</key>
-    	<date>2026-09-25T10:00:00Z</date>
-    	<key>Blob</key>
-    	<data>
-    	AQID
-    	</data>
-    	<key>Groups</key>
-    	<array>
-    		<string>$(AppIdentifierPrefix)com.example</string>
-    		<string></string>
-    	</array>
-    	<key>Nested</key>
-    	<dict>
-    		<key>z</key>
-    		<integer>1</integer>
-    		<key>a</key>
-    		<integer>2</integer>
-    	</dict>
-    </dict>
-    </plist>
-    """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+        	<!-- the bundle -->
+        	<key>CFBundleName</key>
+        	<string>Inventory &amp; Co</string>
+        	<key>CFBundleVersion</key>
+        	<integer>42</integer>
+        	<key>Ratio</key>
+        	<real>0.5</real>
+        	<key>Sandboxed</key>
+        	<true/>
+        	<key>Debug</key>
+        	<false/>
+        	<key>Built</key>
+        	<date>2026-09-25T10:00:00Z</date>
+        	<key>Blob</key>
+        	<data>
+        	AQID
+        	</data>
+        	<key>Groups</key>
+        	<array>
+        		<string>$(AppIdentifierPrefix)com.example</string>
+        		<string></string>
+        	</array>
+        	<key>Nested</key>
+        	<dict>
+        		<key>z</key>
+        		<integer>1</integer>
+        		<key>a</key>
+        		<integer>2</integer>
+        	</dict>
+        </dict>
+        </plist>
+        """
     func pairs(_ v: StructuredValue?) -> [StructuredPair] { if case .mapping(let p)? = v { return p } else { return [] } }
     func get(_ v: StructuredValue?, _ key: String) -> StructuredValue? { pairs(v).first { $0.key == key }?.value }
     func raw(_ r: NSRange?) -> String? { r.map { (plist as NSString).substring(with: $0) } }
 
     func testXMLPlistKeepsOrderAndTypes() throws {
         let root = try XCTUnwrap(PlistStructure.value(of: plist))
-        XCTAssertEqual(pairs(root).map(\.key), ["CFBundleName", "CFBundleVersion", "Ratio", "Sandboxed", "Debug", "Built", "Blob", "Groups", "Nested"], "the file's order, the wrapper gone")
+        XCTAssertEqual(
+            pairs(root).map(\.key),
+            ["CFBundleName", "CFBundleVersion", "Ratio", "Sandboxed", "Debug", "Built", "Blob", "Groups", "Nested"],
+            "the file's order, the wrapper gone")
         XCTAssertEqual(get(root, "CFBundleName"), .string("Inventory & Co"))
         XCTAssertEqual(get(root, "CFBundleVersion"), .integer(42))
         XCTAssertEqual(get(root, "Ratio"), .number(0.5))
@@ -66,7 +69,8 @@ final class PlistStructureTests: XCTestCase {
         XCTAssertEqual(get(root, "Blob"), .string("AQID"), "data without its whitespace")
         XCTAssertEqual(get(root, "Groups"), .sequence([.string("$(AppIdentifierPrefix)com.example"), .string("")]))
         XCTAssertEqual(pairs(get(root, "Nested")).map(\.key), ["z", "a"], "not sorted")
-        XCTAssertEqual(PlistStructure.value(of: "<array><integer>1</integer></array>"), .sequence([.integer(1)]), "a bare root is taken as is")
+        XCTAssertEqual(
+            PlistStructure.value(of: "<array><integer>1</integer></array>"), .sequence([.integer(1)]), "a bare root is taken as is")
         XCTAssertNil(PlistStructure.value(of: "<catalog><book/></catalog>"), "not a plist")
     }
 
@@ -95,9 +99,14 @@ final class PlistStructureTests: XCTestCase {
 
     func testBinaryPlistReadsThroughFoundationWithoutSites() throws {
         let data = try PropertyListSerialization.data(fromPropertyList: ["z": 1, "a": ["x", true]], format: .binary, options: 0)
-        XCTAssertEqual(PlistStructure.value(of: data), .mapping([StructuredPair(key: "a", value: .sequence([.string("x"), .bool(true)])), StructuredPair(key: "z", value: .integer(1))]))
+        XCTAssertEqual(
+            PlistStructure.value(of: data),
+            .mapping([
+                StructuredPair(key: "a", value: .sequence([.string("x"), .bool(true)])), StructuredPair(key: "z", value: .integer(1)),
+            ]))
         let latin = String(data: data, encoding: .isoLatin1)!
-        XCTAssertEqual(PlistStructure.value(of: latin), PlistStructure.value(of: data), "a binary plist opened as Latin-1 text reads the same")
+        XCTAssertEqual(
+            PlistStructure.value(of: latin), PlistStructure.value(of: data), "a binary plist opened as Latin-1 text reads the same")
         XCTAssertNil(PlistStructure.site(in: latin, path: [.key("z")]), "nothing to write into")
     }
 }

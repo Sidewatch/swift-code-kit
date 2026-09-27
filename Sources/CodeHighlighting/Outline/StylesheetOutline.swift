@@ -53,12 +53,16 @@ public enum StylesheetOutline {
         out.reserveCapacity(banners.count + rules.count)
         for (k, b) in banners.enumerated() {
             let end = k + 1 < banners.count ? banners[k + 1].location : scanner.length
-            out.append(Symbol(name: b.name, kind: .heading, range: NSRange(location: b.location, length: b.length), line: b.line,
-                              scopeRange: NSRange(location: b.location, length: max(b.length, end - b.location))))
+            out.append(
+                Symbol(
+                    name: b.name, kind: .heading, range: NSRange(location: b.location, length: b.length), line: b.line,
+                    scopeRange: NSRange(location: b.location, length: max(b.length, end - b.location))))
         }
         for r in rules {
-            out.append(Symbol(name: r.name, kind: r.kind, range: NSRange(location: r.location, length: r.length), line: r.line,
-                              scopeRange: r.scopeEnd.map { NSRange(location: r.location, length: $0 - r.location) }))
+            out.append(
+                Symbol(
+                    name: r.name, kind: r.kind, range: NSRange(location: r.location, length: r.length), line: r.line,
+                    scopeRange: r.scopeEnd.map { NSRange(location: r.location, length: $0 - r.location) }))
         }
         return out.sorted { $0.range.location < $1.range.location }
     }
@@ -82,7 +86,8 @@ public enum StylesheetOutline {
     /// ``bannerName(_:)`` and an optional closing row; or a single-line block directly above code
     /// (`// Buttons` then `.btn {`). A multi-line prose block is never a banner.
     static func lineCommentBanners(_ rows: [(text: String, location: Int, line: Int)], nextIsCode: Bool)
-        -> [(name: String, location: Int, length: Int, line: Int)] {
+        -> [(name: String, location: Int, length: Int, line: Int)]
+    {
         func isDecorationRow(_ s: String) -> Bool {
             let t = s.trimmingCharacters(in: .whitespaces)
             return t.count >= 3 && t.allSatisfy { "*-=#~_".contains($0) }
@@ -127,7 +132,7 @@ public enum StylesheetOutline {
     /// banner (see the type doc for the rule).
     static func bannerName(_ body: String) -> String? {
         let trimmed = body.trimmed
-        guard !trimmed.hasPrefix("!") else { return nil }          // `/*! preserved */`
+        guard !trimmed.hasPrefix("!") else { return nil }  // `/*! preserved */`
         // Decoration lives at the EDGES of every banner shape seen in the wild —
         // `===== Header =====`, the `-----` rows of a WordPress multi-line banner,
         // the `*` gutter of a `/** … */` block — so edge trimming is the whole
@@ -136,7 +141,8 @@ public enum StylesheetOutline {
         let name = stripped.split(whereSeparator: { $0.isWhitespace || $0.isNewline })
             .map { String($0) }.joined(separator: " ")
         guard (1...60).contains(name.count),
-              !name.contains("{"), !name.contains("}"), !name.contains(";") else { return nil }
+            !name.contains("{"), !name.contains("}"), !name.contains(";")
+        else { return nil }
         let lower = name.lowercased()
         guard !pragmaPrefixes.contains(where: { lower.hasPrefix($0) }) else { return nil }
         return name

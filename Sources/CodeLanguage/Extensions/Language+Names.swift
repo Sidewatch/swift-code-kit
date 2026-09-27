@@ -14,7 +14,8 @@ public extension Language {
     /// Every extension and every exact filename the detector maps to `language`, so a corpus
     /// check can ask whether every claimed name has a fixture. Extensions are bare (`"toml"`), filenames exact and lower-cased (`".npmrc"`, `"cargo.lock"`).
     static func names(for language: Language) -> (extensions: [String], filenames: [String]) {
-        let extensions = extensionMap.filter { $0.value == language }.keys.sorted()
+        let extensions =
+            extensionMap.filter { $0.value == language }.keys.sorted()
             + compoundExtensionMap.filter { $0.value == language }.keys.sorted()
         let filenames = filenameMap.filter { $0.value == language }.keys.sorted()
         return (extensions, filenames)

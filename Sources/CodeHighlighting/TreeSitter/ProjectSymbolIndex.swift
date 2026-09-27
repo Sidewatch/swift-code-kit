@@ -19,7 +19,7 @@ import CodeLanguage
 @MainActor
 public final class ProjectSymbolIndex {
     private var defs: [String: [DefLocation]] = [:]
-    private var fileNames: [String: Set<String>] = [:]   // file path → the names it defines
+    private var fileNames: [String: Set<String>] = [:]  // file path → the names it defines
     /// Every name in `defs`, lowercased and sorted, paired with its original
     /// spelling — the prefix query's binary-search cursor. nil = stale; rebuilt
     /// on demand by ``sortedNameCursor()``. See ``definitions(matchingPrefix:limit:)``
@@ -38,7 +38,7 @@ public final class ProjectSymbolIndex {
     /// path (one replay per file). Replayed through `updateFile(_:)` right
     /// after the build installs; cleared by `invalidate()`.
     private var pendingUpdates: [String: URL] = [:]
-    private var generation = 0   // bumped by build()/invalidate() so a superseded build's results are discarded
+    private var generation = 0  // bumped by build()/invalidate() so a superseded build's results are discarded
     /// In-flight `build(root:completion:)` callbacks, keyed by the generation that owns them.
     /// Held here so the scan closure never has to carry a (non-Sendable) closure across the
     /// queue hop. Each entry is removed by the hop that calls it, superseded or not.
@@ -134,7 +134,7 @@ public final class ProjectSymbolIndex {
         var count = 0
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .isDirectoryKey]
-        let skip = skipDirs   // read once: the scan should see one consistent list
+        let skip = skipDirs  // read once: the scan should see one consistent list
         let excluded = isExcluded
         outer: for root in roots {
             guard let en = fm.enumerator(at: root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) else { continue }
@@ -154,13 +154,14 @@ public final class ProjectSymbolIndex {
                 let owners = SymbolOwners.owners(in: syms)
                 for (i, s) in syms.enumerated() {
                     map[s.name, default: []].append(
-                        DefLocation(url: url, name: s.name, kind: s.kind, range: s.range,
-                                    line: s.line, owner: owners[i], language: lang))
+                        DefLocation(
+                            url: url, name: s.name, kind: s.kind, range: s.range,
+                            line: s.line, owner: owners[i], language: lang))
                     names.insert(s.name)
                 }
                 if !names.isEmpty { files[canonicalPath(for: url)] = names }
                 count += 1
-                if count > 5000 { break outer }   // safety cap for very large trees
+                if count > 5000 { break outer }  // safety cap for very large trees
             }
         }
         return ScanResult(defs: map, fileNames: files)
@@ -174,10 +175,10 @@ public final class ProjectSymbolIndex {
 
     /// Installs a finished scan, unless a newer `build()`/`invalidate()` superseded it.
     private func install(_ scanned: ScanResult, generation gen: Int) {
-        guard generation == gen else { return }   // superseded → discard, but still complete
+        guard generation == gen else { return }  // superseded → discard, but still complete
         defs = scanned.defs
         fileNames = scanned.fileNames
-        sortedNames = nil   // names replaced wholesale
+        sortedNames = nil  // names replaced wholesale
         isBuilt = true
         isBuilding = false
         // Replay edits the scan raced against: the enumerator may have read a file before its
@@ -253,7 +254,8 @@ public final class ProjectSymbolIndex {
         let lang = CodeLanguage.Language.detect(for: url)
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard SymbolQueries.sources[lang] != nil, size > 0, size < 500_000,
-              let text = try? String(contentsOf: url, encoding: .utf8) else {
+            let text = try? String(contentsOf: url, encoding: .utf8)
+        else {
             return FileSymbols(defs: [], names: [])
         }
         var newDefs: [DefLocation] = []
@@ -261,8 +263,10 @@ public final class ProjectSymbolIndex {
         let syms = TreeSitterHighlighter.symbols(in: text, language: lang)
         let owners = SymbolOwners.owners(in: syms)
         for (i, s) in syms.enumerated() {
-            newDefs.append(DefLocation(url: url, name: s.name, kind: s.kind, range: s.range,
-                                       line: s.line, owner: owners[i], language: lang))
+            newDefs.append(
+                DefLocation(
+                    url: url, name: s.name, kind: s.kind, range: s.range,
+                    line: s.line, owner: owners[i], language: lang))
             names.insert(s.name)
         }
         return FileSymbols(defs: newDefs, names: names)
@@ -286,7 +290,7 @@ public final class ProjectSymbolIndex {
         }
         for d in rescanned.defs { defs[d.name, default: []].append(d) }
         fileNames[path] = rescanned.names.isEmpty ? nil : rescanned.names
-        sortedNames = nil   // this file's names entered/left `defs`
+        sortedNames = nil  // this file's names entered/left `defs`
     }
 
     /// All known definitions of `name` across the project (empty before the
@@ -311,7 +315,8 @@ public final class ProjectSymbolIndex {
     /// vocabulary — a stylesheet must not complete PHP method names.
     public func definitions(matchingPrefix prefix: String, limit: Int = 50, visibleFrom host: Language) -> [DefLocation] {
         guard let visible = SymbolQueries.visibleLanguages(from: host),
-              !prefix.isEmpty, limit > 0 else { return [] }
+            !prefix.isEmpty, limit > 0
+        else { return [] }
         let needle = prefix.lowercased()
         let names = sortedNameCursor()
         var out: [DefLocation] = []
@@ -386,6 +391,6 @@ public final class ProjectSymbolIndex {
         isBuilt = false
         isBuilding = false
         pendingUpdates = [:]
-        pendingRescans = [:]   // a batch already in flight is discarded by its generation check
+        pendingRescans = [:]  // a batch already in flight is discarded by its generation check
     }
 }

@@ -19,7 +19,11 @@ extension RuleTables {
         doubleQuoted,
         ("'(?:[^'\\\\]|\\\\.)*'", .string),
         (":-|-->|\\?-|\\\\\\+|->|;", .keyword),
-        keywords(["is", "mod", "rem", "not", "true", "fail", "false", "dynamic", "discontiguous", "module", "use_module", "initialization", "findall", "bagof", "setof", "forall", "length", "member", "append", "nth0", "nth1", "assert", "asserta", "assertz", "retract", "write", "writeln", "nl", "format", "halt"]),
+        keywords([
+            "is", "mod", "rem", "not", "true", "fail", "false", "dynamic", "discontiguous", "module", "use_module", "initialization",
+            "findall", "bagof", "setof", "forall", "length", "member", "append", "nth0", "nth1", "assert", "asserta", "assertz", "retract",
+            "write", "writeln", "nl", "format", "halt",
+        ]),
         ("\\b[A-Z_][A-Za-z0-9_]*\\b", .variable),
         ("\\b[a-z]\\w*(?=\\()", .function),
         ("\\b\\d+(\\.\\d+)?\\b", .number),

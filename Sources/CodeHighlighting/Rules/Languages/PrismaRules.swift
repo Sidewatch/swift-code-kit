@@ -17,8 +17,8 @@ extension RuleTables {
         lineComment,
         doubleQuoted,
         keywords(["model", "enum", "datasource", "generator", "type"]),
-        ("@@?\\w+", .attribute),   // @id, @@map, @default…
-        ("\\b[A-Z]\\w*\\b", .type),   // field types / models
+        ("@@?\\w+", .attribute),  // @id, @@map, @default…
+        ("\\b[A-Z]\\w*\\b", .type),  // field types / models
         decimal,
     ]
 }

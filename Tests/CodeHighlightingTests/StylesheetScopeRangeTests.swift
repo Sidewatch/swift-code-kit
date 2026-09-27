@@ -19,7 +19,8 @@ final class StylesheetScopeRangeTests: XCTestCase {
         let symbols = StylesheetOutline.symbols(in: text, language: .css)
         guard let media = symbols.first(where: { $0.name.hasPrefix("@media") }) else { return XCTFail("no @media symbol") }
         let closingBrace = (text as NSString).range(of: "\n}\n").location + 1
-        XCTAssertEqual(media.scopeRange, NSRange(location: media.range.location, length: closingBrace + 1 - media.range.location),
-                       "the scope ends after the `}`, not before it")
+        XCTAssertEqual(
+            media.scopeRange, NSRange(location: media.range.location, length: closingBrace + 1 - media.range.location),
+            "the scope ends after the `}`, not before it")
     }
 }

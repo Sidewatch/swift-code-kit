@@ -39,13 +39,13 @@ final class SymbolIndexTests: XCTestCase {
     func testSymbolsFindsPythonDefinitionsInOrder() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python), "Python grammar failed to load")
         let text = """
-        class Repo:
-            def find(self):
-                pass
+            class Repo:
+                def find(self):
+                    pass
 
-        def helper():
-            pass
-        """
+            def helper():
+                pass
+            """
         let syms = TreeSitterHighlighter.symbols(in: text, language: .python)
         XCTAssertEqual(syms.map(\.name), ["Repo", "find", "helper"], "position order")
         XCTAssertEqual(syms.map(\.kind), [.type, .function, .function])
@@ -70,20 +70,21 @@ final class SymbolIndexTests: XCTestCase {
     func testSymbolsSwiftDefinitions() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.swift), "Swift grammar failed to load")
         let text = """
-        protocol Greeter {
-            func greet()
-        }
+            protocol Greeter {
+                func greet()
+            }
 
-        struct Widget {
-            init() {}
-            func render() {}
-        }
+            struct Widget {
+                init() {}
+                func render() {}
+            }
 
-        func helper() {}
-        """
+            func helper() {}
+            """
         let syms = TreeSitterHighlighter.symbols(in: text, language: .swift)
-        XCTAssertEqual(syms.map(\.name), ["Greeter", "greet", "Widget", "init", "render", "helper"],
-                       "position order; struct uses the same node as class")
+        XCTAssertEqual(
+            syms.map(\.name), ["Greeter", "greet", "Widget", "init", "render", "helper"],
+            "position order; struct uses the same node as class")
         XCTAssertEqual(syms.map(\.kind), [.interface, .method, .type, .method, .function, .function])
         XCTAssertEqual(syms.map(\.line), [1, 2, 5, 6, 7, 10], "1-based definition lines")
     }
@@ -294,7 +295,7 @@ final class SymbolIndexTests: XCTestCase {
 
         idx.updateFile(css)
         idx.updateFile(dir.appendingPathComponent("debug.log"))
-        idx.updateFile(dir)   // a directory-level event
+        idx.updateFile(dir)  // a directory-level event
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
         XCTAssertEqual(idx.rescannedFiles, 0, "nothing parseable was touched, so nothing was parsed")
 
@@ -321,7 +322,7 @@ final class SymbolIndexTests: XCTestCase {
         try "def gamma():\n    pass\n".write(to: file, atomically: true, encoding: .utf8)
         for _ in 0..<50 { idx.updateFile(file) }
         XCTAssertTrue(waitUntil { idx.definitions(of: "gamma").count == 1 }, "the edit lands")
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))   // let any catch-up batch settle
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))  // let any catch-up batch settle
         XCTAssertLessThanOrEqual(idx.rescannedFiles, 2, "50 notifications → the first batch plus one catch-up, not 50 parses")
         XCTAssertEqual(idx.definitions(of: "gamma").count, 1, "the catch-up replaced, never duplicated")
         XCTAssertEqual(idx.definitions(of: "alpha").count, 0)
@@ -371,19 +372,21 @@ final class SymbolIndexTests: XCTestCase {
         // existence-dependent: a deleted file's standardized path drifts.
         // The canonical key must be identical before and after deletion, and
         // identical for both spellings of the same file.
-        let dir = makeTempDir()   // lives under /var/folders/... (a /private symlink)
+        let dir = makeTempDir()  // lives under /var/folders/... (a /private symlink)
         defer { try? FileManager.default.removeItem(at: dir) }
         let file = dir.appendingPathComponent("a.py")
         try "def alpha():\n    pass\n".write(to: file, atomically: true, encoding: .utf8)
 
         let privateSpelling = URL(fileURLWithPath: "/private" + file.path)
         let before = ProjectSymbolIndex.canonicalPath(for: file)
-        XCTAssertEqual(ProjectSymbolIndex.canonicalPath(for: privateSpelling), before,
-                       "both spellings of an existing file share one key")
+        XCTAssertEqual(
+            ProjectSymbolIndex.canonicalPath(for: privateSpelling), before,
+            "both spellings of an existing file share one key")
 
         try FileManager.default.removeItem(at: file)
-        XCTAssertEqual(ProjectSymbolIndex.canonicalPath(for: file), before,
-                       "the key survives the file's deletion (parent still exists)")
+        XCTAssertEqual(
+            ProjectSymbolIndex.canonicalPath(for: file), before,
+            "the key survives the file's deletion (parent still exists)")
         XCTAssertEqual(ProjectSymbolIndex.canonicalPath(for: privateSpelling), before)
     }
 
@@ -406,10 +409,12 @@ final class SymbolIndexTests: XCTestCase {
         XCTAssertFalse(idx.isBuilt)
         wait(for: [built], timeout: 10)
 
-        XCTAssertTrue(waitUntil { idx.definitions(of: "gamma").count == 1 },
-                      "mid-build edit re-indexed after the install")
-        XCTAssertTrue(waitUntil { idx.definitions(of: "alpha").isEmpty },
-                      "pre-edit symbols corrected")
+        XCTAssertTrue(
+            waitUntil { idx.definitions(of: "gamma").count == 1 },
+            "mid-build edit re-indexed after the install")
+        XCTAssertTrue(
+            waitUntil { idx.definitions(of: "alpha").isEmpty },
+            "pre-edit symbols corrected")
     }
 
     func testUpdateFileBeforeBuildIsNoOp() throws {
@@ -420,7 +425,7 @@ final class SymbolIndexTests: XCTestCase {
         try "def alpha():\n    pass\n".write(to: file, atomically: true, encoding: .utf8)
 
         let idx = ProjectSymbolIndex()
-        idx.updateFile(file)   // before any build: guarded no-op
+        idx.updateFile(file)  // before any build: guarded no-op
         XCTAssertFalse(idx.isBuilt)
         XCTAssertEqual(idx.definitions(of: "alpha").count, 0)
     }
@@ -456,8 +461,9 @@ final class SymbolIndexTests: XCTestCase {
         let (idx, dir) = try makePrefixIndex(names: ["GetUser", "getFile"])
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        XCTAssertEqual(idx.definitions(matchingPrefix: "get").map(\.name).sorted(), ["GetUser", "getFile"],
-                       "matches ignore case but results keep the definition's own spelling")
+        XCTAssertEqual(
+            idx.definitions(matchingPrefix: "get").map(\.name).sorted(), ["GetUser", "getFile"],
+            "matches ignore case but results keep the definition's own spelling")
         XCTAssertEqual(idx.definitions(matchingPrefix: "GETUSER").map(\.name), ["GetUser"])
     }
 
@@ -516,12 +522,13 @@ final class SymbolIndexTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: dir) }
         let file = dir.appendingPathComponent("a.py")
 
-        XCTAssertEqual(idx.definitions(matchingPrefix: "alp").map(\.name), ["alpha"])   // caches the cursor
+        XCTAssertEqual(idx.definitions(matchingPrefix: "alp").map(\.name), ["alpha"])  // caches the cursor
 
         try "def alphabet():\n    pass\n".write(to: file, atomically: true, encoding: .utf8)
         idx.updateFile(file)
-        XCTAssertTrue(waitUntil { idx.definitions(matchingPrefix: "alp").map(\.name) == ["alphabet"] },
-                      "renamed symbol replaces the stale one in the prefix cursor")
+        XCTAssertTrue(
+            waitUntil { idx.definitions(matchingPrefix: "alp").map(\.name) == ["alphabet"] },
+            "renamed symbol replaces the stale one in the prefix cursor")
     }
 
     func testPrefixQueryEmptyAfterInvalidate() throws {
@@ -546,36 +553,47 @@ final class SymbolIndexTests: XCTestCase {
         let text = "# adds things\ndef alpha():\n    pass\n"
         let syms = TreeSitterHighlighter.symbols(in: text, language: .python)
         let parsed = try XCTUnwrap(TreeSitterHighlighter.hoverInfo(for: "alpha", in: text, language: .python))
-        let prefetched = try XCTUnwrap(TreeSitterHighlighter.hoverInfo(for: "alpha", symbols: syms,
-                                                                       in: text, language: .python))
+        let prefetched = try XCTUnwrap(
+            TreeSitterHighlighter.hoverInfo(
+                for: "alpha", symbols: syms,
+                in: text, language: .python))
         XCTAssertEqual(prefetched.kind, parsed.kind)
         XCTAssertEqual(prefetched.signature.string, parsed.signature.string)
         XCTAssertEqual(prefetched.doc, parsed.doc)
         XCTAssertEqual(parsed.line, 2, "the card names the definition's line (1-based)")
         XCTAssertEqual(prefetched.line, 2)
-        XCTAssertNil(TreeSitterHighlighter.hoverInfo(for: "alpha", symbols: [], in: text, language: .python),
-                     "a warming session's empty symbols yield nil, never a parse")
+        XCTAssertNil(
+            TreeSitterHighlighter.hoverInfo(for: "alpha", symbols: [], in: text, language: .python),
+            "a warming session's empty symbols yield nil, never a parse")
     }
 
     func testHoverInfoDefinedAtVerifiesTheSiteStillHoldsTheWord() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python))
         let text = "def alpha():\n    pass\n"
         let range = (text as NSString).range(of: "alpha")
-        let info = try XCTUnwrap(TreeSitterHighlighter.hoverInfo(for: "alpha", definedAt: range,
-                                                                 kind: .function, in: text, language: .python))
+        let info = try XCTUnwrap(
+            TreeSitterHighlighter.hoverInfo(
+                for: "alpha", definedAt: range,
+                kind: .function, in: text, language: .python))
         XCTAssertEqual(info.kind, .function)
         XCTAssertEqual(info.signature.string, "def alpha():")
         XCTAssertEqual(info.line, 1, "no Symbol to hand, so the line is counted from the text")
         // A site further down counts every newline before it, not just the first.
         let text3 = "# a\n\n\ndef beta():\n    pass\n"
         let r3 = (text3 as NSString).range(of: "beta")
-        XCTAssertEqual(TreeSitterHighlighter.hoverInfo(for: "beta", definedAt: r3, kind: .function,
-                                                       in: text3, language: .python)?.line, 4)
+        XCTAssertEqual(
+            TreeSitterHighlighter.hoverInfo(
+                for: "beta", definedAt: r3, kind: .function,
+                in: text3, language: .python)?.line, 4)
         // A stale index site (the range no longer holds the word, or is out of
         // bounds) yields nil rather than a guessed signature.
-        XCTAssertNil(TreeSitterHighlighter.hoverInfo(for: "alpha", definedAt: NSRange(location: 0, length: 5),
-                                                     kind: .function, in: text, language: .python))
-        XCTAssertNil(TreeSitterHighlighter.hoverInfo(for: "alpha", definedAt: NSRange(location: 500, length: 5),
-                                                     kind: .function, in: text, language: .python))
+        XCTAssertNil(
+            TreeSitterHighlighter.hoverInfo(
+                for: "alpha", definedAt: NSRange(location: 0, length: 5),
+                kind: .function, in: text, language: .python))
+        XCTAssertNil(
+            TreeSitterHighlighter.hoverInfo(
+                for: "alpha", definedAt: NSRange(location: 500, length: 5),
+                kind: .function, in: text, language: .python))
     }
 }

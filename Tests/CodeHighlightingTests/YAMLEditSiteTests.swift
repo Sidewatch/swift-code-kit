@@ -13,21 +13,21 @@ import XCTest
 
 final class YAMLEditSiteTests: XCTestCase {
     let text = """
-    version: "3.9"
-    services:
-      web:
-        image: nginx   # the front door
-        ports: [80, 443]
-      db:
-        image: postgres
-    list:
-      - a
-      - "b c"
-    script: |
-      echo one
-      echo two
-    empty:
-    """
+        version: "3.9"
+        services:
+          web:
+            image: nginx   # the front door
+            ports: [80, 443]
+          db:
+            image: postgres
+        list:
+          - a
+          - "b c"
+        script: |
+          echo one
+          echo two
+        empty:
+        """
     func raw(_ r: NSRange?) -> String? { r.map { (text as NSString).substring(with: $0) } }
 
     func testFindsKeysAndValuesByPath() throws {

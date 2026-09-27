@@ -31,14 +31,16 @@ extension LanguageBuiltins {
             }
             return (.function, "Built-in function")
         }
-        if s.contains(":") { return (.property, "Built-in property") }   // `PI: number = 3.14`
+        if s.contains(":") { return (.property, "Built-in property") }  // `PI: number = 3.14`
         return (.constant, "Built-in value")
     }
 
     /// Signature openers that declare a type.
-    private static let typePrefixes = ["class ", "struct ", "enum ", "protocol ", "typealias ", "interface ", "trait ",
-                                       "type ", "typing.", "@globalActor", "marker trait ", "open class ", "data class ",
-                                       "object ", "static class ", "delegate ", "new "]
+    private static let typePrefixes = [
+        "class ", "struct ", "enum ", "protocol ", "typealias ", "interface ", "trait ",
+        "type ", "typing.", "@globalActor", "marker trait ", "open class ", "data class ",
+        "object ", "static class ", "delegate ", "new ",
+    ]
 
     /// `Name — …`, `Map<K, V> — …`, `std::vector<T> — …`, `sync.Mutex — …`, `errno — …`: a name
     /// described rather than called. A type when capitalised or qualified, else a value. Nil

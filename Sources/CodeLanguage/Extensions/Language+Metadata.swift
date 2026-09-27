@@ -252,7 +252,8 @@ public extension Language {
         .vyper: Meta(name: "Vyper", family: .shellLike, lineComment: "#", block: nil),
         .wat: Meta(name: "WebAssembly Text", family: .lispLike, lineComment: ";;", block: BlockComment(open: "(;", close: ";)")),
         .wgsl: Meta(name: "WGSL (WebGPU)", family: .cLike, lineComment: "//", block: BlockComment(open: "/*", close: "*/")),
-        .wolfram: Meta(name: "Mathematica / Wolfram Language", family: .mlLike, lineComment: nil, block: BlockComment(open: "(*", close: "*)")),
+        .wolfram: Meta(
+            name: "Mathematica / Wolfram Language", family: .mlLike, lineComment: nil, block: BlockComment(open: "(*", close: "*)")),
         .xcconfig: Meta(name: "Xcode Config", family: .config, lineComment: "//", block: nil),
         .xml: Meta(name: "XML", family: .markup, lineComment: nil, block: BlockComment(open: "<!--", close: "-->")),
         .xquery: Meta(name: "XQuery", family: .plain, lineComment: nil, block: BlockComment(open: "(:", close: ":)")),

@@ -43,34 +43,34 @@ public enum LanguageBuiltins {
     /// Empty when there's no list.
     private static func resourceNames(for language: Language) -> [String] {
         switch language {
-        case .php:          return ["php"]
-        case .javascript:   return ["javascript"]
-        case .typescript:   return ["javascript", "typescript"]
-        case .python:       return ["python"]
-        case .swift:        return ["swift"]
-        case .go:           return ["go"]
-        case .rust:         return ["rust"]
-        case .ruby:         return ["ruby"]
-        case .java:         return ["java"]
-        case .kotlin:       return ["kotlin"]
-        case .csharp:       return ["csharp"]
-        case .c:            return ["c"]
-        case .cpp:          return ["c", "cpp"]
-        case .bash:         return ["bash"]
-        case .dart:         return ["dart"]
-        case .lua:          return ["lua"]
-        case .sql:          return ["sql"]
-        case .scala:        return ["scala"]
-        case .elixir:       return ["elixir"]
-        case .perl:         return ["perl"]
-        case .objectivec:   return ["c", "objectivec"]
-        case .css, .scss:   return ["css"]
+        case .php: return ["php"]
+        case .javascript: return ["javascript"]
+        case .typescript: return ["javascript", "typescript"]
+        case .python: return ["python"]
+        case .swift: return ["swift"]
+        case .go: return ["go"]
+        case .rust: return ["rust"]
+        case .ruby: return ["ruby"]
+        case .java: return ["java"]
+        case .kotlin: return ["kotlin"]
+        case .csharp: return ["csharp"]
+        case .c: return ["c"]
+        case .cpp: return ["c", "cpp"]
+        case .bash: return ["bash"]
+        case .dart: return ["dart"]
+        case .lua: return ["lua"]
+        case .sql: return ["sql"]
+        case .scala: return ["scala"]
+        case .elixir: return ["elixir"]
+        case .perl: return ["perl"]
+        case .objectivec: return ["c", "objectivec"]
+        case .css, .scss: return ["css"]
         case .html, .vue, .svelte: return ["html"]
-        case .zig:          return ["zig"]
-        case .haskell:      return ["haskell"]
-        case .r:            return ["r"]
-        case .powershell:   return ["powershell"]
-        default:            return []
+        case .zig: return ["zig"]
+        case .haskell: return ["haskell"]
+        case .r: return ["r"]
+        case .powershell: return ["powershell"]
+        default: return []
         }
     }
 
@@ -93,8 +93,9 @@ public enum LanguageBuiltins {
     /// (PhpStorm-style), while only the identifier is inserted.
     private static func load(_ name: String?) -> [CompletionItem] {
         guard let name,
-              let url = Bundle.module.url(forResource: name, withExtension: "txt", subdirectory: "Builtins"),
-              let text = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+            let url = Bundle.module.url(forResource: name, withExtension: "txt", subdirectory: "Builtins"),
+            let text = try? String(contentsOf: url, encoding: .utf8)
+        else { return [] }
         var seen = Set<String>()
         var out: [CompletionItem] = []
         for raw in text.split(separator: "\n", omittingEmptySubsequences: true) {
@@ -105,8 +106,10 @@ public enum LanguageBuiltins {
             let identifier = first.trimmingCharacters(in: .whitespaces)
             guard !identifier.isEmpty, seen.insert(identifier).inserted else { continue }
             let signature = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : nil
-            out.append(CompletionItem(text: identifier, kind: .function,
-                                      detail: (signature?.isEmpty == false) ? signature : nil))
+            out.append(
+                CompletionItem(
+                    text: identifier, kind: .function,
+                    detail: (signature?.isEmpty == false) ? signature : nil))
         }
         return out
     }

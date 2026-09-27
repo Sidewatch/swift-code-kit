@@ -22,7 +22,10 @@ extension RuleTables {
         keywords(["digraph", "graph", "subgraph", "node", "edge", "strict", "cluster"]),
         ("->|--", .type),
         ("\\b[A-Za-z_][\\w]*(?=\\s*=)", .attribute),
-        ("\\b(rankdir|label|shape|style|color|fillcolor|fontname|fontsize|penwidth|arrowhead|dir|weight|constraint|splines|nodesep|ranksep|bgcolor|layout|compound|width|height)\\b", .attribute),
+        (
+            "\\b(rankdir|label|shape|style|color|fillcolor|fontname|fontsize|penwidth|arrowhead|dir|weight|constraint|splines|nodesep|ranksep|bgcolor|layout|compound|width|height)\\b",
+            .attribute
+        ),
         ("#[0-9A-Fa-f]{6}\\b|\\b\\d+(\\.\\d+)?\\b", .number),
         ("\\b[A-Za-z_]\\w*(?=\\s*(\\[|->|--|;|$))", .variable),
     ]

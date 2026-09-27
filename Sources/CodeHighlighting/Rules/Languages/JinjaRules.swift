@@ -19,7 +19,12 @@ extension RuleTables {
         doubleQuotedPlain,
         singleQuotedPlain,
         ("\\{%-?|-?%\\}|\\{\\{-?|-?\\}\\}", .keyword),
-        keywords(["if", "elif", "else", "endif", "for", "endfor", "in", "set", "endset", "block", "endblock", "extends", "include", "import", "from", "as", "macro", "endmacro", "call", "endcall", "filter", "endfilter", "with", "endwith", "raw", "endraw", "autoescape", "endautoescape", "is", "not", "and", "or", "true", "false", "none", "True", "False", "None", "loop", "recursive", "scoped", "ignore", "missing", "context", "do", "trans", "endtrans", "pluralize"]),
+        keywords([
+            "if", "elif", "else", "endif", "for", "endfor", "in", "set", "endset", "block", "endblock", "extends", "include", "import",
+            "from", "as", "macro", "endmacro", "call", "endcall", "filter", "endfilter", "with", "endwith", "raw", "endraw", "autoescape",
+            "endautoescape", "is", "not", "and", "or", "true", "false", "none", "True", "False", "None", "loop", "recursive", "scoped",
+            "ignore", "missing", "context", "do", "trans", "endtrans", "pluralize",
+        ]),
         ("\\|\\s*[a-z_]\\w*", .function),
         ("\\b[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)+\\b", .property),
         ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),

@@ -34,7 +34,9 @@ public enum YAMLStructure {
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return [] }
         let ns = text as NSString
         return namedChildren(root).filter { $0.nodeType == "document" }.compactMap { doc in
-            guard let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") }) else { return nil }
+            guard let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") }) else {
+                return nil
+            }
             return convert(body, ns: ns)
         }
     }
@@ -56,7 +58,9 @@ public enum YAMLStructure {
     static func convert(_ node: Node, ns: NSString) -> Value {
         switch node.nodeType ?? "" {
         case "block_node", "flow_node":
-            guard let inner = namedChildren(node).first(where: { !["anchor", "tag", "comment"].contains($0.nodeType ?? "") }) else { return .null }
+            guard let inner = namedChildren(node).first(where: { !["anchor", "tag", "comment"].contains($0.nodeType ?? "") }) else {
+                return .null
+            }
             return convert(inner, ns: ns)
         case "block_mapping", "flow_mapping":
             let pairs = namedChildren(node).filter { ["block_mapping_pair", "flow_pair"].contains($0.nodeType ?? "") }.map { pair -> Pair in
@@ -66,12 +70,13 @@ public enum YAMLStructure {
             }
             return .mapping(pairs)
         case "block_sequence":
-            return .sequence(namedChildren(node).filter { $0.nodeType == "block_sequence_item" }.map { item in
-                namedChildren(item).first(where: { $0.nodeType != "comment" }).map { convert($0, ns: ns) } ?? .null
-            })
+            return .sequence(
+                namedChildren(node).filter { $0.nodeType == "block_sequence_item" }.map { item in
+                    namedChildren(item).first(where: { $0.nodeType != "comment" }).map { convert($0, ns: ns) } ?? .null
+                })
         case "flow_sequence":
             return .sequence(namedChildren(node).filter { $0.nodeType != "comment" }.map { convert($0, ns: ns) })
-        case "flow_pair":   // a single `key: value` inside a flow sequence
+        case "flow_pair":  // a single `key: value` inside a flow sequence
             let key = node.child(byFieldName: "key").map { keyText(convert($0, ns: ns)) } ?? ""
             return .mapping([Pair(key: key, value: node.child(byFieldName: "value").map { convert($0, ns: ns) } ?? .null)])
         case "plain_scalar":
@@ -124,8 +129,12 @@ public enum YAMLStructure {
                 let width = e == "x" ? 2 : (e == "u" ? 4 : 8)
                 var hex = ""
                 for _ in 0..<width { if let h = chars.next() { hex.append(h) } }
-                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) { out.unicodeScalars.append(scalar) } else { out += "\\\(e)\(hex)" }
-            default: out.append(e)   // \" \\ \/ and anything unknown: the character itself
+                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) {
+                    out.unicodeScalars.append(scalar)
+                } else {
+                    out += "\\\(e)\(hex)"
+                }
+            default: out.append(e)  // \" \\ \/ and anything unknown: the character itself
             }
         }
         return out
@@ -137,7 +146,8 @@ public enum YAMLStructure {
         var lines = raw.components(separatedBy: "\n")
         let header = lines.removeFirst().trimmingCharacters(in: .whitespaces)
         while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
-        let indent = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        let indent =
+            lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
             .map { $0.prefix { $0 == " " }.count }.min() ?? 0
         let body = lines.map { String($0.dropFirst(min(indent, $0.prefix { $0 == " " }.count))) }
         let joined = header.hasPrefix(">") ? body.joined(separator: " ") : body.joined(separator: "\n")

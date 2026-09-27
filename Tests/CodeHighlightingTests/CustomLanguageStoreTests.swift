@@ -21,7 +21,9 @@ final class CustomLanguageStoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
     override func tearDown() { try? FileManager.default.removeItem(at: folder) }
-    private func write(_ name: String, _ json: String) throws { try json.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8) }
+    private func write(_ name: String, _ json: String) throws {
+        try json.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+    }
 
     func testClaimsByFilenameBeatExtensionAndFirstFileWins() throws {
         try write("a.json", #"{"name":"Alpha","extensions":["x","shared"]}"#)
@@ -66,7 +68,9 @@ final class CustomLanguageStoreTests: XCTestCase {
         XCTAssertTrue(CustomLanguageStore.seedIfMissing(folder: target, example: example, as: "ex.json"))
         XCTAssertEqual(CustomLanguageStore(folder: target).definitions.map(\.name), ["Ex"])
         try FileManager.default.removeItem(at: target.appendingPathComponent("ex.json"))
-        XCTAssertFalse(CustomLanguageStore.seedIfMissing(folder: target, example: example, as: "ex.json"), "a user who deleted the example but kept the folder is left alone")
+        XCTAssertFalse(
+            CustomLanguageStore.seedIfMissing(folder: target, example: example, as: "ex.json"),
+            "a user who deleted the example but kept the folder is left alone")
         XCTAssertFalse(FileManager.default.fileExists(atPath: target.appendingPathComponent("ex.json").path))
     }
 }

@@ -73,8 +73,9 @@ public final class HighlightSession: @unchecked Sendable {
                 let unit = byteOffset / 2
                 guard let base = buf.baseAddress, unit < buf.count else { return nil }
                 let n = min(readChunkUnits, buf.count - unit)
-                return Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base + unit)),
-                            count: n * 2, deallocator: .none)
+                return Data(
+                    bytesNoCopy: UnsafeMutableRawPointer(mutating: UnsafeRawPointer(base + unit)),
+                    count: n * 2, deallocator: .none)
             }
         }
     }
@@ -213,7 +214,7 @@ public final class HighlightSession: @unchecked Sendable {
     /// from the **cached** tree — no parse. Nil until a tree is installed.
     public func siblingRange(of selection: NSRange, text: String, forward: Bool) -> NSRange? {
         guard let tree = currentTree(matching: text), let root = tree.rootNode,
-              let node = TreeSitterHighlighter.nodeSpanning(selection, ns: text as NSString, root: root)
+            let node = TreeSitterHighlighter.nodeSpanning(selection, ns: text as NSString, root: root)
         else { return nil }
         return (forward ? node.nextNamedSibling : node.previousNamedSibling)?.range
     }
@@ -236,16 +237,17 @@ public final class HighlightSession: @unchecked Sendable {
     public func noteEdit(range: NSRange, replacementLength: Int, newText: String) {
         stateLock.lock()
         defer { stateLock.unlock() }
-        generation += 1   // any in-flight warm-up is now parsing superseded text
+        generation += 1  // any in-flight warm-up is now parsing superseded text
         guard let tree, let old = lastText else { return }
         let oldNS = old as NSString
         let newNS = newText as NSString
         guard range.location >= 0, range.length >= 0, replacementLength >= 0,
-              NSMaxRange(range) <= oldNS.length,
-              newNS.length == oldNS.length - range.length + replacementLength,
-              mirror.count == oldNS.length else {
-            self.tree = nil       // desynced with the cached text: full reparse
-            self.lastText = nil   // on the next highlight
+            NSMaxRange(range) <= oldNS.length,
+            newNS.length == oldNS.length - range.length + replacementLength,
+            mirror.count == oldNS.length
+        else {
+            self.tree = nil  // desynced with the cached text: full reparse
+            self.lastText = nil  // on the next highlight
             self.mirror = []
             return
         }
@@ -261,12 +263,14 @@ public final class HighlightSession: @unchecked Sendable {
         let oldEndPoint = oldScan.point(at: NSMaxRange(range))
         let newEndPoint = newScan.point(at: range.location + replacementLength)
 
-        tree.edit(InputEdit(startByte: range.location * 2,
-                            oldEndByte: NSMaxRange(range) * 2,
-                            newEndByte: (range.location + replacementLength) * 2,
-                            startPoint: startPoint,
-                            oldEndPoint: oldEndPoint,
-                            newEndPoint: newEndPoint))
+        tree.edit(
+            InputEdit(
+                startByte: range.location * 2,
+                oldEndByte: NSMaxRange(range) * 2,
+                newEndByte: (range.location + replacementLength) * 2,
+                startPoint: startPoint,
+                oldEndPoint: oldEndPoint,
+                newEndPoint: newEndPoint))
 
         // Mirror the edit, then re-parse from the mirror (see ``mirror``).
         var inserted = [UInt16](repeating: 0, count: replacementLength)
@@ -310,14 +314,17 @@ public final class HighlightSession: @unchecked Sendable {
         guard clipped.length > 0 else { return false }
 
         var base = 0
-        var hits = TreeSitterHighlighter.collectHits(grammar.highlights, tree: tree, source: ns,
-                                                     offset: 0, clip: clipped, nextBase: &base)
-        hits += TreeSitterHighlighter.collectInjectionHits(grammar, tree: tree, source: ns,
-                                                           offset: 0, clip: clipped, depth: 0,
-                                                           nextBase: &base)
-        return TreeSitterHighlighter.applyResolved(hits: hits, clip: clipped,
-                                                   defaultColor: HighlightTheme.colors.foreground,
-                                                   into: storage) > 0
+        var hits = TreeSitterHighlighter.collectHits(
+            grammar.highlights, tree: tree, source: ns,
+            offset: 0, clip: clipped, nextBase: &base)
+        hits += TreeSitterHighlighter.collectInjectionHits(
+            grammar, tree: tree, source: ns,
+            offset: 0, clip: clipped, depth: 0,
+            nextBase: &base)
+        return TreeSitterHighlighter.applyResolved(
+            hits: hits, clip: clipped,
+            defaultColor: HighlightTheme.colors.foreground,
+            into: storage) > 0
     }
 
     /// Drops the cached tree (and its text). The next
@@ -326,7 +333,7 @@ public final class HighlightSession: @unchecked Sendable {
     /// text changed without a matching ``noteEdit(range:replacementLength:newText:)``.
     public func invalidate() {
         stateLock.lock()
-        generation += 1   // discard any in-flight warm-up parse on arrival
+        generation += 1  // discard any in-flight warm-up parse on arrival
         tree = nil
         lastText = nil
         mirror = []

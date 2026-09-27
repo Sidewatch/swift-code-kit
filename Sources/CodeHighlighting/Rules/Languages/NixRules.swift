@@ -24,7 +24,10 @@ extension RuleTables {
         ("<[\\w./-]+>", .string),
         ("(\\.\\.?|~)?/[\\w./+-]+", .string),
         ("\\b(builtins|lib|pkgs|stdenv|self|super|config|options|system|inputs|outputs|nixpkgs|flake-utils)\\b", .type),
-        ("\\b(mkDerivation|mkShell|fetchurl|fetchFromGitHub|fetchgit|map|filter|toString|concatStringsSep|attrValues|attrNames|mapAttrs|genAttrs|optional|optionals|optionalString|callPackage|writeText|writeShellScriptBin|eachDefaultSystem|eachSystem|listToAttrs|hasAttr|getAttr|readFile|fromJSON|toJSON|elem|length|head|tail|foldl|foldr|substring|stringLength|replaceStrings|splitString|removeSuffix|removePrefix)\\b", .function),
+        (
+            "\\b(mkDerivation|mkShell|fetchurl|fetchFromGitHub|fetchgit|map|filter|toString|concatStringsSep|attrValues|attrNames|mapAttrs|genAttrs|optional|optionals|optionalString|callPackage|writeText|writeShellScriptBin|eachDefaultSystem|eachSystem|listToAttrs|hasAttr|getAttr|readFile|fromJSON|toJSON|elem|length|head|tail|foldl|foldr|substring|stringLength|replaceStrings|splitString|removeSuffix|removePrefix)\\b",
+            .function
+        ),
         ("\\b[a-zA-Z_][\\w'-]*(?=\\s*=[^=])", .property),
         ("\\b[a-zA-Z_][\\w'-]*(?=\\s*:(?!:))", .variable),
         ("\\$\\{|\\}", .keyword),

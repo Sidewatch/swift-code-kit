@@ -19,17 +19,17 @@ public struct DefaultTokenColors: TokenColorProviding {
     /// A fixed system color per token role.
     public func color(for kind: TokenKind) -> NSColor {
         switch kind {
-        case .comment:  return .systemGray
-        case .string:   return .systemRed
-        case .keyword:  return .systemPurple
-        case .type:     return .systemTeal
-        case .number:   return .systemOrange
+        case .comment: return .systemGray
+        case .string: return .systemRed
+        case .keyword: return .systemPurple
+        case .type: return .systemTeal
+        case .number: return .systemOrange
         case .function: return .systemBlue
-        case .attribute:return .systemTeal
+        case .attribute: return .systemTeal
         case .variable: return .labelColor
         case .property: return .systemIndigo
-        case .added:    return .systemGreen
-        case .removed:  return .systemRed
+        case .added: return .systemGreen
+        case .removed: return .systemRed
         }
     }
     /// The default text color (`labelColor`, so it tracks light/dark mode).

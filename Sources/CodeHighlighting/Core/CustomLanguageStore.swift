@@ -61,8 +61,9 @@ public final class CustomLanguageStore {
     public func load() {
         lastFingerprint = Self.fingerprint(of: folder)
         definitions = []; byExtension = [:]; byFilename = [:]
-        let files = ((try? FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? [])
+        let files =
+            ((try? FileManager.default.contentsOfDirectory(
+                at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? [])
             .filter { $0.pathExtension.lowercased() == "json" }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
         for file in files {
@@ -90,9 +91,11 @@ public final class CustomLanguageStore {
     /// Per file, not the folder's own mtime: an in-place save changes the file's mtime only.
     public static func fingerprint(of folder: URL) -> String {
         let keys: Set<URLResourceKey> = [.contentModificationDateKey, .fileSizeKey]
-        let files = (try? FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: Array(keys), options: [.skipsHiddenFiles])) ?? []
-        return files
+        let files =
+            (try? FileManager.default.contentsOfDirectory(
+                at: folder, includingPropertiesForKeys: Array(keys), options: [.skipsHiddenFiles])) ?? []
+        return
+            files
             .filter { $0.pathExtension.lowercased() == "json" }
             .map { url -> String in
                 let values = try? url.resourceValues(forKeys: keys)

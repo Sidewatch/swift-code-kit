@@ -23,22 +23,22 @@ final class ReceiverInferenceTests: XCTestCase {
     }
 
     func testReceiverAcrossOperators() {
-        let php = "$obj->my_method()"          // word starts at 6
+        let php = "$obj->my_method()"  // word starts at 6
         XCTAssertEqual(rcv(php, wordStart: 6), "$obj")
-        let scoped = "Limits::MAX_BATCH"       // word starts at 8
+        let scoped = "Limits::MAX_BATCH"  // word starts at 8
         XCTAssertEqual(rcv(scoped, wordStart: 8), "Limits")
-        let dot = "signer.sign()"              // word starts at 7
+        let dot = "signer.sign()"  // word starts at 7
         XCTAssertEqual(rcv(dot, wordStart: 7), "signer")
     }
 
     func testReceiverOfChainedAccessIsTheNearestSegment() {
-        let code = "$this->signer->sign()"     // "sign" starts at 15
+        let code = "$this->signer->sign()"  // "sign" starts at 15
         XCTAssertEqual(rcv(code, wordStart: 15), "signer")
     }
 
     func testNoReceiverForPlainCall() {
         XCTAssertNil(rcv("render_pipeline()", wordStart: 0))
-        XCTAssertNil(rcv("  foo()", wordStart: 2))   // whitespace before, no operator
+        XCTAssertNil(rcv("  foo()", wordStart: 2))  // whitespace before, no operator
     }
 
     // MARK: - isSelfReference
@@ -85,11 +85,11 @@ final class ReceiverInferenceTests: XCTestCase {
 
     func testNearestPrecedingBindingWins() {
         let code = """
-        $x = new First();
-        $x = new Second();
-        $x->go();
-        $x = new Third();
-        """
+            $x = new First();
+            $x = new Second();
+            $x->go();
+            $x = new Third();
+            """
         // Caret in `$x->go()` (~line 3): the Second() assignment is the live one.
         let caret = (code as NSString).range(of: "go").location
         XCTAssertEqual(ReceiverInference.inferredType(of: "$x", near: caret, in: code), "Second")
@@ -114,8 +114,9 @@ final class ReceiverInferenceTests: XCTestCase {
     // MARK: - SymbolOwners
 
     private func sym(_ name: String, _ kind: SymbolKind, at loc: Int, scope: NSRange? = nil) -> Symbol {
-        Symbol(name: name, kind: kind, range: NSRange(location: loc, length: name.count),
-               line: 1, scopeRange: scope)
+        Symbol(
+            name: name, kind: kind, range: NSRange(location: loc, length: name.count),
+            line: 1, scopeRange: scope)
     }
 
     func testOwnerIsTheEnclosingClass() {
@@ -129,8 +130,8 @@ final class ReceiverInferenceTests: XCTestCase {
         let owners = SymbolOwners.owners(in: syms)
         XCTAssertEqual(owners[1], "Signer")
         XCTAssertEqual(owners[3], "Pipeline")
-        XCTAssertNil(owners[4])     // free function has no owner
-        XCTAssertNil(owners[0])     // a type owns itself → no owner entry
+        XCTAssertNil(owners[4])  // free function has no owner
+        XCTAssertNil(owners[0])  // a type owns itself → no owner entry
     }
 
     func testInnermostTypeWinsForNestedScopes() {
@@ -144,7 +145,7 @@ final class ReceiverInferenceTests: XCTestCase {
 
     func testEnclosingTypeAtCaret() {
         let syms = [
-            sym("Pipeline", .type, at: 10, scope: NSRange(location: 0, length: 500)),
+            sym("Pipeline", .type, at: 10, scope: NSRange(location: 0, length: 500))
         ]
         XCTAssertEqual(SymbolOwners.enclosingType(of: NSRange(location: 250, length: 3), in: syms), "Pipeline")
         XCTAssertNil(SymbolOwners.enclosingType(of: NSRange(location: 600, length: 3), in: syms))

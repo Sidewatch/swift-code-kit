@@ -27,11 +27,14 @@ extension RuleTables {
         doubleQuoted,
         singleQuoted,
         ("\\b\\d+(\\.\\d+)?(px|em|rem|%|vh|vw|s|ms|fr|deg)?\\b", .number),
-        ("[.#%][a-zA-Z_-][\\w-]*", .function),   // selectors (+ SCSS %placeholders)
-        ("#[0-9a-fA-F]{3,8}\\b", .number),   // hex colours, after `#fff`-shaped selectors
-        ("[a-z-]+(?=\\s*:)", .type),   // property names
-        ("@[a-zA-Z_-][\\w-]*", .property),   // Less @variables
-        ("@(media|import|charset|namespace|supports|keyframes|font-face|page|include|mixin|function|return|extend|use|forward|if|else|each|for|while|content|at-root|debug|warn|error|plugin)\\b", .keyword),
-        ("\\$[a-zA-Z_-][\\w-]*", .property),   // SCSS/Sass $variables
+        ("[.#%][a-zA-Z_-][\\w-]*", .function),  // selectors (+ SCSS %placeholders)
+        ("#[0-9a-fA-F]{3,8}\\b", .number),  // hex colours, after `#fff`-shaped selectors
+        ("[a-z-]+(?=\\s*:)", .type),  // property names
+        ("@[a-zA-Z_-][\\w-]*", .property),  // Less @variables
+        (
+            "@(media|import|charset|namespace|supports|keyframes|font-face|page|include|mixin|function|return|extend|use|forward|if|else|each|for|while|content|at-root|debug|warn|error|plugin)\\b",
+            .keyword
+        ),
+        ("\\$[a-zA-Z_-][\\w-]*", .property),  // SCSS/Sass $variables
     ]
 }

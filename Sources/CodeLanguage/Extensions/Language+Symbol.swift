@@ -22,16 +22,16 @@ public extension Language {
         case .swift:
             return "swift"
         case .abap, .actionscript, .ada, .applescript, .awk, .c, .cairo, .carbon, .cfml, .clips, .clojure, .cobol,
-             .coffeescript, .commonlisp, .cpp, .crystal, .csharp, .d, .dart, .elisp, .elixir, .elm, .erlang, .fennel,
-             .fortran, .fsharp, .gdscript, .gleam, .go, .groovy, .hack, .haskell, .haxe, .java, .javascript, .jq, .jsx,
-             .kotlin, .lex, .lua, .move, .nim, .objectivec, .objectivecpp, .ocaml, .odin, .pascal, .perl, .php, .prolog,
-             .purescript, .python, .qsharp, .racket, .raku, .reason, .rego, .rescript, .ruby, .rust, .scala, .scheme,
-             .smalltalk, .sml, .solidity, .tcl, .tsx, .typescript, .v, .vala, .vbnet, .vbscript, .vimscript, .vyper,
-             .yacc, .zig:
+            .coffeescript, .commonlisp, .cpp, .crystal, .csharp, .d, .dart, .elisp, .elixir, .elm, .erlang, .fennel,
+            .fortran, .fsharp, .gdscript, .gleam, .go, .groovy, .hack, .haskell, .haxe, .java, .javascript, .jq, .jsx,
+            .kotlin, .lex, .lua, .move, .nim, .objectivec, .objectivecpp, .ocaml, .odin, .pascal, .perl, .php, .prolog,
+            .purescript, .python, .qsharp, .racket, .raku, .reason, .rego, .rescript, .ruby, .rust, .scala, .scheme,
+            .smalltalk, .sml, .solidity, .tcl, .tsx, .typescript, .v, .vala, .vbnet, .vbscript, .vimscript, .vyper,
+            .yacc, .zig:
             return "chevron.left.forwardslash.chevron.right"
         // Web pages, components and templates.
         case .html, .astro, .vue, .svelte, .blade, .ejs, .erb, .haml, .handlebars, .jinja, .jsp, .liquid, .marko,
-             .mustache, .nunjucks, .pug, .razor, .slim, .smarty, .twig, .velocity, .freemarker:
+            .mustache, .nunjucks, .pug, .razor, .slim, .smarty, .twig, .velocity, .freemarker:
             return "globe"
         // Markup that is not a page.
         case .xml, .xquery, .xslt, .plist:
@@ -41,11 +41,11 @@ public extension Language {
             return "paintbrush"
         // Structured data and interface definitions.
         case .json, .json5, .jsonc, .jsonlines, .jsonnet, .hjson, .ron, .kdl, .cue, .dhall, .graphql, .capnp, .protobuf,
-             .thrift, .avdl:
+            .thrift, .avdl:
             return "curlybraces"
         // Configuration.
         case .yaml, .toml, .ini, .properties, .editorconfig, .xcconfig, .apacheconf, .nginx, .caddyfile, .hosts, .systemd,
-             .crontab, .manifest:
+            .crontab, .manifest:
             return "slider.horizontal.3"
         case .dotenv:
             return "key"
@@ -62,7 +62,7 @@ public extension Language {
             return "tablecells"
         // Prose and documents.
         case .markdown, .mdx, .rmarkdown, .quarto, .asciidoc, .restructuredtext, .org, .textile, .mediawiki, .texinfo,
-             .latex, .bibtex:
+            .latex, .bibtex:
             return "doc.richtext"
         case .plainText:
             return "doc.text"
@@ -79,7 +79,7 @@ public extension Language {
             return "point.3.connected.trianglepath.dotted"
         // GPU, hardware and the metal underneath.
         case .glsl, .hlsl, .wgsl, .metal, .shaderlab, .opencl, .cuda, .verilog, .systemverilog, .vhdl, .llvm, .assembly,
-             .wat:
+            .wat:
             return "cpu"
         // Maths, statistics and proofs.
         case .matlab, .r, .julia, .sas, .stata, .wolfram, .lean, .coq, .agda, .idris:

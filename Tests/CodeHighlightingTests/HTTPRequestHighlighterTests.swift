@@ -33,22 +33,26 @@ final class HTTPRequestHighlighterTests: XCTestCase {
     }
 
     private let document = """
-    ### Get one user
-    GET https://api.example.com/users/1
-    Accept: application/json
+        ### Get one user
+        GET https://api.example.com/users/1
+        Accept: application/json
 
-    {"id": 1}
-    """
+        {"id": 1}
+        """
 
     private func kinds() -> (at: (String) -> TokenKind?, storage: NSTextStorage) {
         let storage = NSTextStorage(string: document)
         HTTPRequestHighlighter(colors: Markers()).highlight(storage, in: NSRange(location: 0, length: storage.length))
         let ns = storage.string as NSString
-        return ({ needle in
-            let r = ns.range(of: needle)
-            guard r.location != NSNotFound, let color = storage.attribute(.foregroundColor, at: r.location, effectiveRange: nil) as? NSColor else { return nil }
-            return Markers.kind(of: color)
-        }, storage)
+        return (
+            { needle in
+                let r = ns.range(of: needle)
+                guard r.location != NSNotFound,
+                    let color = storage.attribute(.foregroundColor, at: r.location, effectiveRange: nil) as? NSColor
+                else { return nil }
+                return Markers.kind(of: color)
+            }, storage
+        )
     }
 
     func testEachPartOfARequestGetsItsRole() {

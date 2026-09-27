@@ -16,7 +16,10 @@ extension RuleTables {
     static let texinfo: [(String, TokenKind)] = [
         ("^@(c|comment)\\b.*$", .comment),
         ("^@node\\s.*$", .function),
-        ("^@(chapter|section|subsection|subsubsection|top|unnumbered|appendix|heading|majorheading|title|subtitle|author|settitle|setfilename)\\b.*$", .type),
+        (
+            "^@(chapter|section|subsection|subsubsection|top|unnumbered|appendix|heading|majorheading|title|subtitle|author|settitle|setfilename)\\b.*$",
+            .type
+        ),
         ("@[a-zA-Z]+", .keyword),
         ("@[@{}]", .keyword),
         ("(?<=@[a-zA-Z]{1,20})\\{[^}]*\\}", .string),

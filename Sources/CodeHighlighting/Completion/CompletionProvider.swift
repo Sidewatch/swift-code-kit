@@ -75,8 +75,10 @@ public final class CompletionProvider {
     /// replace). Rebuilds whichever caches are stale from `text`, queries the
     /// project tier, then ranks. Empty `partial` yields no candidates (no
     /// popup). Main thread only — the caches install and invalidate there.
-    public func completions(for partial: String, text: String,
-                            language: CodeLanguage.Language) -> [CompletionItem] {
+    public func completions(
+        for partial: String, text: String,
+        language: CodeLanguage.Language
+    ) -> [CompletionItem] {
         guard !partial.isEmpty else { return [] }
         var fileSymbols = cachedFileSymbols
         if fileSymbols == nil {
@@ -87,15 +89,17 @@ public final class CompletionProvider {
                 // caching that would pin this tier empty for the unedited
                 // buffer (only noteEdit() clears the cache). Re-querying is a
                 // cached-tree query, cheap per trigger.
-                fileSymbols = Self.sortedUniqueItems(provider().map {
-                    CompletionItem(text: $0.name, kind: $0.kind, detail: nil)
-                })
+                fileSymbols = Self.sortedUniqueItems(
+                    provider().map {
+                        CompletionItem(text: $0.name, kind: $0.kind, detail: nil)
+                    })
                 if fileSymbols?.isEmpty == false { cachedFileSymbols = fileSymbols }
             } else {
                 // Same cap as the word scan: symbols() runs a full synchronous
                 // tree-sitter parse — a main-thread hang on huge files (whose
                 // highlighting the editor already disables at this threshold).
-                cachedFileSymbols = text.utf16.count <= Self.wordScanThreshold
+                cachedFileSymbols =
+                    text.utf16.count <= Self.wordScanThreshold
                     ? Self.sortedUniqueItems(
                         TreeSitterHighlighter.symbols(in: text, language: language).map {
                             CompletionItem(text: $0.name, kind: $0.kind, detail: nil)
@@ -110,11 +114,12 @@ public final class CompletionProvider {
         let project = (projectSymbolsProvider?(partial) ?? []).map {
             CompletionItem(text: $0.name, kind: $0.kind, detail: $0.url.lastPathComponent)
         }
-        return Self.rank(partial: partial,
-                         fileSymbols: fileSymbols ?? [],
-                         projectSymbols: project,
-                         bufferWords: cachedBufferWords ?? [],
-                         builtins: LanguageBuiltins.completions(for: language))
+        return Self.rank(
+            partial: partial,
+            fileSymbols: fileSymbols ?? [],
+            projectSymbols: project,
+            bufferWords: cachedBufferWords ?? [],
+            builtins: LanguageBuiltins.completions(for: language))
     }
 
     // MARK: - Pure ranking / scanning (testable)
@@ -125,10 +130,12 @@ public final class CompletionProvider {
     /// identical to `partial` (completing to itself is noise), caps at `cap`.
     /// Tiers are expected pre-sorted, so results are alphabetical within each
     /// tier.
-    public static func rank(partial: String, fileSymbols: [CompletionItem],
-                            projectSymbols: [CompletionItem], bufferWords: [String],
-                            builtins: [CompletionItem] = [],
-                            cap: Int = maxCandidates) -> [CompletionItem] {
+    public static func rank(
+        partial: String, fileSymbols: [CompletionItem],
+        projectSymbols: [CompletionItem], bufferWords: [String],
+        builtins: [CompletionItem] = [],
+        cap: Int = maxCandidates
+    ) -> [CompletionItem] {
         guard !partial.isEmpty, cap > 0 else { return [] }
         let needle = partial.lowercased()
         var seen = Set<String>()
@@ -139,8 +146,9 @@ public final class CompletionProvider {
         func take(_ item: CompletionItem) -> Bool {
             guard out.count < cap else { return false }
             guard item.text != partial,
-                  item.text.lowercased().hasPrefix(needle),
-                  seen.insert(item.text).inserted else { return true }
+                item.text.lowercased().hasPrefix(needle),
+                seen.insert(item.text).inserted
+            else { return true }
             out.append(item)
             return out.count < cap
         }

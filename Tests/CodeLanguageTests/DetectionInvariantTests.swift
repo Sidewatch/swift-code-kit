@@ -62,8 +62,9 @@ final class DetectionInvariantTests: XCTestCase {
         let keys = Array(Language.compoundExtensionMap.keys)
         for a in keys {
             for b in keys where a != b {
-                XCTAssertFalse(a.hasSuffix("." + b),
-                               "'\(a)' and '\(b)' both match one filename; dictionary order decides the winner")
+                XCTAssertFalse(
+                    a.hasSuffix("." + b),
+                    "'\(a)' and '\(b)' both match one filename; dictionary order decides the winner")
             }
         }
     }
@@ -75,8 +76,9 @@ final class DetectionInvariantTests: XCTestCase {
     func testPrecedenceLadderHoldsAtEveryRung() {
         // filename beats extension: a file literally named for a known filename key
         if let (name, expected) = Language.filenameMap.first(where: { $0.key.contains(".") }) {
-            XCTAssertEqual(Language.detect(filename: name), expected,
-                           "exact filename must beat the plain-extension rule")
+            XCTAssertEqual(
+                Language.detect(filename: name), expected,
+                "exact filename must beat the plain-extension rule")
         }
         // prefix beats extension: Dockerfile.dev has extension "dev" (unknown) → dockerfile
         XCTAssertEqual(Language.detect(filename: "Dockerfile.dev"), .dockerfile)
@@ -129,8 +131,9 @@ final class DetectionInvariantTests: XCTestCase {
     func testCommentTokensAreWellFormed() {
         for language in Language.allCases {
             if let token = language.lineCommentToken {
-                XCTAssertFalse(token.trimmingCharacters(in: .whitespaces).isEmpty,
-                               "\(language) has an empty line-comment token")
+                XCTAssertFalse(
+                    token.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "\(language) has an empty line-comment token")
             }
             if let block = language.blockComment {
                 // Symmetric delimiters are legitimate — asciidoc uses //// for both ends and

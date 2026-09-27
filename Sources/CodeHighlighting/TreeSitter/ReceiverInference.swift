@@ -58,9 +58,9 @@ public enum ReceiverInference {
         let escaped = NSRegularExpression.escapedPattern(for: variable)
         // Each pattern captures the class name in group 1.
         let patterns = [
-            "\(escaped)\\s*=\\s*new\\s+(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)",   // $v = new X / v = new X
-            "\(escaped)\\s*:\\s*(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)",          // v: X
-            "(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)\\s+\(escaped)\\b",            // X $v  (typed param / property / @var)
+            "\(escaped)\\s*=\\s*new\\s+(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)",  // $v = new X / v = new X
+            "\(escaped)\\s*:\\s*(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)",  // v: X
+            "(\\\\?[A-Z][A-Za-z0-9_\\\\.]*)\\s+\(escaped)\\b",  // X $v  (typed param / property / @var)
         ]
         let ns = text as NSString
         let full = NSRange(location: 0, length: ns.length)

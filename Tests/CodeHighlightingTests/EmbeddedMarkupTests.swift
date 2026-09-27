@@ -18,11 +18,11 @@ private struct SFCColors: TokenColorProviding {
     func color(for kind: TokenKind) -> NSColor {
         switch kind {
         case .comment: return .red
-        case .string:  return .green
+        case .string: return .green
         case .keyword: return .blue
-        case .type:    return .purple
-        case .number:  return .orange
-        default:       return .brown
+        case .type: return .purple
+        case .number: return .orange
+        default: return .brown
         }
     }
     var foreground: NSColor { .black }
@@ -60,11 +60,11 @@ final class EmbeddedMarkupTests: XCTestCase {
 
     func testAstroFrontmatterIsTypeScript() {
         let src = """
-        ---
-        const x: number = 1;
-        ---
-        <p>hi</p>
-        """
+            ---
+            const x: number = 1;
+            ---
+            <p>hi</p>
+            """
         let r = regions(src, .astro)
         XCTAssertEqual(r.count, 1)
         XCTAssertEqual(r.first?.lang, .typescript)
@@ -132,21 +132,21 @@ final class EmbeddedMarkupTests: XCTestCase {
 
     func testFullComponentSplitsIntoAllThreeLayers() {
         let src = """
-        ---
-        const title = 'hi';
-        ---
-        <article class="card">
-          <h1>{title}</h1>
-        </article>
+            ---
+            const title = 'hi';
+            ---
+            <article class="card">
+              <h1>{title}</h1>
+            </article>
 
-        <script>
-          console.log(1);
-        </script>
+            <script>
+              console.log(1);
+            </script>
 
-        <style>
-          .card { color: red; }
-        </style>
-        """
+            <style>
+              .card { color: red; }
+            </style>
+            """
         let r = regions(src, .astro)
         XCTAssertEqual(r.map(\.lang), [.typescript, .typescript, .css])
         XCTAssertTrue(r[0].text.contains("const title"))
@@ -163,11 +163,11 @@ final class EmbeddedMarkupTests: XCTestCase {
     /// style block — tag scanning starts after the closing fence.
     func testTagsInsideFrontmatterAreNotRegions() {
         let src = """
-        ---
-        const markup = '<style>.x{}</style>';
-        ---
-        <p>hi</p>
-        """
+            ---
+            const markup = '<style>.x{}</style>';
+            ---
+            <p>hi</p>
+            """
         let r = regions(src, .astro)
         XCTAssertEqual(r.count, 1)
         XCTAssertEqual(r.first?.lang, .typescript)
@@ -178,9 +178,13 @@ final class EmbeddedMarkupTests: XCTestCase {
     func testComplementCoversEverythingNotEmbedded() {
         let clip = NSRange(location: 0, length: 100)
         let gaps = H.complement(of: [NSRange(location: 10, length: 20), NSRange(location: 50, length: 10)], within: clip)
-        XCTAssertEqual(gaps, [NSRange(location: 0, length: 10),
-                              NSRange(location: 30, length: 20),
-                              NSRange(location: 60, length: 40)])
+        XCTAssertEqual(
+            gaps,
+            [
+                NSRange(location: 0, length: 10),
+                NSRange(location: 30, length: 20),
+                NSRange(location: 60, length: 40),
+            ])
     }
 
     func testComplementIsEmptyWhenRegionCoversClip() {
@@ -201,22 +205,23 @@ final class EmbeddedMarkupTests: XCTestCase {
     ///   `testEmbeddedRegionFallsBackToTheDialectsOwnRegexTable` holds the positive assertion.
     func testStyleBodyIsNoLongerPaintedByTheMarkupTable() throws {
         let src = """
-        ---
-        const x = 1;
-        ---
-        <p class="a">hi</p>
-        <style>
-          .a { background: color-mix(in srgb, red 10%, transparent); }
-        </style>
-        """
+            ---
+            const x = 1;
+            ---
+            <p class="a">hi</p>
+            <style>
+              .a { background: color-mix(in srgb, red 10%, transparent); }
+            </style>
+            """
         let storage = NSTextStorage(string: src)
         let h = try XCTUnwrap(H(language: .astro, colors: SFCColors()))
         h.highlight(storage, in: NSRange(location: 0, length: storage.length))
 
         let inRange = (src as NSString).range(of: "in srgb")
-        XCTAssertNotEqual(storage.attribute(.foregroundColor, at: inRange.location, effectiveRange: nil) as? NSColor,
-                          SFCColors().color(for: .keyword),
-                          "`in` inside color-mix() must not be painted as a JS keyword")
+        XCTAssertNotEqual(
+            storage.attribute(.foregroundColor, at: inRange.location, effectiveRange: nil) as? NSColor,
+            SFCColors().color(for: .keyword),
+            "`in` inside color-mix() must not be painted as a JS keyword")
     }
 
     /// SCSS/Sass/Less deliberately have no tree-sitter grammar (they route around
@@ -247,9 +252,10 @@ final class EmbeddedMarkupTests: XCTestCase {
         h.highlight(storage, in: NSRange(location: 0, length: storage.length))
 
         let tag = (src as NSString).range(of: "<p")
-        XCTAssertEqual(storage.attribute(.foregroundColor, at: tag.location, effectiveRange: nil) as? NSColor,
-                       SFCColors().color(for: .keyword),
-                       "markup tags outside the style block keep the host language's coloring")
+        XCTAssertEqual(
+            storage.attribute(.foregroundColor, at: tag.location, effectiveRange: nil) as? NSColor,
+            SFCColors().color(for: .keyword),
+            "markup tags outside the style block keep the host language's coloring")
     }
 
     /// A viewport-sized clip must paint only that clip (the editor re-highlights
@@ -257,8 +263,9 @@ final class EmbeddedMarkupTests: XCTestCase {
     func testPartialClipLeavesTheRestUntouched() throws {
         let src = "<style>\n.a { color: red; }\n</style>\n<p>hi</p>\n"
         let storage = NSTextStorage(string: src)
-        storage.addAttribute(.foregroundColor, value: NSColor.magenta,
-                             range: NSRange(location: 0, length: storage.length))
+        storage.addAttribute(
+            .foregroundColor, value: NSColor.magenta,
+            range: NSRange(location: 0, length: storage.length))
         let h = try XCTUnwrap(H(language: .astro, colors: SFCColors()))
 
         let tail = (src as NSString).range(of: "<p>hi</p>")

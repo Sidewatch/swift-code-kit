@@ -41,7 +41,8 @@ public extension Language {
         // Only reached when detection failed outright, so a wrapper name that IS
         // mapped (e.g. a future `.dist` language) still wins over the strip.
         if let dot = name.lastIndex(of: "."), dot > name.startIndex,
-           Self.wrapperSuffixes.contains(String(name[name.index(after: dot)...])) {
+            Self.wrapperSuffixes.contains(String(name[name.index(after: dot)...]))
+        {
             return detect(filename: String(name[..<dot]))
         }
         return .plainText
@@ -238,7 +239,7 @@ public extension Language {
         "ignore": .gitignore,
         "iml": .xml,
         "ini": .ini,
-        "desktop": .ini,   // a freedesktop.org desktop entry is INI-shaped
+        "desktop": .ini,  // a freedesktop.org desktop entry is INI-shaped
         "inl": .cpp,
         "ins": .latex,
         "ipp": .cpp,
@@ -296,7 +297,7 @@ public extension Language {
         "marko": .marko,
         "mawk": .awk,
         "md": .markdown,
-        "mdoc": .markdown,   // Markdoc (Markdown superset) — highlight + preview as Markdown
+        "mdoc": .markdown,  // Markdoc (Markdown superset) — highlight + preview as Markdown
         "mdown": .markdown,
         "mdwn": .markdown,
         "mdx": .mdx,

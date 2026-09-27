@@ -90,7 +90,7 @@ let package = Package(
                 .product(name: "TreeSitterTypeScript", package: "tree-sitter-typescript"),
                 .product(name: "TreeSitterMarkdown", package: "tree-sitter-markdown"),
             ],
-            exclude: ["Fixtures"],   // read by #filePath, not bundled
+            exclude: ["Fixtures"],  // read by #filePath, not bundled
             resources: [.copy("Resources/jsfx.json")]
         ),
     ]

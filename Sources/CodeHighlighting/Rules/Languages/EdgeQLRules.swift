@@ -18,8 +18,19 @@ extension RuleTables {
         singleQuoted,
         doubleQuoted,
         ("\\$\\$[\\s\\S]*?\\$\\$", .string),
-        keywords(["module", "type", "abstract", "extending", "required", "optional", "multi", "single", "property", "link", "constraint", "exclusive", "index", "on", "default", "annotation", "using", "function", "returning", "scalar", "alias", "global", "select", "insert", "update", "delete", "filter", "order", "by", "limit", "offset", "with", "for", "in", "union", "detached", "introspect", "set", "unless", "conflict", "else", "if", "then", "group", "distinct", "exists", "not", "and", "or", "like", "ilike", "is", "asc", "desc", "empty", "first", "last", "true", "false", "start", "migration", "commit", "create", "alter", "drop", "to", "from", "as", "assert_single", "count", "len", "sum", "max", "min", "array_agg", "datetime_current", "random", "uuid_generate_v1mc"]),
-        ("\\b(str|int16|int32|int64|float32|float64|bigint|decimal|bool|datetime|duration|uuid|json|bytes|array|tuple|range|anytype|cal::local_date|cal::local_datetime|std::\\w+)\\b", .type),
+        keywords([
+            "module", "type", "abstract", "extending", "required", "optional", "multi", "single", "property", "link", "constraint",
+            "exclusive", "index", "on", "default", "annotation", "using", "function", "returning", "scalar", "alias", "global", "select",
+            "insert", "update", "delete", "filter", "order", "by", "limit", "offset", "with", "for", "in", "union", "detached",
+            "introspect", "set", "unless", "conflict", "else", "if", "then", "group", "distinct", "exists", "not", "and", "or", "like",
+            "ilike", "is", "asc", "desc", "empty", "first", "last", "true", "false", "start", "migration", "commit", "create", "alter",
+            "drop", "to", "from", "as", "assert_single", "count", "len", "sum", "max", "min", "array_agg", "datetime_current", "random",
+            "uuid_generate_v1mc",
+        ]),
+        (
+            "\\b(str|int16|int32|int64|float32|float64|bigint|decimal|bool|datetime|duration|uuid|json|bytes|array|tuple|range|anytype|cal::local_date|cal::local_datetime|std::\\w+)\\b",
+            .type
+        ),
         ("<[\\w:]+>", .type),
         (":=|\\+=|-=|\\?\\?|\\?=|\\?!=|\\.<|\\.>|@", .keyword),
         ("\\.[a-zA-Z_]\\w*", .property),

@@ -26,13 +26,16 @@ final class CodeIndenterTests: XCTestCase {
     /// The strongest single check: strip the leading whitespace off both sides and they must be
     /// identical. Anything the indenter touched beyond indentation shows up here — a dropped
     /// token, a rewritten string, a lost line.
-    private func assertOnlyIndentationChanged(_ input: String, _ output: String,
-                                              file: StaticString = #filePath, line: UInt = #line) {
+    private func assertOnlyIndentationChanged(
+        _ input: String, _ output: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
         func skeleton(_ s: String) -> [String] {
             s.components(separatedBy: "\n").map { String($0.drop { $0 == " " || $0 == "\t" }) }
         }
-        XCTAssertEqual(skeleton(input), skeleton(output),
-                       "content changed, not just indentation", file: file, line: line)
+        XCTAssertEqual(
+            skeleton(input), skeleton(output),
+            "content changed, not just indentation", file: file, line: line)
     }
 
     // MARK: - Things it must not touch
@@ -41,13 +44,13 @@ final class CodeIndenterTests: XCTestCase {
     /// whitespace is the VALUE of the string — re-indenting it changes what the program prints.
     func testDoesNotTouchInteriorOfMultiLineStrings() {
         let input = """
-        func f() {
-        let s = \"\"\"
-                deliberately
-                    ragged
-        \"\"\"
-        }
-        """
+            func f() {
+            let s = \"\"\"
+                    deliberately
+                        ragged
+            \"\"\"
+            }
+            """
         let out = CodeIndenter.reindent(input, language: .swift)!
         XCTAssertTrue(out.contains("        deliberately"), "string interior was re-indented:\n\(out)")
         XCTAssertTrue(out.contains("            ragged"), "string interior was re-indented:\n\(out)")
@@ -57,11 +60,11 @@ final class CodeIndenterTests: XCTestCase {
     /// tokens, this would open a level that never closes and skew the rest of the file.
     func testBracesInsideStringsDoNotChangeDepth() {
         let input = """
-        func f() {
-        let a = "{{{"
-        let b = 1
-        }
-        """
+            func f() {
+            let a = "{{{"
+            let b = 1
+            }
+            """
         let out = CodeIndenter.reindent(input, language: .swift)!
         XCTAssertTrue(out.contains("\n    let b = 1"), "string braces leaked into depth:\n\(out)")
         XCTAssertTrue(out.contains("\"{{{\""), "the string itself was altered:\n\(out)")
@@ -78,18 +81,20 @@ final class CodeIndenterTests: XCTestCase {
     /// which is exactly why the original tests missed it.
     func testStringContainingBothEscapesAndBrackets() {
         let input = """
-        {
-        "braces": "{\\"a\\": 1, [b]}",
-        "after": 1
-        }
-        """
+            {
+            "braces": "{\\"a\\": 1, [b]}",
+            "after": 1
+            }
+            """
         let out = CodeIndenter.reindent(input, language: .json, indentUnit: "  ")!
-        XCTAssertEqual(out, """
-        {
-          "braces": "{\\"a\\": 1, [b]}",
-          "after": 1
-        }
-        """, "depth leaked out of an escaped string")
+        XCTAssertEqual(
+            out,
+            """
+            {
+              "braces": "{\\"a\\": 1, [b]}",
+              "after": 1
+            }
+            """, "depth leaked out of an escaped string")
     }
 
     /// The same shape in Swift, since the node types differ per grammar.
@@ -103,11 +108,11 @@ final class CodeIndenterTests: XCTestCase {
     /// Same hazard, in a comment.
     func testBracesInsideCommentsDoNotChangeDepth() {
         let input = """
-        func f() {
-        // a stray { in a comment
-        let b = 1
-        }
-        """
+            func f() {
+            // a stray { in a comment
+            let b = 1
+            }
+            """
         let out = CodeIndenter.reindent(input, language: .swift)!
         XCTAssertTrue(out.contains("\n    let b = 1"), "comment braces leaked into depth:\n\(out)")
     }
@@ -135,21 +140,22 @@ final class CodeIndenterTests: XCTestCase {
     /// so the fragment rides the same test.)
     func testWellIndentedJSXRoundTripsByteIdentical() {
         let input = """
-        function App() {
-            return (
-                <div className="app">
-                    <Header title="Sidewatch" />
-                    <>
-                        <p>{count + 1}</p>
-                    </>
-                </div>
-            );
-        }
+            function App() {
+                return (
+                    <div className="app">
+                        <Header title="Sidewatch" />
+                        <>
+                            <p>{count + 1}</p>
+                        </>
+                    </div>
+                );
+            }
 
-        """
+            """
         for lang in [CodeLanguage.Language.jsx, .tsx] {
-            XCTAssertEqual(CodeIndenter.reindent(input, language: lang), input,
-                           "\(lang) rewrote well-indented JSX")
+            XCTAssertEqual(
+                CodeIndenter.reindent(input, language: lang), input,
+                "\(lang) rewrote well-indented JSX")
         }
     }
 
@@ -158,19 +164,20 @@ final class CodeIndenterTests: XCTestCase {
     /// protection matches it and not just `jsx_element`.
     func testWellIndentedMultiLineSelfClosingElementRoundTrips() {
         let input = """
-        function icon() {
-            return (
-                <Icon
-                    name="gear"
-                    size={16}
-                />
-            );
-        }
+            function icon() {
+                return (
+                    <Icon
+                        name="gear"
+                        size={16}
+                    />
+                );
+            }
 
-        """
+            """
         for lang in [CodeLanguage.Language.jsx, .tsx] {
-            XCTAssertEqual(CodeIndenter.reindent(input, language: lang), input,
-                           "\(lang) rewrote a well-indented self-closing element")
+            XCTAssertEqual(
+                CodeIndenter.reindent(input, language: lang), input,
+                "\(lang) rewrote a well-indented self-closing element")
         }
     }
 
@@ -179,21 +186,23 @@ final class CodeIndenterTests: XCTestCase {
     /// the block still lands at the right level while the JSX itself stays untouched.
     func testCodeAfterJSXBlockStillIndents() {
         let input = """
-        function App() {
-            const el = (
-                <div>
-                    <span>{x}</span>
-                </div>
-            );
-        return el;
-        }
-        """
+            function App() {
+                const el = (
+                    <div>
+                        <span>{x}</span>
+                    </div>
+                );
+            return el;
+            }
+            """
         for lang in [CodeLanguage.Language.jsx, .tsx] {
             let out = CodeIndenter.reindent(input, language: lang)!
-            XCTAssertTrue(out.contains("\n    return el;"),
-                          "\(lang): depth was lost across the JSX block:\n\(out)")
-            XCTAssertTrue(out.contains("\n            <span>{x}</span>\n"),
-                          "\(lang): JSX interior was touched:\n\(out)")
+            XCTAssertTrue(
+                out.contains("\n    return el;"),
+                "\(lang): depth was lost across the JSX block:\n\(out)")
+            XCTAssertTrue(
+                out.contains("\n            <span>{x}</span>\n"),
+                "\(lang): JSX interior was touched:\n\(out)")
             assertOnlyIndentationChanged(input, out)
         }
     }
@@ -229,13 +238,15 @@ final class CodeIndenterTests: XCTestCase {
 
     func testIndentsNestedBraces() {
         let out = CodeIndenter.reindent("func f() {\nif x {\nreturn\n}\n}", language: .swift)!
-        XCTAssertEqual(out, """
-        func f() {
-            if x {
-                return
+        XCTAssertEqual(
+            out,
+            """
+            func f() {
+                if x {
+                    return
+                }
             }
-        }
-        """)
+            """)
     }
 
     /// A closing brace belongs at its OPENER's level. Getting this wrong puts every `}` one step
@@ -251,10 +262,12 @@ final class CodeIndenterTests: XCTestCase {
     }
 
     func testCustomIndentUnit() {
-        XCTAssertEqual(CodeIndenter.reindent("func f() {\nlet a = 1\n}", language: .swift, indentUnit: "\t"),
-                       "func f() {\n\tlet a = 1\n}")
-        XCTAssertEqual(CodeIndenter.reindent("func f() {\nlet a = 1\n}", language: .swift, indentUnit: "  "),
-                       "func f() {\n  let a = 1\n}")
+        XCTAssertEqual(
+            CodeIndenter.reindent("func f() {\nlet a = 1\n}", language: .swift, indentUnit: "\t"),
+            "func f() {\n\tlet a = 1\n}")
+        XCTAssertEqual(
+            CodeIndenter.reindent("func f() {\nlet a = 1\n}", language: .swift, indentUnit: "  "),
+            "func f() {\n  let a = 1\n}")
     }
 
     /// Running it twice must be a no-op, or the command produces a diff every time it is used.
@@ -268,8 +281,9 @@ final class CodeIndenterTests: XCTestCase {
     func testBracketsAndParensNestAsWell() {
         let out = CodeIndenter.reindent("let a = [\n1,\n2\n]", language: .swift)!
         XCTAssertEqual(out, "let a = [\n    1,\n    2\n]")
-        XCTAssertEqual(CodeIndenter.reindent("{\n\"a\": [\n1\n]\n}", language: .json),
-                       "{\n    \"a\": [\n        1\n    ]\n}")
+        XCTAssertEqual(
+            CodeIndenter.reindent("{\n\"a\": [\n1\n]\n}", language: .json),
+            "{\n    \"a\": [\n        1\n    ]\n}")
     }
 
     // MARK: - Across the supported set
@@ -278,23 +292,23 @@ final class CodeIndenterTests: XCTestCase {
     /// A grammar whose bracket tokens this does not recognise would show up as churn.
     func testEverySupportedLanguageIsIdempotentOnItsOwnOutput() {
         let samples: [CodeLanguage.Language: String] = [
-            .swift:      "func f() {\nlet a = 1\n}\n",
-            .c:          "int main() {\nreturn 0;\n}\n",
-            .cpp:        "int main() {\nreturn 0;\n}\n",
-            .csharp:     "class A {\nvoid B() {\n}\n}\n",
-            .java:       "class A {\nvoid b() {\n}\n}\n",
+            .swift: "func f() {\nlet a = 1\n}\n",
+            .c: "int main() {\nreturn 0;\n}\n",
+            .cpp: "int main() {\nreturn 0;\n}\n",
+            .csharp: "class A {\nvoid B() {\n}\n}\n",
+            .java: "class A {\nvoid b() {\n}\n}\n",
             .javascript: "function f() {\nreturn 1;\n}\n",
             .typescript: "function f(): number {\nreturn 1;\n}\n",
-            .tsx:        "function f() {\nreturn (\n<a>\n<b />\n</a>\n);\n}\n",
-            .jsx:        "function f() {\nreturn (\n<a>\n<b />\n</a>\n);\n}\n",
-            .go:         "func main() {\nx := 1\n}\n",
-            .rust:       "fn main() {\nlet a = 1;\n}\n",
-            .php:        "<?php\nfunction f() {\nreturn 1;\n}\n",
-            .css:        "body {\ncolor: red;\n}\n",
-            .json:       "{\n\"a\": 1\n}\n",
-            .kotlin:     "fun f() {\nval a = 1\n}\n",
-            .scala:      "object A {\ndef b = 1\n}\n",
-            .dart:       "void main() {\nvar a = 1;\n}\n",
+            .tsx: "function f() {\nreturn (\n<a>\n<b />\n</a>\n);\n}\n",
+            .jsx: "function f() {\nreturn (\n<a>\n<b />\n</a>\n);\n}\n",
+            .go: "func main() {\nx := 1\n}\n",
+            .rust: "fn main() {\nlet a = 1;\n}\n",
+            .php: "<?php\nfunction f() {\nreturn 1;\n}\n",
+            .css: "body {\ncolor: red;\n}\n",
+            .json: "{\n\"a\": 1\n}\n",
+            .kotlin: "fun f() {\nval a = 1\n}\n",
+            .scala: "object A {\ndef b = 1\n}\n",
+            .dart: "void main() {\nvar a = 1;\n}\n",
         ]
         for (lang, source) in samples {
             guard let once = CodeIndenter.reindent(source, language: lang) else {
@@ -337,7 +351,8 @@ final class CodeIndenterTests: XCTestCase {
         let source = String(repeating: "{\n", count: depth) + "x\n" + String(repeating: "}\n", count: depth)
         let out = CodeIndenter.reindent(source, language: .json)
         XCTAssertNotNil(out, "deep nesting failed")
-        XCTAssertTrue(out!.contains(String(repeating: "    ", count: depth) + "x"),
-                      "deepest line is at the wrong level")
+        XCTAssertTrue(
+            out!.contains(String(repeating: "    ", count: depth) + "x"),
+            "deepest line is at the wrong level")
     }
 }

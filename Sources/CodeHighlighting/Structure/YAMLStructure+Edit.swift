@@ -27,7 +27,8 @@ extension YAMLStructure {
         guard !path.isEmpty, let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return nil }
         let ns = text as NSString
         guard let doc = namedChildren(root).first(where: { $0.nodeType == "document" }),
-              let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") }) else { return nil }
+            let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") })
+        else { return nil }
         return find(body, path: path[...], ns: ns)
     }
 
@@ -36,7 +37,8 @@ extension YAMLStructure {
     private static func unwrap(_ node: Node) -> Node {
         var n = node
         while ["block_node", "flow_node"].contains(n.nodeType ?? ""),
-              let inner = namedChildren(n).first(where: { !["anchor", "tag", "comment"].contains($0.nodeType ?? "") }) { n = inner }
+            let inner = namedChildren(n).first(where: { !["anchor", "tag", "comment"].contains($0.nodeType ?? "") })
+        { n = inner }
         return n
     }
 
@@ -59,7 +61,9 @@ extension YAMLStructure {
         case "block_sequence":
             guard case .index(let i) = step else { return nil }
             let items = namedChildren(n).filter { $0.nodeType == "block_sequence_item" }
-            guard items.indices.contains(i), let inner = namedChildren(items[i]).first(where: { $0.nodeType != "comment" }) else { return nil }
+            guard items.indices.contains(i), let inner = namedChildren(items[i]).first(where: { $0.nodeType != "comment" }) else {
+                return nil
+            }
             if path.count == 1 { return EditSite(key: nil, value: unwrap(inner).range) }
             return find(inner, path: path.dropFirst(), ns: ns)
         case "flow_sequence":

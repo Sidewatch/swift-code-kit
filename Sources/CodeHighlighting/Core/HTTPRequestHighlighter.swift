@@ -56,14 +56,14 @@ public final class HTTPRequestHighlighter: CodeHighlighter {
 
         while lineStart < ns.length {
             let lineRange = ns.lineRange(for: NSRange(location: lineStart, length: 0))
-            let content = contentRange(of: lineRange, in: ns)   // line minus its EOL
+            let content = contentRange(of: lineRange, in: ns)  // line minus its EOL
             let text = ns.substring(with: content)
             let trimmed = text.trimmingCharacters(in: .whitespaces)
 
             if trimmed.hasPrefix("###") || trimmed.hasPrefix("//") || trimmed.hasPrefix("#") {
                 closeBody(endExclusive: lineRange.location)
                 storage.addAttribute(.foregroundColor, value: colors.color(for: .comment), range: content)
-                if trimmed.hasPrefix("###") { state = .awaitingRequest }   // a new block begins
+                if trimmed.hasPrefix("###") { state = .awaitingRequest }  // a new block begins
             } else if trimmed.isEmpty {
                 if state == .headers { state = .body; bodyStart = NSMaxRange(lineRange) }
             } else {
@@ -74,7 +74,7 @@ public final class HTTPRequestHighlighter: CodeHighlighter {
                 case .headers:
                     colorHeaderLine(content, text: text, into: storage)
                 case .body:
-                    break   // painted as a range by the JSON pass below
+                    break  // painted as a range by the JSON pass below
                 }
             }
             lineStart = NSMaxRange(lineRange)
@@ -115,8 +115,9 @@ public final class HTTPRequestHighlighter: CodeHighlighter {
         let valueLoc = content.location + colon.location + 1
         let valueLen = content.length - colon.location - 1
         if valueLen > 0 {
-            storage.addAttribute(.foregroundColor, value: colors.color(for: .string),
-                                 range: NSRange(location: valueLoc, length: valueLen))
+            storage.addAttribute(
+                .foregroundColor, value: colors.color(for: .string),
+                range: NSRange(location: valueLoc, length: valueLen))
         }
     }
 

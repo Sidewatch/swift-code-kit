@@ -69,8 +69,10 @@ final class CompletionTests: XCTestCase {
     }
 
     func testEmptyPartialYieldsNothing() {
-        XCTAssertTrue(CompletionProvider.rank(
-            partial: "", fileSymbols: [item("x")], projectSymbols: [], bufferWords: []).isEmpty)
+        XCTAssertTrue(
+            CompletionProvider.rank(
+                partial: "", fileSymbols: [item("x")], projectSymbols: [], bufferWords: []
+            ).isEmpty)
     }
 
     func testNonMatchingPrefixExcluded() {
@@ -83,7 +85,7 @@ final class CompletionTests: XCTestCase {
 
     func testBufferWordsExtractsIdentifiers() {
         let words = CompletionProvider.bufferWords(in: "let userName = fetchData(userName)")
-        XCTAssertEqual(words, ["fetchData", "let", "userName"])   // sorted, unique
+        XCTAssertEqual(words, ["fetchData", "let", "userName"])  // sorted, unique
     }
 
     func testBufferWordsSkipsShortWords() {
@@ -122,8 +124,9 @@ final class CompletionTests: XCTestCase {
         XCTAssertTrue(builtins.contains { $0.text == "array_map" })
         XCTAssertTrue(builtins.contains { $0.text == "preg_match" })
         // Ranked into completion for a partial.
-        let out = CompletionProvider.rank(partial: "array_", fileSymbols: [], projectSymbols: [],
-                                          bufferWords: [], builtins: builtins)
+        let out = CompletionProvider.rank(
+            partial: "array_", fileSymbols: [], projectSymbols: [],
+            bufferWords: [], builtins: builtins)
         XCTAssertTrue(out.contains { $0.text == "array_map" })
         XCTAssertTrue(out.contains { $0.text == "array_filter" })
     }
@@ -183,11 +186,15 @@ final class CompletionTests: XCTestCase {
         provider.symbolsProvider = { symbols }
         XCTAssertTrue(provider.completions(for: "qq", text: "", language: .plainText).isEmpty)
 
-        symbols = [Symbol(name: "qqAlpha", kind: .function,
-                          range: NSRange(location: 0, length: 7), line: 1)]
+        symbols = [
+            Symbol(
+                name: "qqAlpha", kind: .function,
+                range: NSRange(location: 0, length: 7), line: 1)
+        ]
         let out = provider.completions(for: "qq", text: "", language: .plainText)
-        XCTAssertEqual(out.map(\.text), ["qqAlpha"],
-                       "warm-up's empty tier must not stick without an edit")
+        XCTAssertEqual(
+            out.map(\.text), ["qqAlpha"],
+            "warm-up's empty tier must not stick without an edit")
     }
 
     func testNonEmptySymbolsProviderResultIsCached() {
@@ -195,8 +202,11 @@ final class CompletionTests: XCTestCase {
         let provider = CompletionProvider()
         provider.symbolsProvider = {
             calls += 1
-            return [Symbol(name: "qqAlpha", kind: .function,
-                           range: NSRange(location: 0, length: 7), line: 1)]
+            return [
+                Symbol(
+                    name: "qqAlpha", kind: .function,
+                    range: NSRange(location: 0, length: 7), line: 1)
+            ]
         }
         _ = provider.completions(for: "qq", text: "", language: .plainText)
         _ = provider.completions(for: "qq", text: "", language: .plainText)
@@ -232,7 +242,10 @@ final class CompletionTests: XCTestCase {
         let samples: [(String, [CompletionItem], [String])] = [
             ("swift", LanguageBuiltins.completions(for: .swift), ["print", "map", "String", "Task", "count", "DispatchQueue"]),
             ("python", LanguageBuiltins.completions(for: .python), ["defaultdict", "split", "os", "Path", "startswith", "reduce"]),
-            ("javascript", LanguageBuiltins.completions(for: .javascript), ["console", "isArray", "structuredClone", "Promise", "localStorage", "PI"]),
+            (
+                "javascript", LanguageBuiltins.completions(for: .javascript),
+                ["console", "isArray", "structuredClone", "Promise", "localStorage", "PI"]
+            ),
             ("typescript", LanguageBuiltins.completions(for: .typescript), ["console", "Record", "Partial", "unknown", "Awaited"]),
             ("go", LanguageBuiltins.completions(for: .go), ["append", "Println", "Errorf", "Mutex", "error"]),
             ("rust", LanguageBuiltins.completions(for: .rust), ["println", "Vec", "unwrap", "collect", "Arc"]),
@@ -249,13 +262,19 @@ final class CompletionTests: XCTestCase {
             ("scala", LanguageBuiltins.completions(for: .scala), ["println", "Option", "foldLeft", "Future", "mkString"]),
             ("elixir", LanguageBuiltins.completions(for: .elixir), ["puts", "Enum", "GenServer", "put", "|>"]),
             ("perl", LanguageBuiltins.completions(for: .perl), ["print", "chomp", "open", "@_", "Data::Dumper"]),
-            ("objectivec", LanguageBuiltins.completions(for: .objectivec), ["printf", "NSLog", "NSString", "dispatch_async", "NSMakeRange"]),
+            (
+                "objectivec", LanguageBuiltins.completions(for: .objectivec),
+                ["printf", "NSLog", "NSString", "dispatch_async", "NSMakeRange"]
+            ),
             ("css", LanguageBuiltins.completions(for: .css), ["display", "grid-template-columns", "@media", "var", ":has"]),
             ("html", LanguageBuiltins.completions(for: .html), ["div", "input", "aria-label", "loading", "dialog"]),
             ("zig", LanguageBuiltins.completions(for: .zig), ["@import", "ArrayList", "Allocator", "print", "usize"]),
             ("haskell", LanguageBuiltins.completions(for: .haskell), ["putStrLn", "foldr", "Maybe", "fmap", "Monad"]),
             ("r", LanguageBuiltins.completions(for: .r), ["data.frame", "lapply", "ggplot", "mutate", "%>%"]),
-            ("powershell", LanguageBuiltins.completions(for: .powershell), ["Write-Host", "Get-ChildItem", "Where-Object", "$PSScriptRoot", "-match"]),
+            (
+                "powershell", LanguageBuiltins.completions(for: .powershell),
+                ["Write-Host", "Get-ChildItem", "Where-Object", "$PSScriptRoot", "-match"]
+            ),
         ]
         for (language, items, names) in samples {
             for name in names {

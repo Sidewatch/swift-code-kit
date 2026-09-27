@@ -89,7 +89,8 @@ struct StylesheetScanner {
         }
         let end = j + 1 < length ? j + 2 : length
         if depth == 0, isBlank(lineStart, start),
-           let name = StylesheetOutline.bannerName(ns.substring(with: NSRange(location: start + 2, length: max(0, j - start - 2)))) {
+            let name = StylesheetOutline.bannerName(ns.substring(with: NSRange(location: start + 2, length: max(0, j - start - 2))))
+        {
             banners.append(Banner(name: name, location: start, length: end - start, line: startLine))
         }
         preludeComments.append(NSRange(location: start, length: end - start))
@@ -114,7 +115,7 @@ struct StylesheetScanner {
             while e < length, buf[e] != 0x0A { e += 1 }
             rows.append((ns.substring(with: NSRange(location: k + 2, length: e - k - 2)), k, line))
             preludeComments.append(NSRange(location: k, length: e - k))
-            i = e   // the newline (or EOF) is the main loop's
+            i = e  // the newline (or EOF) is the main loop's
             guard e < length else { break }
             var p = e + 1
             while p < length, buf[p] == 0x20 || buf[p] == 0x09 || buf[p] == 0x0D { p += 1 }
@@ -134,7 +135,7 @@ struct StylesheetScanner {
     private mutating func skipString(quote: unichar) {
         var j = i + 1
         while j < length, buf[j] != quote {
-            if buf[j] == 0x5C { j += 1 }                     // escaped char
+            if buf[j] == 0x5C { j += 1 }  // escaped char
             if j < length, buf[j] == 0x0A { line += 1; lineStart = j + 1 }
             j += 1
         }
@@ -151,11 +152,14 @@ struct StylesheetScanner {
         if !name.isEmpty, depth == 0 || blockStack.last! != nil {
             let nameStart = preludeNameStart()
             let isAtRule = name.hasPrefix("@")
-            let kind: SymbolKind = isAtRule
+            let kind: SymbolKind =
+                isAtRule
                 ? (name.hasPrefix("@mixin") || name.hasPrefix("@function") ? .function : .module)
                 : .selector
-            rules.append(Rule(name: name, location: nameStart, length: max(1, i - nameStart),
-                              line: line - newlines(nameStart, i), kind: kind, scopeEnd: nil))
+            rules.append(
+                Rule(
+                    name: name, location: nameStart, length: max(1, i - nameStart),
+                    line: line - newlines(nameStart, i), kind: kind, scopeEnd: nil))
             if isAtRule, StylesheetOutline.nestingAtRules.contains(where: { name.hasPrefix($0) }) { listed = rules.count - 1 }
         }
         blockStack.append(listed)
@@ -176,8 +180,10 @@ struct StylesheetScanner {
     private mutating func endStatement() {
         if depth == 0, let name = StylesheetOutline.variableName(in: preludeName()) {
             let nameStart = preludeNameStart()
-            rules.append(Rule(name: name, location: nameStart, length: (name as NSString).length,
-                              line: line - newlines(nameStart, i), kind: .variable, scopeEnd: nil))
+            rules.append(
+                Rule(
+                    name: name, location: nameStart, length: (name as NSString).length,
+                    line: line - newlines(nameStart, i), kind: .variable, scopeEnd: nil))
         }
         startPrelude(after: i)
     }
@@ -198,7 +204,9 @@ struct StylesheetScanner {
     /// The first offset in the prelude that is neither whitespace nor inside a comment.
     private func preludeNameStart() -> Int {
         var nameStart = preludeStart
-        while nameStart < i, Self.isWS(buf[nameStart]) || preludeComments.contains(where: { NSLocationInRange(nameStart, $0) }) { nameStart += 1 }
+        while nameStart < i, Self.isWS(buf[nameStart]) || preludeComments.contains(where: { NSLocationInRange(nameStart, $0) }) {
+            nameStart += 1
+        }
         return nameStart
     }
 

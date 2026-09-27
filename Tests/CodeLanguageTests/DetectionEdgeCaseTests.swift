@@ -22,24 +22,24 @@ final class DetectionEdgeCaseTests: XCTestCase {
     /// the curated winner deterministically.
     func testContestedExtensionsResolveToCuratedWinner() {
         let cases: [(String, Language)] = [
-            ("vec.h", .c),                 // C header wins over C++/Obj-C
-            ("View.m", .objectivec),       // Obj-C wins over MATLAB
+            ("vec.h", .c),  // C header wins over C++/Obj-C
+            ("View.m", .objectivec),  // Obj-C wins over MATLAB
             ("Bridge.mm", .objectivecpp),  // Obj-C++ is distinct from .m
-            ("cpu.v", .verilog),           // Verilog wins over V/Coq
-            ("main.vv", .v),               // V-lang gets its own extension
-            ("script.pl", .perl),          // Perl wins over Prolog
-            ("facts.pro", .prolog),        // Prolog gets .pro
-            ("boot.s", .assembly),         // Assembly wins over multiple
-            ("harness.t", .perl),          // Perl test file
+            ("cpu.v", .verilog),  // Verilog wins over V/Coq
+            ("main.vv", .v),  // V-lang gets its own extension
+            ("script.pl", .perl),  // Perl wins over Prolog
+            ("facts.pro", .prolog),  // Prolog gets .pro
+            ("boot.s", .assembly),  // Assembly wins over multiple
+            ("harness.t", .perl),  // Perl test file
             ("stats.r", .r),
-            ("clean.do", .stata),          // Stata wins over other .do users
+            ("clean.do", .stata),  // Stata wins over other .do users
             ("query.q", .hiveql),
             ("worksheet.sc", .scala),
-            ("Program.fs", .fsharp),       // F# wins over Forth/GLSL frag
-            ("thesis.cls", .latex),        // LaTeX class wins over VBA/Apex
-            ("module.pp", .pascal),        // Pascal wins over Puppet
-            ("lib.d", .d),                 // D-lang wins over Makefile deps
-            ("shader.gs", .glsl),          // GLSL wins over Google Apps Script
+            ("Program.fs", .fsharp),  // F# wins over Forth/GLSL frag
+            ("thesis.cls", .latex),  // LaTeX class wins over VBA/Apex
+            ("module.pp", .pascal),  // Pascal wins over Puppet
+            ("lib.d", .d),  // D-lang wins over Makefile deps
+            ("shader.gs", .glsl),  // GLSL wins over Google Apps Script
             ("types.re", .reason),
             ("Model.st", .smalltalk),
             ("SUB.f", .fortran),
@@ -112,9 +112,9 @@ final class DetectionEdgeCaseTests: XCTestCase {
 
     /// Compound extensions must beat the plain (last-component) extension.
     func testCompoundExtensionsBeatPlainExtension() {
-        XCTAssertEqual(Language.detect(filename: "welcome.blade.php"), .blade)   // not .php
-        XCTAssertEqual(Language.detect(filename: "index.php"), .php)             // plain .php intact
-        XCTAssertEqual(Language.detect(filename: "layout.html.erb"), .erb)       // not .erb-via-ext? both erb, but must not be .html
+        XCTAssertEqual(Language.detect(filename: "welcome.blade.php"), .blade)  // not .php
+        XCTAssertEqual(Language.detect(filename: "index.php"), .php)  // plain .php intact
+        XCTAssertEqual(Language.detect(filename: "layout.html.erb"), .erb)  // not .erb-via-ext? both erb, but must not be .html
         XCTAssertEqual(Language.detect(filename: "partial.erb"), .erb)
     }
 
@@ -126,7 +126,7 @@ final class DetectionEdgeCaseTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: "Dockerfile.multi.stage"), .dockerfile)
         XCTAssertEqual(Language.detect(filename: "Containerfile"), .dockerfile)
         XCTAssertEqual(Language.detect(filename: "app.dockerfile"), .dockerfile)  // via extension map
-        XCTAssertEqual(Language.detect(filename: "mydockerfile"), .plainText)     // no prefix match
+        XCTAssertEqual(Language.detect(filename: "mydockerfile"), .plainText)  // no prefix match
     }
 
     // MARK: - Dotfiles
@@ -136,11 +136,11 @@ final class DetectionEdgeCaseTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: ".env"), .dotenv)
         XCTAssertEqual(Language.detect(filename: ".env.local"), .dotenv)
         XCTAssertEqual(Language.detect(filename: ".env.production"), .dotenv)
-        XCTAssertEqual(Language.detect(filename: ".env.staging.backup"), .dotenv) // prefix rule is greedy
+        XCTAssertEqual(Language.detect(filename: ".env.staging.backup"), .dotenv)  // prefix rule is greedy
         XCTAssertEqual(Language.detect(filename: ".flaskenv"), .dotenv)
-        XCTAssertEqual(Language.detect(filename: "secrets.env"), .dotenv)          // .env as an extension
-        XCTAssertEqual(Language.detect(filename: ".envrc"), .bash)                 // direnv fix must not regress
-        XCTAssertEqual(Language.detect(filename: ".environment"), .plainText)      // no ".env." prefix, unknown ext
+        XCTAssertEqual(Language.detect(filename: "secrets.env"), .dotenv)  // .env as an extension
+        XCTAssertEqual(Language.detect(filename: ".envrc"), .bash)  // direnv fix must not regress
+        XCTAssertEqual(Language.detect(filename: ".environment"), .plainText)  // no ".env." prefix, unknown ext
     }
 
     func testShellAndEditorDotfiles() {
@@ -166,7 +166,7 @@ final class DetectionEdgeCaseTests: XCTestCase {
     /// map (the leading dot makes the rest the extension). Documented behavior.
     func testBareDotExtensionResolvesViaExtensionMap() {
         XCTAssertEqual(Language.detect(filename: ".swift"), .swift)
-        XCTAssertEqual(Language.detect(filename: ".gitignore_global"), .plainText) // not a mapped ext
+        XCTAssertEqual(Language.detect(filename: ".gitignore_global"), .plainText)  // not a mapped ext
     }
 
     // MARK: - Case sensitivity
@@ -199,7 +199,7 @@ final class DetectionEdgeCaseTests: XCTestCase {
     func testMultiDotNamesUseLastComponent() {
         XCTAssertEqual(Language.detect(filename: "jquery.min.js"), .javascript)
         XCTAssertEqual(Language.detect(filename: "component.test.tsx"), .tsx)
-        XCTAssertEqual(Language.detect(filename: "archive.tar.gz"), .plainText)   // .gz unmapped
+        XCTAssertEqual(Language.detect(filename: "archive.tar.gz"), .plainText)  // .gz unmapped
         XCTAssertEqual(Language.detect(filename: "v1.2.3"), .plainText)
     }
 
@@ -293,7 +293,7 @@ final class DetectionEdgeCaseTests: XCTestCase {
             ("composer.json.dist", .json),
             ("settings.py.example", .python),
             ("config.yml.sample", .yaml),
-            ("nginx.conf.bak", .nginx),   // the strip re-enters the FILENAME rule too
+            ("nginx.conf.bak", .nginx),  // the strip re-enters the FILENAME rule too
             ("wp-config.php.default", .php),
             ("docker-compose.yml.template", .yaml),
             ("main.swift.orig", .swift),
@@ -312,9 +312,9 @@ final class DetectionEdgeCaseTests: XCTestCase {
     /// reroute a name that already detects, and a bare wrapper name (nothing
     /// left of the dot worth detecting) stays plain text.
     func testWrapperStripDoesNotOverrideDirectRules() {
-        XCTAssertEqual(Language.detect(filename: "main.swift"), .swift)      // untouched path
-        XCTAssertEqual(Language.detect(filename: "template"), .plainText)    // no dot at all
-        XCTAssertEqual(Language.detect(filename: ".dist"), .plainText)       // leading-dot bare wrapper
+        XCTAssertEqual(Language.detect(filename: "main.swift"), .swift)  // untouched path
+        XCTAssertEqual(Language.detect(filename: "template"), .plainText)  // no dot at all
+        XCTAssertEqual(Language.detect(filename: ".dist"), .plainText)  // leading-dot bare wrapper
         XCTAssertEqual(Language.detect(filename: "notes.dist"), .plainText)  // inner "notes" is nothing
     }
 
@@ -331,7 +331,7 @@ final class DetectionEdgeCaseTests: XCTestCase {
             ("profile.tcsh", .sh),
             ("MyApp-2026.ips", .json),
             ("Doxyfile", .ini),
-            ("core.lisp", .commonlisp),   // the flip must not strand Lisp
+            ("core.lisp", .commonlisp),  // the flip must not strand Lisp
         ]
         for (name, expected) in cases {
             XCTAssertEqual(Language.detect(filename: name), expected, name)

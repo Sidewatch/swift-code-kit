@@ -38,9 +38,11 @@ public enum CodeIndenter {
     ///   - language: Must be in ``supportedLanguages``.
     ///   - indentUnit: One level. Defaults to four spaces.
     /// - Returns: The re-indented source, or nil if it cannot be done safely.
-    public static func reindent(_ text: String,
-                                language: CodeLanguage.Language,
-                                indentUnit: String = "    ") -> String? {
+    public static func reindent(
+        _ text: String,
+        language: CodeLanguage.Language,
+        indentUnit: String = "    "
+    ) -> String? {
         guard supports(language) else { return nil }
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: language) else { return nil }
         let ns = text as NSString
@@ -107,10 +109,12 @@ public enum CodeIndenter {
 
     // MARK: - Rewriting
 
-    private static func rebuild(ns: NSString,
-                                brackets: [Bracket],
-                                protectedLines: Set<Int>,
-                                indentUnit: String) -> String {
+    private static func rebuild(
+        ns: NSString,
+        brackets: [Bracket],
+        protectedLines: Set<Int>,
+        indentUnit: String
+    ) -> String {
         var out: [String] = []
         var bracketIdx = 0
         var depth = 0
@@ -120,8 +124,10 @@ public enum CodeIndenter {
         while offset <= ns.length {
             let lineRange = ns.lineRange(for: NSRange(location: min(offset, ns.length), length: 0))
             let contentEnd = lineEndExcludingBreak(ns: ns, lineRange: lineRange)
-            let content = ns.substring(with: NSRange(location: lineRange.location,
-                                                     length: contentEnd - lineRange.location))
+            let content = ns.substring(
+                with: NSRange(
+                    location: lineRange.location,
+                    length: contentEnd - lineRange.location))
 
             // Depth entering this line: every bracket that closed before it counts.
             while bracketIdx < brackets.count, brackets[bracketIdx].offset < lineRange.location {
@@ -131,11 +137,11 @@ public enum CodeIndenter {
             depth = max(0, depth)
 
             if protectedLines.contains(lineNo) {
-                out.append(content)                     // inside a literal: byte for byte
+                out.append(content)  // inside a literal: byte for byte
             } else {
                 let trimmed = content.drop { $0 == " " || $0 == "\t" }
                 if trimmed.isEmpty {
-                    out.append("")                      // no trailing whitespace on blank lines
+                    out.append("")  // no trailing whitespace on blank lines
                 } else {
                     // A line that OPENS with a closer belongs at its opener's level, not at the
                     // level of the content it closes — otherwise every `}` sits one step too deep.

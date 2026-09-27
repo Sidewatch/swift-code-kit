@@ -19,10 +19,10 @@ extension RuleTables {
         htmlComment,
         doubleQuoted,
         singleQuoted,
-        ("\\{[#/:][^}]*\\}", .keyword),   // {#if}/{/each}/{:else} (Svelte)
-        ("\\{\\{[^}]*\\}\\}", .property),   // {{ mustache }} (Vue)
-        ("</?[A-Za-z][\\w.-]*", .keyword),   // tags
-        ("v-[a-z-]+|@[a-z:.-]+|:[a-z-]+|(?:on|bind|use|class):[a-z]+", .attribute),   // directives
+        ("\\{[#/:][^}]*\\}", .keyword),  // {#if}/{/each}/{:else} (Svelte)
+        ("\\{\\{[^}]*\\}\\}", .property),  // {{ mustache }} (Vue)
+        ("</?[A-Za-z][\\w.-]*", .keyword),  // tags
+        ("v-[a-z-]+|@[a-z:.-]+|:[a-z-]+|(?:on|bind|use|class):[a-z]+", .attribute),  // directives
         decimal,
     ]
 }

@@ -17,7 +17,10 @@ extension RuleTables {
         hashComment,
         doubleQuoted,
         singleQuotedPlain,
-        ("(?i)^\\s*(FROM|RUN|CMD|LABEL|EXPOSE|ENV|ADD|COPY|ENTRYPOINT|VOLUME|USER|WORKDIR|ARG|ONBUILD|STOPSIGNAL|HEALTHCHECK|SHELL|MAINTAINER)\\b", .keyword),
+        (
+            "(?i)^\\s*(FROM|RUN|CMD|LABEL|EXPOSE|ENV|ADD|COPY|ENTRYPOINT|VOLUME|USER|WORKDIR|ARG|ONBUILD|STOPSIGNAL|HEALTHCHECK|SHELL|MAINTAINER)\\b",
+            .keyword
+        ),
         ("\\$\\{?[a-zA-Z_]\\w*\\}?", .type),
         ("\\b\\d+\\b", .number),
     ]

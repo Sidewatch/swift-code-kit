@@ -32,8 +32,9 @@ public enum MarkdownOutline {
             // Scope runs to the next same-or-higher heading (or the document's end).
             let end = raw[(i + 1)...].first(where: { $0.level <= h.level })?.location ?? ns.length
             let scope = NSRange(location: h.location, length: max(h.length, end - h.location))
-            return Symbol(name: h.name, kind: .heading, range: NSRange(location: h.location, length: h.length),
-                          line: h.line, scopeRange: scope)
+            return Symbol(
+                name: h.name, kind: .heading, range: NSRange(location: h.location, length: h.length),
+                line: h.line, scopeRange: scope)
         }
     }
 
@@ -48,7 +49,7 @@ public enum MarkdownOutline {
             guard i < line.contentEnd, scanner.buf[i] == 0x23 /* # */, indent <= 3, spacesOnly else { return nil }
             var hashes = 0
             while i < line.contentEnd, scanner.buf[i] == 0x23 { hashes += 1; i += 1 }
-            guard hashes <= 6, i == line.contentEnd || scanner.buf[i] == 0x20 else { return nil }   // ATX requires a space
+            guard hashes <= 6, i == line.contentEnd || scanner.buf[i] == 0x20 else { return nil }  // ATX requires a space
             let title = scanner.ns.substring(with: NSRange(location: i, length: line.contentEnd - i))
                 .trimmingCharacters(in: .whitespaces)
                 .trimmingCharacters(in: CharacterSet(charactersIn: "# "))

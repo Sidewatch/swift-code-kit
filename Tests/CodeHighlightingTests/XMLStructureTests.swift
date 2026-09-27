@@ -14,31 +14,31 @@ import DataConverter
 
 final class XMLStructureTests: XCTestCase {
     let xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet type="text/xsl" href="catalog.xsl"?>
-    <!DOCTYPE catalog [
-      <!ENTITY publisher "O'Grady &amp; Sons">
-    ]>
-    <!-- a comment -->
-    <catalog xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.1">
-      <book id="bk101" available="true">
-        <dc:title>The Emerald Vale</dc:title>
-        <price currency="USD">29.95</price>
-        <publisher>&publisher;</publisher>
-        <blurb>Fewer than 5 &lt;copies&gt; left &#8212; order soon.</blurb>
-        <review><![CDATA[Raw text: <not-a-tag> & unescaped.]]></review>
-        <tags>
-          <tag>fiction</tag>
-          <!-- between -->
-          <tag>fantasy</tag>
-        </tags>
-        <note>Read <em>this</em> first.</note>
-        <cover href="covers/bk101.png"/>
-        <empty></empty>
-        <solo/>
-      </book>
-    </catalog>
-    """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <?xml-stylesheet type="text/xsl" href="catalog.xsl"?>
+        <!DOCTYPE catalog [
+          <!ENTITY publisher "O'Grady &amp; Sons">
+        ]>
+        <!-- a comment -->
+        <catalog xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.1">
+          <book id="bk101" available="true">
+            <dc:title>The Emerald Vale</dc:title>
+            <price currency="USD">29.95</price>
+            <publisher>&publisher;</publisher>
+            <blurb>Fewer than 5 &lt;copies&gt; left &#8212; order soon.</blurb>
+            <review><![CDATA[Raw text: <not-a-tag> & unescaped.]]></review>
+            <tags>
+              <tag>fiction</tag>
+              <!-- between -->
+              <tag>fantasy</tag>
+            </tags>
+            <note>Read <em>this</em> first.</note>
+            <cover href="covers/bk101.png"/>
+            <empty></empty>
+            <solo/>
+          </book>
+        </catalog>
+        """
     func pairs(_ v: StructuredValue?) -> [StructuredPair] { if case .mapping(let p)? = v { return p } else { return [] } }
     func get(_ v: StructuredValue?, _ key: String) -> StructuredValue? { pairs(v).first { $0.key == key }?.value }
     func raw(_ r: NSRange?) -> String? { r.map { (xml as NSString).substring(with: $0) } }
@@ -50,14 +50,17 @@ final class XMLStructureTests: XCTestCase {
         XCTAssertEqual(pairs(catalog).map(\.key), ["@xmlns:dc", "@version", "book"], "attributes first, in file order, then children")
         XCTAssertEqual(get(catalog, "@version"), .string("2.1"))
         let book = get(catalog, "book")
-        XCTAssertEqual(pairs(book).map(\.key), ["@id", "@available", "dc:title", "price", "publisher", "blurb", "review", "tags", "note", "cover", "empty", "solo"])
+        XCTAssertEqual(
+            pairs(book).map(\.key),
+            ["@id", "@available", "dc:title", "price", "publisher", "blurb", "review", "tags", "note", "cover", "empty", "solo"])
         XCTAssertEqual(get(book, "dc:title"), .string("The Emerald Vale"), "a leaf element is its text; the namespace prefix stays")
         XCTAssertEqual(pairs(get(book, "price")).map(\.key), ["@currency", "#text"], "attributes and text keep the text under #text")
         XCTAssertEqual(get(get(book, "price"), "#text"), .string("29.95"))
         XCTAssertEqual(get(book, "publisher"), .string("&publisher;"), "a DTD entity is left as written")
         XCTAssertEqual(get(book, "blurb"), .string("Fewer than 5 <copies> left — order soon."), "predefined and numeric references resolve")
         XCTAssertEqual(get(book, "review"), .string("Raw text: <not-a-tag> & unescaped."), "CDATA verbatim")
-        XCTAssertEqual(get(get(book, "tags"), "tag"), .sequence([.string("fiction"), .string("fantasy")]), "a repeated child name is one sequence")
+        XCTAssertEqual(
+            get(get(book, "tags"), "tag"), .sequence([.string("fiction"), .string("fantasy")]), "a repeated child name is one sequence")
         XCTAssertEqual(pairs(get(book, "note")).map(\.key), ["em", "#text"], "mixed content: children, then the text")
         XCTAssertEqual(get(get(book, "note"), "#text"), .string("Read  first."))
         XCTAssertEqual(pairs(get(book, "cover")).map(\.key), ["@href"], "an empty element with attributes")
@@ -79,7 +82,8 @@ final class XMLStructureTests: XCTestCase {
         XCTAssertEqual(empty.value.length, 0, "an empty element's site is between its tags")
         XCTAssertNil(XMLStructure.site(in: xml, path: [.key("catalog"), .key("book"), .key("solo")]), "<solo/> has nowhere for text")
         let cover = try XCTUnwrap(XMLStructure.site(in: xml, path: [.key("catalog"), .key("book"), .key("cover")]))
-        XCTAssertEqual(raw(cover.value), "<cover href=\"covers/bk101.png\"/>", "an element with attributes is a mapping whose span is the element")
+        XCTAssertEqual(
+            raw(cover.value), "<cover href=\"covers/bk101.png\"/>", "an element with attributes is a mapping whose span is the element")
         XCTAssertNil(XMLStructure.site(in: xml, path: [.key("catalog"), .key("nope")]))
         let href = try XCTUnwrap(XMLStructure.site(in: xml, path: [.key("catalog"), .key("book"), .key("cover"), .key("@href")]))
         XCTAssertEqual(raw(href.value), "\"covers/bk101.png\"")

@@ -24,52 +24,88 @@ public enum SymbolKind: String, Sendable {
     /// Maps a tree-sitter capture name (from the symbol queries below) to a kind.
     public init?(capture: String) {
         switch capture {
-        case "function":  self = .function
-        case "method":    self = .method
-        case "class":     self = .type
-        case "struct":    self = .structure
-        case "enum":      self = .enumeration
+        case "function": self = .function
+        case "method": self = .method
+        case "class": self = .type
+        case "struct": self = .structure
+        case "enum": self = .enumeration
         case "interface": self = .interface
-        case "module":    self = .module
-        case "property":  self = .property
-        case "constant":  self = .constant
-        case "type":      self = .type
-        case "variable":  self = .variable
-        default:          return nil
+        case "module": self = .module
+        case "property": self = .property
+        case "constant": self = .constant
+        case "type": self = .type
+        case "variable": self = .variable
+        default: return nil
         }
     }
 
     /// SF Symbol shown beside the entry in the outline / picker.
     public var iconName: String {
         switch self {
-        case .function, .method:   return "function"
-        case .type:                return "cube"
-        case .structure:           return "cube.fill"
-        case .enumeration:         return "list.number"
-        case .interface:           return "square.on.square"
-        case .module:              return "shippingbox"
+        case .function, .method: return "function"
+        case .type: return "cube"
+        case .structure: return "cube.fill"
+        case .enumeration: return "list.number"
+        case .interface: return "square.on.square"
+        case .module: return "shippingbox"
         case .property, .variable: return "diamond"
-        case .constant:            return "c.circle"
-        case .heading:             return "number"
-        case .selector:            return "paintbrush"
+        case .constant: return "c.circle"
+        case .heading: return "number"
+        case .selector: return "paintbrush"
         }
     }
 
     /// Short label shown after the symbol name.
     public var label: String {
         switch self {
-        case .type:        return String(localized: "class", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is")
-        case .structure:   return String(localized: "struct", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is")
-        case .enumeration: return String(localized: "enum", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is")
-        case .function:    return String(localized: "function", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .method:      return String(localized: "method", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .interface:   return String(localized: "interface", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .module:      return String(localized: "module", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .property:    return String(localized: "property", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .constant:    return String(localized: "constant", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .variable:    return String(localized: "variable", bundle: .module, comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
-        case .heading:     return ""      // the name is the heading; no kind suffix
-        case .selector:    return ""      // the name IS the selector
+        case .type:
+            return String(
+                localized: "class", bundle: .module,
+                comment:
+                    "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is"
+            )
+        case .structure:
+            return String(
+                localized: "struct", bundle: .module,
+                comment:
+                    "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is"
+            )
+        case .enumeration:
+            return String(
+                localized: "enum", bundle: .module,
+                comment:
+                    "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; the code keyword, usually kept as is"
+            )
+        case .function:
+            return String(
+                localized: "function", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .method:
+            return String(
+                localized: "method", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .interface:
+            return String(
+                localized: "interface", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .module:
+            return String(
+                localized: "module", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .property:
+            return String(
+                localized: "property", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .constant:
+            return String(
+                localized: "constant", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .variable:
+            return String(
+                localized: "variable", bundle: .module,
+                comment: "Symbol kind shown after a symbol name in the outline, hover card and Go to Definition list; a programming term")
+        case .heading: return ""  // the name is the heading; no kind suffix
+        case .selector: return ""  // the name IS the selector
         }
     }
 }

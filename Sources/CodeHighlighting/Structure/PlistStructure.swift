@@ -58,7 +58,8 @@ public enum PlistStructure {
     static func located(_ text: String) -> LocatedValue? {
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .xml) else { return nil }
         let ns = text as NSString
-        guard var element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" }) else { return nil }
+        guard var element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" })
+        else { return nil }
         if name(of: element, ns) == "plist" {
             guard let inner = childElements(of: element).first else { return nil }
             element = inner
@@ -90,11 +91,17 @@ public enum PlistStructure {
             switch piece.nodeType ?? "" {
             case "CharData": text += YAMLStructure.text(piece, ns)
             case "CharRef", "EntityRef": text += XMLEdit.decodedReferences(YAMLStructure.text(piece, ns))
-            case "CDSect": if let data = YAMLStructure.namedChildren(piece).first(where: { $0.nodeType == "CData" }) { text += YAMLStructure.text(data, ns) }
+            case "CDSect":
+                if let data = YAMLStructure.namedChildren(piece).first(where: { $0.nodeType == "CData" }) {
+                    text += YAMLStructure.text(data, ns)
+                }
             default: continue
             }
         }
-        return (text.trimmingCharacters(in: .whitespacesAndNewlines), XMLStructure.trimmedRange(of: ns.substring(with: content.range), at: content.range.location))
+        return (
+            text.trimmingCharacters(in: .whitespacesAndNewlines),
+            XMLStructure.trimmedRange(of: ns.substring(with: content.range), at: content.range.location)
+        )
     }
 
     private static func build(_ element: Node, ns: NSString) -> LocatedBuilder {
@@ -125,7 +132,7 @@ public enum PlistStructure {
         case "data":
             let c = content(of: element, ns: ns)
             return .scalar(.string(c.text.filter { !$0.isWhitespace }), range: c.range)
-        default:   // string, date, and anything else: its text
+        default:  // string, date, and anything else: its text
             let c = content(of: element, ns: ns)
             return .scalar(.string(c.text), range: c.range)
         }

@@ -74,7 +74,9 @@ public enum TOMLStructure {
 
     /// The mapping at `segments` under `table`, making mappings on the way; the last segment is
     /// made as `last`.
-    private static func descend(_ table: LocatedBuilder, _ segments: [(text: String, range: NSRange)], last: LocatedBuilder.Kind) -> LocatedBuilder {
+    private static func descend(_ table: LocatedBuilder, _ segments: [(text: String, range: NSRange)], last: LocatedBuilder.Kind)
+        -> LocatedBuilder
+    {
         var current = table
         for (i, segment) in segments.enumerated() {
             current = current.member(segment.text, keyRange: segment.range, orMake: i == segments.count - 1 ? last : .mapping)
@@ -88,7 +90,8 @@ public enum TOMLStructure {
 
     private static func addPair(_ pair: Node, into table: LocatedBuilder, ns: NSString) {
         let children = YAMLStructure.namedChildren(pair)
-        guard let keyNode = children.first(where: isKey), let valueNode = children.first(where: { !isKey($0) && $0.nodeType != "comment" }) else { return }
+        guard let keyNode = children.first(where: isKey), let valueNode = children.first(where: { !isKey($0) && $0.nodeType != "comment" })
+        else { return }
         let segments = keyPath(keyNode, ns)
         guard let last = segments.last else { return }
         let parent = descend(table, Array(segments.dropLast()), last: .mapping)
@@ -122,7 +125,7 @@ public enum TOMLStructure {
             if plain.lowercased().contains("inf") || plain.lowercased().contains("nan") { return .scalar(.string(raw), range: node.range) }
             return .scalar(Double(plain).map { .number($0) } ?? .string(raw), range: node.range)
         case "boolean": return .scalar(.bool(raw == "true"), range: node.range)
-        default: return .scalar(.string(raw), range: node.range)   // the date-time forms, and anything new
+        default: return .scalar(.string(raw), range: node.range)  // the date-time forms, and anything new
         }
     }
 
@@ -177,11 +180,18 @@ public enum TOMLStructure {
                 let width = e == "u" ? 4 : 8
                 let hex = String(chars[i..<min(chars.count, i + width)])
                 i += hex.count
-                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) { out.unicodeScalars.append(scalar) } else { out += "\\\(e)\(hex)" }
-            case "\n", "\r\n", " ", "\t" where multiline:
+                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) {
+                    out.unicodeScalars.append(scalar)
+                } else {
+                    out += "\\\(e)\(hex)"
+                }
+            case "\n", "\r\n", " ",
+                "\t" where multiline:
                 // A line-ending backslash: everything up to the next non-whitespace goes.
                 var j = i - 1
-                while j < chars.count, chars[j] == " " || chars[j] == "\t" || chars[j] == "\n" || chars[j] == "\r\n" || chars[j] == "\r" { j += 1 }
+                while j < chars.count, chars[j] == " " || chars[j] == "\t" || chars[j] == "\n" || chars[j] == "\r\n" || chars[j] == "\r" {
+                    j += 1
+                }
                 i = j
             default: out.append("\\"); out.append(e)
             }

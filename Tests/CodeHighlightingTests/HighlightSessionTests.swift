@@ -20,17 +20,17 @@ import SwiftTreeSitter
 private struct SessionMockColors: TokenColorProviding {
     func color(for kind: TokenKind) -> NSColor {
         switch kind {
-        case .comment:   return .red
-        case .string:    return .green
-        case .keyword:   return .blue
-        case .type:      return .purple
-        case .number:    return .orange
-        case .function:  return .brown
+        case .comment: return .red
+        case .string: return .green
+        case .keyword: return .blue
+        case .type: return .purple
+        case .number: return .orange
+        case .function: return .brown
         case .attribute: return .magenta
-        case .variable:  return .cyan
-        case .property:  return .yellow
-        case .added:     return .systemGreen
-        case .removed:   return .systemRed
+        case .variable: return .cyan
+        case .property: return .yellow
+        case .added: return .systemGreen
+        case .removed: return .systemRed
         }
     }
     var foreground: NSColor { .black }
@@ -60,8 +60,10 @@ final class HighlightSessionTests: XCTestCase {
 
     /// Builds a session around a hand-compiled query for `language` — the
     /// bundle-free path (headless `swift test` has no .scm resource bundles).
-    private func makeSession(_ queryText: String,
-                             language: CodeLanguage.Language = .python) throws -> HighlightSession {
+    private func makeSession(
+        _ queryText: String,
+        language: CodeLanguage.Language = .python
+    ) throws -> HighlightSession {
         let lang = try XCTUnwrap(TreeSitterHighlighter.tsLanguage(for: language), "grammar not loaded")
         let query = try Query(language: lang, data: Data(queryText.utf8))
         return HighlightSession(grammar: .init(language: lang, highlights: query, injections: nil))
@@ -71,8 +73,9 @@ final class HighlightSessionTests: XCTestCase {
     /// document) and returns the storage.
     private func paint(_ session: HighlightSession, _ text: String, clip: NSRange? = nil) -> NSTextStorage {
         let storage = NSTextStorage(string: text)
-        session.highlight(in: storage, text: text,
-                          clip: clip ?? NSRange(location: 0, length: storage.length))
+        session.highlight(
+            in: storage, text: text,
+            clip: clip ?? NSRange(location: 0, length: storage.length))
         return storage
     }
 
@@ -127,9 +130,10 @@ final class HighlightSessionTests: XCTestCase {
         // Insert a whole line at the very top — every existing token shifts.
         let inserted = "# note héllo 🙂\n"
         let new = inserted + old
-        session.noteEdit(range: NSRange(location: 0, length: 0),
-                         replacementLength: (inserted as NSString).length,
-                         newText: new)
+        session.noteEdit(
+            range: NSRange(location: 0, length: 0),
+            replacementLength: (inserted as NSString).length,
+            newText: new)
         XCTAssertEqual(session.incrementalParseCount, 1, "the edit re-parsed incrementally")
         XCTAssertEqual(session.fullParseCount, 1, "…and did NOT fall back to a full parse")
 
@@ -141,8 +145,9 @@ final class HighlightSessionTests: XCTestCase {
             XCTAssertEqual(colorAt(s, r.location), .cyan, "`\(word)` colored at its SHIFTED start")
             XCTAssertEqual(colorAt(s, NSMaxRange(r) - 1), .cyan, "`\(word)` colored to its SHIFTED end")
         }
-        XCTAssertEqual(colorAt(s, 0), .black,
-                       "the inserted comment is no identifier — stale pre-shift ranges would paint it cyan")
+        XCTAssertEqual(
+            colorAt(s, 0), .black,
+            "the inserted comment is no identifier — stale pre-shift ranges would paint it cyan")
     }
 
     func testNoteEditMultiLineInsertionMidDocumentAcrossScannerBlocks() throws {
@@ -161,8 +166,9 @@ final class HighlightSessionTests: XCTestCase {
         let insertAt = oldNS.range(of: "gamma").location
         let inserted = "x1 = 7\nx2 = 8\n"
         let new = oldNS.replacingCharacters(in: NSRange(location: insertAt, length: 0), with: inserted)
-        session.noteEdit(range: NSRange(location: insertAt, length: 0),
-                         replacementLength: (inserted as NSString).length, newText: new)
+        session.noteEdit(
+            range: NSRange(location: insertAt, length: 0),
+            replacementLength: (inserted as NSString).length, newText: new)
         XCTAssertEqual(session.incrementalParseCount, 1, "the edit re-parsed incrementally")
         XCTAssertEqual(session.fullParseCount, 1, "…and did NOT fall back to a full parse")
 
@@ -228,10 +234,12 @@ final class HighlightSessionTests: XCTestCase {
         let textB = "# just a comment\nalpha = 1\n"
         let stale = paint(session, textB)
         let nsB = textB as NSString
-        XCTAssertEqual(colorAt(stale, 0), .cyan,
-                       "desynced: the stale tree paints text-A's identifier offsets onto the comment")
-        XCTAssertEqual(colorAt(stale, nsB.range(of: "alpha").location), .black,
-                       "desynced: the real identifier at its new offset is missed")
+        XCTAssertEqual(
+            colorAt(stale, 0), .cyan,
+            "desynced: the stale tree paints text-A's identifier offsets onto the comment")
+        XCTAssertEqual(
+            colorAt(stale, nsB.range(of: "alpha").location), .black,
+            "desynced: the real identifier at its new offset is missed")
 
         // invalidate() drops the tree; the next highlight re-parses and is correct.
         session.invalidate()

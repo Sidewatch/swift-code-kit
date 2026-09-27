@@ -21,17 +21,17 @@ import TreeSitterMarkdownInline
 private struct AllKindMockColors: TokenColorProviding {
     func color(for kind: TokenKind) -> NSColor {
         switch kind {
-        case .comment:   return .red
-        case .string:    return .green
-        case .keyword:   return .blue
-        case .type:      return .purple
-        case .number:    return .orange
-        case .function:  return .brown
+        case .comment: return .red
+        case .string: return .green
+        case .keyword: return .blue
+        case .type: return .purple
+        case .number: return .orange
+        case .function: return .brown
         case .attribute: return .magenta
-        case .variable:  return .cyan
-        case .property:  return .yellow
-        case .added:     return .systemGreen
-        case .removed:   return .systemRed
+        case .variable: return .cyan
+        case .property: return .yellow
+        case .added: return .systemGreen
+        case .removed: return .systemRed
         }
     }
     var foreground: NSColor { .black }
@@ -76,8 +76,9 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let selection = ns.range(of: "42")
         // "42" is exactly the number node, so expansion must climb to the pair.
         let expanded = TreeSitterHighlighter.enclosingNodeRange(selection: selection, text: text, language: .json)
-        XCTAssertEqual(expanded, ns.range(of: "\"count\": 42"),
-                       "expanding from the value must select the enclosing pair, at the correct UTF-16 range")
+        XCTAssertEqual(
+            expanded, ns.range(of: "\"count\": 42"),
+            "expanding from the value must select the enclosing pair, at the correct UTF-16 range")
     }
 
     func testEnclosingNodeRangeAfterUnicodePrefixPython() throws {
@@ -86,8 +87,9 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let ns = text as NSString
         let selection = ns.range(of: "x + 1")
         let expanded = TreeSitterHighlighter.enclosingNodeRange(selection: selection, text: text, language: .python)
-        XCTAssertEqual(expanded, ns.range(of: "return x + 1"),
-                       "the binary expression expands to the return statement despite CJK/emoji earlier in the buffer")
+        XCTAssertEqual(
+            expanded, ns.range(of: "return x + 1"),
+            "the binary expression expands to the return statement despite CJK/emoji earlier in the buffer")
     }
 
     func testEnclosingNodeRangeBeforeUnicodeSuffix() throws {
@@ -107,8 +109,9 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let first = ns.range(of: "\"キー\": 1")
         let next = TreeSitterHighlighter.siblingRange(of: first, text: text, language: .json, forward: true)
         XCTAssertEqual(next, ns.range(of: "\"値\": 2"), "next named sibling of the first pair")
-        let prev = TreeSitterHighlighter.siblingRange(of: ns.range(of: "\"値\": 2"),
-                                                      text: text, language: .json, forward: false)
+        let prev = TreeSitterHighlighter.siblingRange(
+            of: ns.range(of: "\"値\": 2"),
+            text: text, language: .json, forward: false)
         XCTAssertEqual(prev, first, "previous named sibling walks back to the first pair")
     }
 
@@ -116,8 +119,9 @@ final class TreeSitterHighlighterTests: XCTestCase {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python), "Python grammar failed to load")
         let text = "# コメント 🙂 cafe\u{0301}\nclass Greeter:\n    def hello(self):\n        pass\n"
         let ns = text as NSString
-        let crumbs = TreeSitterHighlighter.breadcrumbs(at: ns.range(of: "pass").location,
-                                                       text: text, language: .python)
+        let crumbs = TreeSitterHighlighter.breadcrumbs(
+            at: ns.range(of: "pass").location,
+            text: text, language: .python)
         // Both the offset→byte conversion (×2) and the name-node byte→NSRange
         // conversion must be exact or the names come back garbled/empty.
         XCTAssertEqual(crumbs, ["Greeter", "hello"])
@@ -125,7 +129,8 @@ final class TreeSitterHighlighterTests: XCTestCase {
 
     func testSymbolRangesWithUnicodeBeforeAndBetweenDefinitions() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python), "Python grammar failed to load")
-        let text = Self.unicodePrefix
+        let text =
+            Self.unicodePrefix
             + "def alpha():\n    pass\n"
             + "tag = \"中文 🚀\"\n"
             + "def beta():\n    pass\n"
@@ -147,10 +152,12 @@ final class TreeSitterHighlighterTests: XCTestCase {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python), "Python grammar failed to load")
         let text = "x = 1\n"
         let len = (text as NSString).length
-        XCTAssertNil(TreeSitterHighlighter.enclosingNodeRange(
-            selection: NSRange(location: len, length: 5), text: text, language: .python))
-        XCTAssertNil(TreeSitterHighlighter.enclosingNodeRange(
-            selection: NSRange(location: len + 10, length: 1), text: text, language: .python))
+        XCTAssertNil(
+            TreeSitterHighlighter.enclosingNodeRange(
+                selection: NSRange(location: len, length: 5), text: text, language: .python))
+        XCTAssertNil(
+            TreeSitterHighlighter.enclosingNodeRange(
+                selection: NSRange(location: len + 10, length: 1), text: text, language: .python))
     }
 
     /// `UInt64(_:radix:)` accepts a leading sign, so `#+12345` decoded as a colour. Every
@@ -170,12 +177,14 @@ final class TreeSitterHighlighterTests: XCTestCase {
     func testBreadcrumbsDoNotTreatACallAsAScope() {
         let java = "class A {\n  void run() {\n    other.call(1,\n      2);\n  }\n}\n"
         let jns = java as NSString
-        XCTAssertEqual(TreeSitterHighlighter.breadcrumbs(at: jns.range(of: "2)").location, text: java, language: .java),
-                       ["A", "run"])
+        XCTAssertEqual(
+            TreeSitterHighlighter.breadcrumbs(at: jns.range(of: "2)").location, text: java, language: .java),
+            ["A", "run"])
         let lua = "function f()\n  print(1,\n    2)\nend\n"
         let lns = lua as NSString
-        XCTAssertEqual(TreeSitterHighlighter.breadcrumbs(at: lns.range(of: "2)").location, text: lua, language: .lua),
-                       ["f"])
+        XCTAssertEqual(
+            TreeSitterHighlighter.breadcrumbs(at: lns.range(of: "2)").location, text: lua, language: .lua),
+            ["f"])
     }
 
     /// The scope-position variant must return the SAME names as `breadcrumbs`
@@ -193,13 +202,16 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let scopes = TreeSitterHighlighter.breadcrumbScopes(
             at: ns.range(of: "pass").location, ns: ns, root: root)
         XCTAssertEqual(scopes.map(\.name), ["Greeter", "hello"])
-        XCTAssertEqual(scopes.map(\.start),
-                       [ns.range(of: "class Greeter").location, ns.range(of: "def hello").location],
-                       "each scope carries its definition node's start offset")
-        XCTAssertEqual(scopes.map(\.name),
-                       TreeSitterHighlighter.breadcrumbs(at: ns.range(of: "pass").location,
-                                                         text: text, language: .python),
-                       "names identical to the breadcrumb path")
+        XCTAssertEqual(
+            scopes.map(\.start),
+            [ns.range(of: "class Greeter").location, ns.range(of: "def hello").location],
+            "each scope carries its definition node's start offset")
+        XCTAssertEqual(
+            scopes.map(\.name),
+            TreeSitterHighlighter.breadcrumbs(
+                at: ns.range(of: "pass").location,
+                text: text, language: .python),
+            "names identical to the breadcrumb path")
     }
 
     func testBreadcrumbsBeyondEndReturnsEmpty() throws {
@@ -217,13 +229,16 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let text = "class Greeter:\n    def hello(self):\n        pass\n\ndef solo():\n    pass\n"
         let ns = text as NSString
         let resolver = try XCTUnwrap(TreeSitterHighlighter.breadcrumbResolver(text: text, language: .python))
-        for offset in [ns.range(of: "pass").location,      // inside Greeter.hello
-                       ns.range(of: "solo").location,      // inside the top-level def
-                       0,                                  // before any definition
-                       ns.length + 7] {                    // out of bounds → []
-            XCTAssertEqual(resolver(offset),
-                           TreeSitterHighlighter.breadcrumbs(at: offset, text: text, language: .python),
-                           "resolver diverged from the static path at offset \(offset)")
+        for offset in [
+            ns.range(of: "pass").location,  // inside Greeter.hello
+            ns.range(of: "solo").location,  // inside the top-level def
+            0,  // before any definition
+            ns.length + 7,
+        ] {  // out of bounds → []
+            XCTAssertEqual(
+                resolver(offset),
+                TreeSitterHighlighter.breadcrumbs(at: offset, text: text, language: .python),
+                "resolver diverged from the static path at offset \(offset)")
         }
         XCTAssertEqual(resolver(ns.range(of: "pass").location), ["Greeter", "hello"])
     }
@@ -232,10 +247,12 @@ final class TreeSitterHighlighterTests: XCTestCase {
 
     /// Compiles `queryText` against a bundled grammar, parses `text`, and runs
     /// the real applyQuery over a fresh storage. Colors come from the mock theme.
-    private func runQuery(_ queryText: String, on text: String,
-                          language: CodeLanguage.Language = .python,
-                          offset: Int = 0, clip: NSRange? = nil,
-                          storageText: String? = nil) throws -> NSTextStorage {
+    private func runQuery(
+        _ queryText: String, on text: String,
+        language: CodeLanguage.Language = .python,
+        offset: Int = 0, clip: NSRange? = nil,
+        storageText: String? = nil
+    ) throws -> NSTextStorage {
         let lang = try XCTUnwrap(TreeSitterHighlighter.tsLanguage(for: language), "grammar not loaded")
         let query = try Query(language: lang, data: Data(queryText.utf8))
         let parser = Parser()
@@ -244,8 +261,9 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let storage = NSTextStorage(string: storageText ?? text)
         let clipRange = clip ?? NSRange(location: 0, length: storage.length)
         MainActor.assumeIsolated {
-            TreeSitterHighlighter.applyQuery(query, tree: tree, source: text as NSString,
-                                             offset: offset, clip: clipRange, into: storage)
+            TreeSitterHighlighter.applyQuery(
+                query, tree: tree, source: text as NSString,
+                offset: offset, clip: clipRange, into: storage)
         }
         return storage
     }
@@ -260,17 +278,22 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let text = "const x = <div className=\"a\">{items.map((i: Item<string>) => <Badge key={i} />)}</div>;"
         let ns = text as NSString
         let tree = try XCTUnwrap(parser.parse(text))
-        XCTAssertFalse(try XCTUnwrap(tree.rootNode?.sExpressionString).contains("ERROR"),
-                       "JSX inside generics must parse without error recovery")
-        let query = try Query(language: lang, data: Data("""
-            (jsx_opening_element (identifier) @tag)
-            (jsx_attribute (property_identifier) @attribute)
-            (jsx_self_closing_element (identifier) @type)
-            """.utf8))
+        XCTAssertFalse(
+            try XCTUnwrap(tree.rootNode?.sExpressionString).contains("ERROR"),
+            "JSX inside generics must parse without error recovery")
+        let query = try Query(
+            language: lang,
+            data: Data(
+                """
+                (jsx_opening_element (identifier) @tag)
+                (jsx_attribute (property_identifier) @attribute)
+                (jsx_self_closing_element (identifier) @type)
+                """.utf8))
         let storage = NSTextStorage(string: text)
         MainActor.assumeIsolated {
-            TreeSitterHighlighter.applyQuery(query, tree: tree, source: ns, offset: 0,
-                                             clip: NSRange(location: 0, length: storage.length), into: storage)
+            TreeSitterHighlighter.applyQuery(
+                query, tree: tree, source: ns, offset: 0,
+                clip: NSRange(location: 0, length: storage.length), into: storage)
         }
         XCTAssertEqual(colorAt(storage, ns.range(of: "div").location), .blue, "JSX tag (@tag → keyword)")
         XCTAssertEqual(colorAt(storage, ns.range(of: "className").location), .yellow, "JSX attribute (@attribute → property)")
@@ -302,13 +325,15 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let ns = text as NSString
         // Later pattern is #eq?-restricted to "print": it must beat the
         // catch-all on `print` but leave `value` to the earlier pattern.
-        let s = try runQuery("""
+        let s = try runQuery(
+            """
             ((identifier) @variable.builtin)
             ((identifier) @function (#eq? @function "print"))
             """, on: text)
         XCTAssertEqual(colorAt(s, 0), .brown, "`print` matches the later #eq? pattern")
-        XCTAssertEqual(colorAt(s, ns.range(of: "value").location), .cyan,
-                       "`value` fails the predicate, so the earlier catch-all keeps it")
+        XCTAssertEqual(
+            colorAt(s, ns.range(of: "value").location), .cyan,
+            "`value` fails the predicate, so the earlier catch-all keeps it")
     }
 
     func testApplyHitsSortsByPatternIndexNotArrayOrder() {
@@ -316,11 +341,12 @@ final class TreeSitterHighlighterTests: XCTestCase {
         // by patternIndex (ascending application → the highest index paints last).
         let storage = NSTextStorage(string: "abcdef")
         let full = NSRange(location: 0, length: storage.length)
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 0, length: 6), pattern: 7, color: .brown),
-            (range: NSRange(location: 0, length: 6), pattern: 2, color: .cyan),
-            (range: NSRange(location: 2, length: 2), pattern: 5, color: .orange),
-        ], clip: full, into: storage)
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 0, length: 6), pattern: 7, color: .brown),
+                (range: NSRange(location: 0, length: 6), pattern: 2, color: .cyan),
+                (range: NSRange(location: 2, length: 2), pattern: 5, color: .orange),
+            ], clip: full, into: storage)
         XCTAssertEqual(colorAt(storage, 0), .brown, "pattern 7 beats pattern 2")
         XCTAssertEqual(colorAt(storage, 2), .brown, "pattern 7 also beats the narrower pattern 5")
         XCTAssertEqual(colorAt(storage, 5), .brown)
@@ -331,12 +357,13 @@ final class TreeSitterHighlighterTests: XCTestCase {
         // The injection path parses an embedded substring and applies it at
         // `offset` in the host storage (host doc has a 10-unit preamble here).
         let sub = "x = 1"
-        let host = "#héllo 🙂 " + sub   // preamble is 10 UTF-16 units
+        let host = "#héllo 🙂 " + sub  // preamble is 10 UTF-16 units
         let preamble = (host as NSString).length - (sub as NSString).length
-        let s = try runQuery("((identifier) @variable.builtin)", on: sub,
-                             offset: preamble,
-                             clip: NSRange(location: 0, length: (host as NSString).length),
-                             storageText: host)
+        let s = try runQuery(
+            "((identifier) @variable.builtin)", on: sub,
+            offset: preamble,
+            clip: NSRange(location: 0, length: (host as NSString).length),
+            storageText: host)
         XCTAssertEqual(colorAt(s, preamble), .cyan, "identifier colored at its shifted host position")
         XCTAssertNil(colorAt(s, 0), "nothing painted inside the preamble")
     }
@@ -359,18 +386,20 @@ final class TreeSitterHighlighterTests: XCTestCase {
         // grammar is handed (it reads `<#` as a tag and loses every element after it).
         let masked = TreeSitterHighlighter.maskingTemplateTags(ns, tags.all)
         XCTAssertEqual(masked.length, ns.length)
-        XCTAssertEqual((masked as String).replacingOccurrences(of: " ", with: ""), "<labelfor=\"_e\"></label>\n",
-                       "everything outside the tags survives; the tags themselves are spaces")
+        XCTAssertEqual(
+            (masked as String).replacingOccurrences(of: " ", with: ""), "<labelfor=\"_e\"></label>\n",
+            "everything outside the tags survives; the tags themselves are spaces")
         XCTAssertFalse((masked as String).contains("<#") || (masked as String).contains("{{"))
     }
 
     // MARK: - 3. Range clamping at document/clip edges
 
     func testApplyHitsClampsPartialOverlapToClip() {
-        let storage = NSTextStorage(string: "hello world")   // length 11
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 3, length: 6), pattern: 0, color: .red),
-        ], clip: NSRange(location: 0, length: 5), into: storage)
+        let storage = NSTextStorage(string: "hello world")  // length 11
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 3, length: 6), pattern: 0, color: .red)
+            ], clip: NSRange(location: 0, length: 5), into: storage)
         XCTAssertEqual(colorAt(storage, 3), .red)
         XCTAssertEqual(colorAt(storage, 4), .red)
         XCTAssertNil(colorAt(storage, 5), "the part of the hit outside the clip must not be painted")
@@ -378,9 +407,10 @@ final class TreeSitterHighlighterTests: XCTestCase {
 
     func testApplyHitsDropsHitEntirelyOutsideClip() {
         let storage = NSTextStorage(string: "hello world")
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 6, length: 5), pattern: 0, color: .red),
-        ], clip: NSRange(location: 0, length: 5), into: storage)
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 6, length: 5), pattern: 0, color: .red)
+            ], clip: NSRange(location: 0, length: 5), into: storage)
         for i in 0..<storage.length {
             XCTAssertNil(colorAt(storage, i), "no attribute anywhere for a fully-clipped hit (index \(i))")
         }
@@ -389,24 +419,27 @@ final class TreeSitterHighlighterTests: XCTestCase {
     func testApplyHitsOverrunningDocumentEndIsTrimmedNotCrashing() {
         // A hit whose range runs past the end of the storage must be trimmed by
         // the clip intersection — NSTextStorage would throw on an OOB range.
-        let storage = NSTextStorage(string: "hello world")   // length 11
+        let storage = NSTextStorage(string: "hello world")  // length 11
         let full = NSRange(location: 0, length: storage.length)
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 8, length: 10), pattern: 0, color: .green),
-        ], clip: full, into: storage)
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 8, length: 10), pattern: 0, color: .green)
+            ], clip: full, into: storage)
         XCTAssertEqual(colorAt(storage, 8), .green)
         XCTAssertEqual(colorAt(storage, 10), .green, "painted up to the last character")
     }
 
     func testApplyHitsZeroLengthAndEmptyStorageAreNoOps() {
         let empty = NSTextStorage(string: "")
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 0, length: 5), pattern: 0, color: .red),
-        ], clip: NSRange(location: 0, length: 0), into: empty)   // must not throw
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 0, length: 5), pattern: 0, color: .red)
+            ], clip: NSRange(location: 0, length: 0), into: empty)  // must not throw
         let storage = NSTextStorage(string: "abc")
-        TreeSitterHighlighter.apply(hits: [
-            (range: NSRange(location: 1, length: 0), pattern: 0, color: .red),
-        ], clip: NSRange(location: 0, length: 3), into: storage)
+        TreeSitterHighlighter.apply(
+            hits: [
+                (range: NSRange(location: 1, length: 0), pattern: 0, color: .red)
+            ], clip: NSRange(location: 0, length: 3), into: storage)
         XCTAssertNil(colorAt(storage, 1), "zero-length hit paints nothing")
     }
 
@@ -414,8 +447,8 @@ final class TreeSitterHighlighterTests: XCTestCase {
         let hl = try XCTUnwrap(TreeSitterHighlighter(language: .python), "grammar not loaded")
         let storage = NSTextStorage(string: "x = 1\ny = 2")
         // Both the location and the max of the edited range overrun the document.
-        hl.highlight(storage, in: NSRange(location: 50, length: 25))       // fully past the end
-        hl.highlight(storage, in: NSRange(location: 8, length: 100))      // max overruns
+        hl.highlight(storage, in: NSRange(location: 50, length: 25))  // fully past the end
+        hl.highlight(storage, in: NSRange(location: 8, length: 100))  // max overruns
         hl.highlight(storage, in: NSRange(location: 0, length: storage.length))
         XCTAssertNotNil(colorAt(storage, storage.length - 1), "foreground reset reached the last character")
     }
@@ -423,7 +456,7 @@ final class TreeSitterHighlighterTests: XCTestCase {
     func testHighlightEmptyStorageIsNoOp() throws {
         let hl = try XCTUnwrap(TreeSitterHighlighter(language: .python), "grammar not loaded")
         let storage = NSTextStorage(string: "")
-        hl.highlight(storage, in: NSRange(location: 0, length: 0))   // must not crash
+        hl.highlight(storage, in: NSRange(location: 0, length: 0))  // must not crash
         XCTAssertEqual(storage.length, 0)
     }
 
@@ -450,46 +483,50 @@ extension TreeSitterHighlighterTests {
 
     func testPrunedQueryDropsNeverColoredPatternsKeepsColoredOnes() {
         let src = """
-        ["(" ")"] @punctuation.bracket
-        (identifier) @variable
-        (identifier) @variable.builtin
-        ["+" "-"] @operator
-        "return" @keyword
-        """
+            ["(" ")"] @punctuation.bracket
+            (identifier) @variable
+            (identifier) @variable.builtin
+            ["+" "-"] @operator
+            "return" @keyword
+            """
         let pruned = TreeSitterHighlighter.prunedQuerySource(src)
         XCTAssertFalse(pruned.contains("@punctuation.bracket"), "punctuation can never paint — dropped")
         XCTAssertFalse(pruned.contains("@operator"), "operators can never paint — dropped")
-        XCTAssertFalse(pruned.contains("@variable\n"),
-                       "the bare identifier catch-all maps to no color (default text) — dropped")
+        XCTAssertFalse(
+            pruned.contains("@variable\n"),
+            "the bare identifier catch-all maps to no color (default text) — dropped")
         XCTAssertTrue(pruned.contains("(identifier) @variable.builtin"))
         XCTAssertTrue(pruned.contains("\"return\" @keyword"))
     }
 
     func testPrunedQueryKeepsPredicatesAndMixedCapturePatterns() {
         let src = """
-        ((identifier) @constructor
-         (#match? @constructor "^[A-Z]"))
-        (ternary_expression ["?" ":"] @keyword.conditional.ternary)
-        (call ["("] @punctuation.bracket function: (identifier) @function)
-        """
+            ((identifier) @constructor
+             (#match? @constructor "^[A-Z]"))
+            (ternary_expression ["?" ":"] @keyword.conditional.ternary)
+            (call ["("] @punctuation.bracket function: (identifier) @function)
+            """
         let pruned = TreeSitterHighlighter.prunedQuerySource(src)
         XCTAssertTrue(pruned.contains("#match?"), "predicates travel with their kept pattern")
         XCTAssertTrue(pruned.contains("@keyword.conditional.ternary"))
-        XCTAssertTrue(pruned.contains("@punctuation.bracket"),
-                      "a pattern with at least one colored capture is kept WHOLE")
+        XCTAssertTrue(
+            pruned.contains("@punctuation.bracket"),
+            "a pattern with at least one colored capture is kept WHOLE")
     }
 
     func testPrunedQueryFallsBackToOriginalWhenNothingWouldRemain() {
         let src = "[\"(\" \")\"] @punctuation.bracket"
-        XCTAssertEqual(TreeSitterHighlighter.prunedQuerySource(src), src,
-                       "an all-nil query is returned unpruned rather than emptied")
+        XCTAssertEqual(
+            TreeSitterHighlighter.prunedQuerySource(src), src,
+            "an all-nil query is returned unpruned rather than emptied")
     }
 
     func testPrunedQueryPreservesLaterPatternWinsAcrossADroppedPattern() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python), "Python grammar failed to load")
         // pattern 1 (punctuation) sits between two colored identifier patterns;
         // pruning it must not flip the relative precedence of patterns 0 and 2.
-        let pruned = TreeSitterHighlighter.prunedQuerySource("""
+        let pruned = TreeSitterHighlighter.prunedQuerySource(
+            """
             ((identifier) @variable.builtin)
             ["(" ")"] @punctuation.bracket
             ((identifier) @function)
@@ -520,12 +557,14 @@ extension TreeSitterHighlighterTests {
         let storage = NSTextStorage(string: "abcdef")
         // Junk pre-state everywhere: the resolved pass must reset non-hit ranges
         // to the default and paint hits with later-pattern-wins precedence.
-        storage.addAttribute(.foregroundColor, value: NSColor.systemPink,
-                             range: NSRange(location: 0, length: 6))
-        TreeSitterHighlighter.applyResolved(hits: [
-            (range: NSRange(location: 1, length: 2), pattern: 0, color: .red),
-            (range: NSRange(location: 2, length: 2), pattern: 5, color: .green),
-        ], clip: NSRange(location: 0, length: 6), defaultColor: .black, into: storage)
+        storage.addAttribute(
+            .foregroundColor, value: NSColor.systemPink,
+            range: NSRange(location: 0, length: 6))
+        TreeSitterHighlighter.applyResolved(
+            hits: [
+                (range: NSRange(location: 1, length: 2), pattern: 0, color: .red),
+                (range: NSRange(location: 2, length: 2), pattern: 5, color: .green),
+            ], clip: NSRange(location: 0, length: 6), defaultColor: .black, into: storage)
         XCTAssertEqual(colorAt(storage, 0), .black, "junk outside hits reset to the default")
         XCTAssertEqual(colorAt(storage, 1), .red)
         XCTAssertEqual(colorAt(storage, 2), .green, "later pattern wins the overlap")
@@ -548,9 +587,10 @@ extension TreeSitterHighlighterTests {
         TreeSitterHighlighter.applyResolved(hits: hits, clip: clip, defaultColor: .black, into: storage)
 
         let counter = EditCounter()
-        NotificationCenter.default.addObserver(counter, selector: #selector(EditCounter.edited(_:)),
-                                               name: NSTextStorage.didProcessEditingNotification,
-                                               object: storage)
+        NotificationCenter.default.addObserver(
+            counter, selector: #selector(EditCounter.edited(_:)),
+            name: NSTextStorage.didProcessEditingNotification,
+            object: storage)
         defer { NotificationCenter.default.removeObserver(counter) }
         // Second identical pass: every desired color already matches — the whole
         // point of the diff-aware apply is that this issues NO storage edits
@@ -564,16 +604,18 @@ extension TreeSitterHighlighterTests {
 
     func testApplyResolvedClampsHitsAndClipToStorageBounds() {
         let storage = NSTextStorage(string: "hello")
-        TreeSitterHighlighter.applyResolved(hits: [
-            (range: NSRange(location: 3, length: 10), pattern: 0, color: .red),   // overruns the end
-        ], clip: NSRange(location: 0, length: 50), defaultColor: .black, into: storage)
+        TreeSitterHighlighter.applyResolved(
+            hits: [
+                (range: NSRange(location: 3, length: 10), pattern: 0, color: .red)  // overruns the end
+            ], clip: NSRange(location: 0, length: 50), defaultColor: .black, into: storage)
         XCTAssertEqual(colorAt(storage, 3), .red)
         XCTAssertEqual(colorAt(storage, 4), .red)
         XCTAssertEqual(colorAt(storage, 0), .black)
         // Empty storage / empty clip: must not throw.
         let empty = NSTextStorage(string: "")
-        TreeSitterHighlighter.applyResolved(hits: [], clip: NSRange(location: 0, length: 10),
-                                            defaultColor: .black, into: empty)
+        TreeSitterHighlighter.applyResolved(
+            hits: [], clip: NSRange(location: 0, length: 10),
+            defaultColor: .black, into: empty)
     }
 
     // MARK: - Vendored JSON grammar (.json + .jsonc routing)
@@ -594,12 +636,14 @@ extension TreeSitterHighlighterTests {
         let parser = Parser()
         try parser.setLanguage(lang)
         let tree = try XCTUnwrap(parser.parse(text))
-        XCTAssertFalse(try XCTUnwrap(tree.rootNode?.sExpressionString).contains("ERROR"),
-                       "JSONC comments must parse as extras, not error recovery")
+        XCTAssertFalse(
+            try XCTUnwrap(tree.rootNode?.sExpressionString).contains("ERROR"),
+            "JSONC comments must parse as extras, not error recovery")
         // Keys vs values vs comments through the real apply path (a hand query
         // standing in for the bundled highlights, same shape as the extra).
-        let s = try runQuery("(comment) @comment\n(pair key: (string) @property)\n((number) @number)",
-                             on: text, language: .jsonc)
+        let s = try runQuery(
+            "(comment) @comment\n(pair key: (string) @property)\n((number) @number)",
+            on: text, language: .jsonc)
         XCTAssertEqual(colorAt(s, 0), .red, "// comment colored")
         XCTAssertEqual(colorAt(s, ns.range(of: "\"名前\"").location), .yellow, "CJK key colored as property")
         XCTAssertEqual(colorAt(s, ns.range(of: "2.5e3").location), .orange, "number colored")
@@ -615,7 +659,8 @@ extension TreeSitterHighlighterTests {
         let ns = text as NSString
         // The block-structure nodes the editor extra re-captures, hand-compiled
         // (the bundled queries aren't available under `swift test`).
-        let s = try runQuery("""
+        let s = try runQuery(
+            """
             (atx_heading (inline) @keyword)
             (list_marker_minus) @keyword
             (block_quote_marker) @comment
@@ -639,15 +684,19 @@ extension TreeSitterHighlighterTests {
         let ns = text as NSString
         let tree = try XCTUnwrap(parser.parse(text))
         XCTAssertFalse(try XCTUnwrap(tree.rootNode?.sExpressionString).contains("ERROR"))
-        let query = try Query(language: lang, data: Data("""
-            (code_span) @string
-            (emphasis) @type
-            (inline_link (link_text) @type (link_destination) @string)
-            """.utf8))
+        let query = try Query(
+            language: lang,
+            data: Data(
+                """
+                (code_span) @string
+                (emphasis) @type
+                (inline_link (link_text) @type (link_destination) @string)
+                """.utf8))
         let storage = NSTextStorage(string: text)
         MainActor.assumeIsolated {
-            TreeSitterHighlighter.applyQuery(query, tree: tree, source: ns, offset: 0,
-                                             clip: NSRange(location: 0, length: storage.length), into: storage)
+            TreeSitterHighlighter.applyQuery(
+                query, tree: tree, source: ns, offset: 0,
+                clip: NSRange(location: 0, length: storage.length), into: storage)
         }
         XCTAssertEqual(colorAt(storage, ns.range(of: "`code`").location), .green, "code span")
         XCTAssertEqual(colorAt(storage, ns.range(of: "*emph*").location), .purple, "emphasis")
@@ -670,12 +719,16 @@ extension TreeSitterHighlighterTests {
         let tree = try XCTUnwrap(parser.parse(text))
         // Hand-compiled stand-ins for the bundled queries: the block grammar's
         // own injections.scm carries exactly this inline pattern.
-        let injections = try Query(language: blockLang, data: Data("""
-            ((inline) @injection.content (#set! injection.language "markdown_inline"))
-            """.utf8))
+        let injections = try Query(
+            language: blockLang,
+            data: Data(
+                """
+                ((inline) @injection.content (#set! injection.language "markdown_inline"))
+                """.utf8))
         let highlights = try Query(language: blockLang, data: Data("(atx_heading (inline) @keyword)".utf8))
-        let grammar = TreeSitterHighlighter.Grammar(language: blockLang, highlights: highlights,
-                                                    injections: injections)
+        let grammar = TreeSitterHighlighter.Grammar(
+            language: blockLang, highlights: highlights,
+            injections: injections)
         let hits: [TreeSitterHighlighter.Hit] = MainActor.assumeIsolated {
             var base = 1_000_000
             return TreeSitterHighlighter.collectInjectionHits(
@@ -685,10 +738,12 @@ extension TreeSitterHighlighterTests {
         // The inline grammar's supplementary query colors these even headless.
         let code = ns.range(of: "`code`")
         let emph = ns.range(of: "*emph*")
-        XCTAssertTrue(hits.contains { $0.range == code && $0.color == .green },
-                      "code span in the FIRST inline chunk captured via the injection")
-        XCTAssertTrue(hits.contains { $0.range == emph && $0.color == .purple },
-                      "emphasis in the LAST inline chunk captured — all chunks share one parse")
+        XCTAssertTrue(
+            hits.contains { $0.range == code && $0.color == .green },
+            "code span in the FIRST inline chunk captured via the injection")
+        XCTAssertTrue(
+            hits.contains { $0.range == emph && $0.color == .purple },
+            "emphasis in the LAST inline chunk captured — all chunks share one parse")
     }
 
     /// Markdown's inline chunks are parsed one at a time: combined, tree-sitter reads two list
@@ -703,19 +758,24 @@ extension TreeSitterHighlighterTests {
         let parser = Parser()
         try parser.setLanguage(blockLang)
         let tree = try XCTUnwrap(parser.parse(text))
-        let injections = try Query(language: blockLang, data: Data("""
-            ((inline) @injection.content (#set! injection.language "markdown_inline"))
-            """.utf8))
+        let injections = try Query(
+            language: blockLang,
+            data: Data(
+                """
+                ((inline) @injection.content (#set! injection.language "markdown_inline"))
+                """.utf8))
         let highlights = try Query(language: blockLang, data: Data("(atx_heading (inline) @keyword)".utf8))
         let grammar = TreeSitterHighlighter.Grammar(language: blockLang, highlights: highlights, injections: injections)
         let hits: [TreeSitterHighlighter.Hit] = MainActor.assumeIsolated {
             var base = 1_000_000
-            return TreeSitterHighlighter.collectInjectionHits(grammar, tree: tree, source: ns, offset: 0,
-                                                              clip: NSRange(location: 0, length: ns.length), depth: 0, nextBase: &base)
+            return TreeSitterHighlighter.collectInjectionHits(
+                grammar, tree: tree, source: ns, offset: 0,
+                clip: NSRange(location: 0, length: ns.length), depth: 0, nextBase: &base)
         }
         let spans = hits.filter { $0.color == .green }.map(\.range).sorted { $0.location < $1.location }
-        XCTAssertEqual(spans, [ns.range(of: "`a`"), ns.range(of: "`b`"), ns.range(of: "`c`"), ns.range(of: "`d`")],
-                       "one code span per item, none running into the next item")
+        XCTAssertEqual(
+            spans, [ns.range(of: "`a`"), ns.range(of: "`b`"), ns.range(of: "`c`"), ns.range(of: "`d`")],
+            "one code span per item, none running into the next item")
         XCTAssertTrue(hits.contains { $0.range == ns.range(of: "*em*") && $0.color == .purple })
     }
 
@@ -726,8 +786,8 @@ extension TreeSitterHighlighterTests {
         let merged = TreeSitterHighlighter.mergeAscending([
             NSRange(location: 40, length: 10),
             NSRange(location: 0, length: 5),
-            NSRange(location: 5, length: 3),    // adjacent to the first — unions
-            NSRange(location: 42, length: 4),   // inside the 40..<50 range — unions
+            NSRange(location: 5, length: 3),  // adjacent to the first — unions
+            NSRange(location: 42, length: 4),  // inside the 40..<50 range — unions
         ])
         XCTAssertEqual(merged, [NSRange(location: 0, length: 8), NSRange(location: 40, length: 10)])
         XCTAssertEqual(TreeSitterHighlighter.mergeAscending([]), [])

@@ -18,25 +18,25 @@ final class YAMLStructureTests: XCTestCase {
     typealias P = YAMLStructure.Pair
 
     private let compose = """
-    # a service file
-    version: "3.9"
-    services:
-      web:
-        image: nginx:1.25
-        ports:
-          - "80:80"
-          - 443
-        debug: true
-        replicas: 3
-        ratio: 0.5
-        empty:
-        nothing: ~
-        notes: |
-          line one
-          line two
-      db: {image: postgres, env: [A, 'it''s', "q\\"x"]}
-    list: [1, two, 3.5]
-    """
+        # a service file
+        version: "3.9"
+        services:
+          web:
+            image: nginx:1.25
+            ports:
+              - "80:80"
+              - 443
+            debug: true
+            replicas: 3
+            ratio: 0.5
+            empty:
+            nothing: ~
+            notes: |
+              line one
+              line two
+          db: {image: postgres, env: [A, 'it''s', "q\\"x"]}
+        list: [1, two, 3.5]
+        """
 
     private func mapping(_ v: V?) -> [P]? { if case .mapping(let p)? = v { return p }; return nil }
     private func get(_ v: V?, _ key: String) -> V? { mapping(v)?.first { $0.key == key }?.value }
@@ -61,7 +61,9 @@ final class YAMLStructureTests: XCTestCase {
         let root = try XCTUnwrap(YAMLStructure.value(of: compose))
         let db = get(get(root, "services"), "db")
         XCTAssertEqual(get(db, "image"), .string("postgres"))
-        XCTAssertEqual(get(db, "env"), .sequence([.string("A"), .string("it's"), .string("q\"x")]), "single-quote doubling and double-quote escapes resolve")
+        XCTAssertEqual(
+            get(db, "env"), .sequence([.string("A"), .string("it's"), .string("q\"x")]),
+            "single-quote doubling and double-quote escapes resolve")
         XCTAssertEqual(get(root, "list"), .sequence([.integer(1), .string("two"), .number(3.5)]))
     }
 

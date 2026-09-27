@@ -224,9 +224,12 @@ extension CustomLanguageDefinition {
             defs.append((NSRegularExpression.escapedPattern(for: marker) + ".*$", .comment))
         }
         if let start = blockCommentStart, let end = blockCommentEnd, !start.isEmpty, !end.isEmpty {
-            defs.append((NSRegularExpression.escapedPattern(for: start)
-                + "[\\s\\S]*?"
-                + NSRegularExpression.escapedPattern(for: end), .comment))
+            defs.append(
+                (
+                    NSRegularExpression.escapedPattern(for: start)
+                        + "[\\s\\S]*?"
+                        + NSRegularExpression.escapedPattern(for: end), .comment
+                ))
         }
         for delimiter in stringDelimiters ?? [] where !delimiter.isEmpty {
             defs.append((Self.stringPattern(delimiter: delimiter), .string))

@@ -22,7 +22,10 @@ extension RuleTables {
         singleQuotedPlain,
         ("^\\s*\\|.*$", .string),
         ("^\\s*(doctype|!!!)\\b.*$", .keyword),
-        ("\\b(if|else|elif|elsif|unless|each|for|in|of|while|case|when|default|mixin|include|extends|block|append|prepend|yield|end|do|render|javascript|css|coffee|markdown|sass|scss)\\b", .keyword),
+        (
+            "\\b(if|else|elif|elsif|unless|each|for|in|of|while|case|when|default|mixin|include|extends|block|append|prepend|yield|end|do|render|javascript|css|coffee|markdown|sass|scss)\\b",
+            .keyword
+        ),
         ("^\\s*%[\\w:-]+", .keyword),
         ("^\\s*[a-z][\\w:-]*(?=[\\s.#(=:]|$)", .keyword),
         ("[.#][A-Za-z_][\\w-]*", .type),
