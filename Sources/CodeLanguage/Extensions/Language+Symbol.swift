@@ -14,8 +14,8 @@ import Foundation
 public extension Language {
     /// The SF Symbol name for this language's files. Grouped by what the file IS rather than one
     /// glyph per language: a tab or a row already names the file, so the icon anchors the kind.
-    /// An EXHAUSTIVE switch, so a new case does not compile until it is placed. Moved here from
-    /// Sidewatch's `FileIcon` on 24 Sep 2026 (the rule: language facts live in this package).
+    /// An EXHAUSTIVE switch, so a new case does not compile until it is placed. Lives here
+    /// because language facts belong to this package, not to the app.
     public var symbolName: String {
         switch self {
         // Programming languages: the code brackets. Swift wears its own bird.

@@ -98,7 +98,7 @@ public extension Language {
         "cginc": .hlsl,
         "cjs": .javascript,
         // Xcode-parity: `.cl` is OpenCL there and in GPU work generally; Common
-        // Lisp keeps .lisp/.lsp/.asd (flipped 27 Aug 2026).
+        // Lisp keeps .lisp/.lsp/.asd.
         "cl": .opencl,
         "clp": .clips,
         "clj": .clojure,
@@ -238,7 +238,7 @@ public extension Language {
         "ignore": .gitignore,
         "iml": .xml,
         "ini": .ini,
-        "desktop": .ini,   // a freedesktop.org desktop entry is INI-shaped (25 Sep 2026)
+        "desktop": .ini,   // a freedesktop.org desktop entry is INI-shaped
         "inl": .cpp,
         "ins": .latex,
         "ipp": .cpp,
@@ -565,8 +565,8 @@ public extension Language {
         ".clang-tidy": .yaml,
         ".dockerignore": .gitignore,
         ".editorconfig": .editorconfig,
-        // INI-shaped config files without an .ini name (25 Sep 2026, David: "not common on mac but
-        // worth supporting and any common linux ones"): the tree shows them as sections of keys.
+        // INI-shaped config files without an .ini name, including the common Linux ones: the
+        // tree shows them as sections of keys.
         ".npmrc": .ini,
         "pip.conf": .ini,
         ".pypirc": .ini,
