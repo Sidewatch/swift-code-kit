@@ -16,7 +16,7 @@ public extension Language {
     /// glyph per language: a tab or a row already names the file, so the icon anchors the kind.
     /// An EXHAUSTIVE switch, so a new case does not compile until it is placed. Lives here
     /// because language facts belong to this package, not to the app.
-    public var symbolName: String {
+    var symbolName: String {
         switch self {
         // Programming languages: the code brackets. Swift wears its own bird.
         case .swift:

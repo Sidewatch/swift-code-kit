@@ -757,8 +757,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         let upper = min(max(lower, NSMaxRange(clip) - offset), ns.length)
         guard upper > lower else { return [] }  // the clip lies wholly outside this source
         cursor.setRange(NSRange(location: lower, length: upper - lower))
-        let resolving = ResolvingQueryCursor(cursor: cursor)
-        resolving.prepare(with: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil })
+        var resolving = cursor.resolve(
+            with: Predicate.Context(textProvider: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil }))
         var hits: [Hit] = []
         while let match = resolving.next() {
             for capture in match.captures {
@@ -899,8 +899,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             let upper = min(max(lower, NSMaxRange(clip)), ns.length)
             if upper > lower { cursor.setRange(NSRange(location: lower, length: upper - lower)) }
         }
-        let resolving = ResolvingQueryCursor(cursor: cursor)
-        resolving.prepare(with: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil })
+        var resolving = cursor.resolve(
+            with: Predicate.Context(textProvider: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil }))
         var separate: [(name: String, ranges: [NSRange])] = []
         while let match = resolving.next() {
             guard let named = match.injection(with: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil }),
@@ -1223,8 +1223,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         }
         guard let tree else { return }
         let cursor = g.highlights.execute(in: tree)
-        let resolving = ResolvingQueryCursor(cursor: cursor)
-        resolving.prepare(with: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil })
+        var resolving = cursor.resolve(
+            with: Predicate.Context(textProvider: { r, _ in NSMaxRange(r) <= ns.length ? ns.substring(with: r) : nil }))
         while let match = resolving.next() {
             for cap in match.captures {
                 guard let name = cap.name, NSMaxRange(cap.range) <= ns.length else { continue }
