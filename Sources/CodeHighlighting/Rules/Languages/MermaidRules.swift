@@ -15,7 +15,7 @@ import Foundation
 extension RuleTables {
     static let mermaid: [(String, TokenKind)] = [
         ("%%.*$", .comment),
-        doubleQuotedPlain,
+        ("\"[^\"\\n]*\"", .string),
         (
             "\\b(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram(-v2)?|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|C4Context|sankey-beta|xychart-beta|block-beta)\\b",
             .keyword
@@ -28,7 +28,7 @@ extension RuleTables {
         ]),
         ("\\[\\*\\]", .keyword),
         ("<?-{1,3}>?|<?={1,3}>?|-\\.+->|--\\|>|\\.\\.>|\\*--|o--|<\\|--|--\\*|--o|-->>|--x|--\\)|:::|-\\.-", .type),
-        ("\\[[^\\]]*\\]|\\([^)]*\\)|\\{[^}]*\\}|\\|[^|]*\\|", .string),
+        ("\\[[^\\]\\n]*\\]|\\([^)\\n]*\\)|\\{[^}\\n]*\\}|\\|[^|\\n]*\\|", .string),
         (":\\s.*$", .string),
         ("^\\s*[A-Za-z_][\\w-]*", .variable),
         ("\\b\\d+(\\.\\d+)?%?\\b", .number),

@@ -70,6 +70,10 @@ enum RuleTables {
         case .xquery: return xquery
         case .abap: return abap
         case .mermaid: return mermaid
+        case .julia: return julia
+        case .kdl: return kdl
+        case .lean: return lean
+        case .makefile: return makefile
         case .plantuml: return plantuml
         case .log: return log
         case .asciidoc: return asciidoc
