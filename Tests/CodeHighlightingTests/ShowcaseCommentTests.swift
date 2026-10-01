@@ -32,6 +32,14 @@ final class ShowcaseCommentTests: XCTestCase {
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../../TestFiles").standardized
     }
 
+    /// Lines that start with the comment token but are not comments: Markdown headings inside a
+    /// docstring are STRING content in Julia (`\"\"\"…\"\"\"`) and Elixir (`@moduledoc \"\"\"…\"\"\"`), and
+    /// painting them as strings is right. Keyed by language folder and the line's trimmed text.
+    static let notComments: [String: Set<String>] = [
+        "julia": ["# Arguments", "# Examples"],
+        "elixir": ["## Examples"],
+    ]
+
     /// Languages the editor paints through another tier, so the regex tier is not what a reader sees.
     static let otherTier: Set<Language> = [.vue, .svelte, .astro]
 
@@ -50,7 +58,7 @@ final class ShowcaseCommentTests: XCTestCase {
                 guard !Self.otherTier.contains(language), TreeSitterHighlighter.grammar(for: language) == nil,
                     let text = try? String(contentsOf: url, encoding: .utf8)
                 else { continue }
-                let bad = unpaintedCommentLines(text, language)
+                let bad = unpaintedCommentLines(text, language, skipping: Self.notComments[folder] ?? [])
                 if !bad.isEmpty { failing.append("\(folder)/\(name): lines \(bad.prefix(8).map(String.init).joined(separator: ", "))") }
             }
         }
@@ -59,7 +67,7 @@ final class ShowcaseCommentTests: XCTestCase {
 
     /// 1-based lines that hold only a line comment but are not recognised (first glyph) or not
     /// mostly painted as one.
-    private func unpaintedCommentLines(_ text: String, _ language: Language) -> [Int] {
+    private func unpaintedCommentLines(_ text: String, _ language: Language, skipping: Set<String>) -> [Int] {
         guard let token = language.lineCommentToken, !token.isEmpty else { return [] }
         let storage = NSTextStorage(string: text, attributes: [.foregroundColor: NSColor.black])
         SyntaxHighlighter(language: language, colors: OneColourPerKind())
@@ -70,7 +78,7 @@ final class ShowcaseCommentTests: XCTestCase {
         while pos < ns.length {
             let range = ns.lineRange(for: NSRange(location: pos, length: 0))
             let trimmed = ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasPrefix(token), !trimmed.hasPrefix("#!") {
+            if trimmed.hasPrefix(token), !trimmed.hasPrefix("#!"), !skipping.contains(trimmed) {
                 var visible = 0, painted = 0, first = true, firstPainted = false
                 for i in range.location..<NSMaxRange(range) {
                     guard let s = Unicode.Scalar(ns.character(at: i)), !CharacterSet.whitespacesAndNewlines.contains(s) else { continue }
