@@ -14,7 +14,7 @@ import Foundation
 /// Later rules repaint earlier ones; strings and comments paint last.
 extension RuleTables {
     static let json: [(String, TokenKind)] = [
-        ("\"(?:[^\"\\\\]|\\\\.)*\"\\s*:", .function),
+        ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"\\s*:", .function),
         doubleQuoted,
         keywords(["true", "false", "null"]),
         ("\\b-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b", .number),

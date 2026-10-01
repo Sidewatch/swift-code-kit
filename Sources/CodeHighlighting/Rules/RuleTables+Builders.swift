@@ -31,11 +31,11 @@ extension RuleTables {
     // MARK: Strings
 
     /// `"…"` with backslash escapes.
-    static let doubleQuoted: (String, TokenKind) = ("\"(?:[^\"\\\\]|\\\\.)*\"", .string)
+    static let doubleQuoted: (String, TokenKind) = ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string)
     /// `'…'` with backslash escapes.
-    static let singleQuoted: (String, TokenKind) = ("'(?:[^'\\\\]|\\\\.)*'", .string)
+    static let singleQuoted: (String, TokenKind) = ("'(?:[^'\\\\]|\\\\[\\s\\S])*'", .string)
     /// `` `…` `` with backslash escapes.
-    static let backQuoted: (String, TokenKind) = ("`(?:[^`\\\\]|\\\\.)*`", .string)
+    static let backQuoted: (String, TokenKind) = ("`(?:[^`\\\\]|\\\\[\\s\\S])*`", .string)
     /// `"…"` with no escapes (data formats).
     static let doubleQuotedPlain: (String, TokenKind) = ("\"[^\"]*\"", .string)
     /// `'…'` with no escapes.

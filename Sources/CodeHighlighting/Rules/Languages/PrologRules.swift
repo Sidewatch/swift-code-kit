@@ -17,7 +17,7 @@ extension RuleTables {
         ("%.*$", .comment),
         blockComment,
         doubleQuoted,
-        ("'(?:[^'\\\\]|\\\\.)*'", .string),
+        ("'(?:[^'\\\\]|\\\\[\\s\\S])*'", .string),
         (":-|-->|\\?-|\\\\\\+|->|;", .keyword),
         keywords([
             "is", "mod", "rem", "not", "true", "fail", "false", "dynamic", "discontiguous", "module", "use_module", "initialization",

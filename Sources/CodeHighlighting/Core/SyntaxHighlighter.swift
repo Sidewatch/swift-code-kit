@@ -152,8 +152,13 @@ public final class SyntaxHighlighter: CodeHighlighter {
                     next[i] = (found?.length ?? 0) > 0 ? found : NSRange(location: NSNotFound, length: 0)
                 }
                 guard let m = next[i], m.location != NSNotFound else { continue }
-                if best == nil || m.location < best!.range.location
-                    || (m.location == best!.range.location && m.length > best!.range.length)
+                // Earliest start wins; at the same start a COMMENT beats a string (Vim script's `"`
+                // opens both, and a line that starts with it is a comment), else the longer match.
+                let tie = best.map { m.location == $0.range.location } ?? false
+                let commentBeatsString = tie && rules[i].kind == .comment && best!.kind == .string
+                let stringLosesToComment = tie && rules[i].kind == .string && best!.kind == .comment
+                if best == nil || m.location < best!.range.location || commentBeatsString
+                    || (tie && !stringLosesToComment && m.length > best!.range.length)
                 {
                     best = (m, rules[i].kind)
                 }

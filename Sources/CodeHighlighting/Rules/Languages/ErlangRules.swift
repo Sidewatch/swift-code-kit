@@ -16,7 +16,7 @@ extension RuleTables {
     static let erlang: [(String, TokenKind)] = [
         ("%.*$", .comment),
         doubleQuoted,
-        ("'(?:[^'\\\\]|\\\\.)*'", .string),
+        ("'(?:[^'\\\\]|\\\\[\\s\\S])*'", .string),
         ("^-[a-z_]+", .attribute),
         keywords([
             "module", "export", "import", "define", "record", "behaviour", "behavior", "include", "include_lib", "spec", "type", "opaque",

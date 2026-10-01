@@ -17,7 +17,7 @@ extension RuleTables {
     static let strings: [(String, TokenKind)] = [
         blockComment,
         lineComment,
-        ("\"(?:[^\"\\\\]|\\\\.)*\"(?=\\s*=)", .property),
+        ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"(?=\\s*=)", .property),
         doubleQuoted,
         ("\\b[A-Za-z_][\\w.]*(?=\\s*=)", .property),
         ("[=;]", .keyword),

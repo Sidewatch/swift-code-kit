@@ -15,7 +15,7 @@ import Foundation
 extension RuleTables {
     static let llvm: [(String, TokenKind)] = [
         (";.*$", .comment),
-        ("c?\"(?:[^\"\\\\]|\\\\.)*\"", .string),
+        ("c?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
         ("%[\\w.]+", .variable),
         ("@[\\w.]+", .function),
         ("![\\w.]+", .property),

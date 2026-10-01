@@ -17,8 +17,14 @@ import CodeLanguage
 /// `Rules/Families`; the shared builders live in `RuleTables+Builders.swift`.
 enum RuleTables {
 
-    /// The table for `lang`; languages without one fall through to their family's.
+    /// The table for `lang` — its own, or its family's when it has none — with the language's own
+    /// comment syntax added, so a family table cannot leave a language's comments unrecognised.
     static func table(for lang: Language) -> [(String, TokenKind)] {
+        withOwnComments(baseTable(for: lang), for: lang)
+    }
+
+    /// The table written for `lang`; languages without one fall through to their family's.
+    static func baseTable(for lang: Language) -> [(String, TokenKind)] {
         switch lang {
         case .swift: return swift
         case .python: return python

@@ -15,7 +15,7 @@ extension RuleTables {
     static let csharp: [(String, TokenKind)] = [
         lineComment,
         blockComment,
-        ("@?\"(?:[^\"\\\\]|\\\\.)*\"", .string),
+        ("@?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
         singleQuoted,
         keywords([
             "using", "namespace", "class", "struct", "interface", "enum", "public", "private", "protected", "internal",
