@@ -1,6 +1,4 @@
 #define TS_XML
-// Vendored: upstream keeps this header at common/scanner.h (shared with the
-// dtd grammar); we ship the xml grammar only, so it lives next to this file.
 #include "scanner.h"
 #include "tree_sitter/array.h"
 
@@ -50,7 +48,8 @@ static bool scan_end_tag_name(Vector *tags, TSLexer *lexer) {
     }
 
     if (tags->size > 0 && string_eq(array_back(tags), &tag_name)) {
-        array_delete(&array_pop(tags));
+        String last_tag = array_pop(tags);
+        array_delete(&last_tag);
         lexer->result_symbol = END_TAG_NAME;
     } else {
         lexer->result_symbol = ERRONEOUS_END_NAME;
@@ -63,7 +62,8 @@ static bool scan_self_closing_tag_delimiter(Vector *tags, TSLexer *lexer) {
     advance(lexer);
     advance_if_eq(lexer, '>');
     if (tags->size > 0) {
-        array_delete(&array_pop(tags));
+        String last_tag = array_pop(tags);
+        array_delete(&last_tag);
         lexer->result_symbol = SELF_CLOSING_TAG_DELIMITER;
     }
     return true;
@@ -238,7 +238,7 @@ void tree_sitter_xml_external_scanner_deserialize(void *payload, const char *buf
     for (unsigned i = 0; i < tags->size; ++i) {
         array_delete(array_get(tags, i));
     }
-    array_delete(tags);
+    array_clear(tags);
 
     if (length == 0) return;
 

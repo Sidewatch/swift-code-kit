@@ -23,13 +23,14 @@ Source code, understood: which language a file is, and syntax highlighting for i
 - `Enums/` — enums with no behaviour beyond their cases and labels: SymbolKind, TokenKind
 - `Errors/` — every Error type, one per file: CustomLanguageDefinitionError
 - Shared Foundation helpers (`trimmed`, …) come from swift-foundation-extensions, not a local `Extensions/`.
-- `Models/` — value types — the shape of a thing, nothing else: CompletionItem, CustomPattern, DefaultTokenColors, DefLocation, UTF16NewlineScanner
+- `Models/` — value types — the shape of a thing, nothing else: CompletionItem, CustomPattern, DefaultTokenColors, DefLocation, GrammarCoverage (+Gaps), UTF16NewlineScanner
 - `Outline/` — the engine: outline: MarkdownOutline, OutlineNode, OutlineTree, StylesheetOutline
 - `Structure/` — the documents read as ordered structure off the vendored grammars, all as swift-data-converter's `StructuredValue`: YAMLStructure (`value(of:)`, `documents(in:)`, `site(in:path:)`), TOMLStructure (tables, arrays of tables, dotted keys, every scalar kind), XMLStructure (attributes as `@name`, repeated children gathered into a sequence, text and `#text`, entities resolved), PlistStructure (an XML plist in file order with edit sites; a binary one through the converter's reader); LocatedValue / LocatedBuilder — the one walk that carries ranges, so a reader's tree and its edit sites can never disagree
 - `Protocols/` — protocols the module exposes: CodeHighlighter, TokenColorProviding
 - `Rules/` — the regex tables behind `SyntaxHighlighter`: RuleTables, RuleTables+Builders, one file per language under `Languages/`, one per family under `Families/`
 - `Support/` — QuerySourceScanner (tree-sitter query forms), StylesheetScanner (one pass over a stylesheet), UTF16LineScanner (document lines as UTF-16 offsets)
-- `TreeSitter/` — the engine: treesitter: CodeIndenter, HighlightSession, ProjectSymbolIndex, ReceiverInference, SymbolIndex, SymbolOwners, SymbolQueries, SymbolVisibility, TreeSitterHighlighter
+- `TreeSitter/` — the engine: treesitter: CodeIndenter, HighlightSession, ProjectSymbolIndex, ReceiverInference, SymbolIndex, SymbolOwners, SymbolQueries, SymbolVisibility, TreeSitterHighlighter (+Coverage: a text against its grammar's own symbol table)
+- `Grammars/` — the vendored grammars; `Grammars/VERSIONS.md` records which upstream version each is, `scripts/check_grammar_versions.py` re-checks them
 
 ## Rules
 
