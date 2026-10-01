@@ -85,4 +85,17 @@ final class CommentRecognitionTests: XCTestCase {
         XCTAssertEqual(storage.attribute(.foregroundColor, at: at, effectiveRange: nil) as? NSColor, .systemGreen)
         XCTAssertTrue(paintedAsComment("# a fish comment", .fish))
     }
+
+    func testSecondCommentFormsAreComments() {
+        XCTAssertTrue(paintedAsComment("# shell-style comment", .thrift))
+        XCTAssertTrue(paintedAsComment("! an exclamation comment", .properties))
+        XCTAssertTrue(paintedAsComment("REM an old-style remark", .vbnet))
+        XCTAssertTrue(paintedAsComment("* a statement comment;", .sas))
+        XCTAssertTrue(paintedAsComment("* a star comment", .stata))
+    }
+
+    func testOrgKeywordLinesAreNotComments() {
+        XCTAssertTrue(paintedAsComment("# a real Org comment", .org))
+        XCTAssertFalse(paintedAsComment("#+TITLE: Inventory service notes", .org))
+    }
 }

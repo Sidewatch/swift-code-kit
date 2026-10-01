@@ -31,8 +31,10 @@ extension RuleTables {
 
     /// The comment rules `lang`'s own syntax gives, from the language table.
     static func ownCommentRules(for lang: Language) -> [(String, TokenKind)] {
-        var rules: [(String, TokenKind)] = []
-        if let token = lang.lineCommentToken, let first = token.first {
+        var rules: [(String, TokenKind)] = extraLineComments[lang] ?? []
+        if let exact = exactLineComment[lang] {
+            rules.append(exact)
+        } else if let token = lang.lineCommentToken, let first = token.first {
             let escaped = NSRegularExpression.escapedPattern(for: token)
             if token == "\"" {
                 rules.append(("^[ \\t]*\".*$", .comment))
@@ -48,6 +50,21 @@ extension RuleTables {
         if lang == .d { rules.append(nestedBlock("/+", "+/")) }  // D's nesting comment, beside its `/* */`
         return rules
     }
+
+    /// Languages whose line comment needs more than "the token to the end of the line": in Org only
+    /// `# text` (or a bare `#`) is a comment — `#+TITLE:` and the other `#+` lines are keywords.
+    static let exactLineComment: [Language: (String, TokenKind)] = [
+        .org: ("^[ \\t]*#(?:[ \\t].*)?$", .comment)
+    ]
+
+    /// A second comment form some languages have beside the one the language table records.
+    static let extraLineComments: [Language: [(String, TokenKind)]] = [
+        .thrift: [("#.*$", .comment)],
+        .properties: [("^[ \\t]*!.*$", .comment)],
+        .vbnet: [("(?i)^[ \\t]*REM\\b.*$", .comment)],
+        .sas: [("^[ \\t]*\\*[^;]*;", .comment)],  // a statement comment ends at its semicolon
+        .stata: [("^[ \\t]*\\*.*$", .comment)],
+    ]
 
     /// Languages whose block comments nest: a flat `open…close` ends at the INNER close and leaves the
     /// rest of the outer comment painted as code.

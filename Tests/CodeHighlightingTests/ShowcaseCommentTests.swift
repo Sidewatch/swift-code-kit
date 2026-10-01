@@ -78,7 +78,9 @@ final class ShowcaseCommentTests: XCTestCase {
         while pos < ns.length {
             let range = ns.lineRange(for: NSRange(location: pos, length: 0))
             let trimmed = ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasPrefix(token), !trimmed.hasPrefix("#!"), !skipping.contains(trimmed) {
+            // Org's `#+KEYWORD:` lines start with its comment token and are keywords, not comments.
+            let orgKeyword = language == .org && trimmed.hasPrefix("#+")
+            if trimmed.hasPrefix(token), !trimmed.hasPrefix("#!"), !skipping.contains(trimmed), !orgKeyword {
                 var visible = 0, painted = 0, first = true, firstPainted = false
                 for i in range.location..<NSMaxRange(range) {
                     guard let s = Unicode.Scalar(ns.character(at: i)), !CharacterSet.whitespacesAndNewlines.contains(s) else { continue }
