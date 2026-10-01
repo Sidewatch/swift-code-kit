@@ -87,7 +87,11 @@ enum RuleTables {
         case .gitattributes: return gitattributes
         case .json5, .hjson: return json5
         case .nix: return nix
-        case .pug, .haml, .slim: return indentedMarkup
+        case .pug, .haml: return indentedMarkup
+        case .slim: return slim
+        case .ron: return ron
+        case .verilog, .systemverilog: return verilog
+        case .vimscript: return vimscript
         case .jinja: return jinja
         case .bibtex: return bibtex
         case .dot: return dot

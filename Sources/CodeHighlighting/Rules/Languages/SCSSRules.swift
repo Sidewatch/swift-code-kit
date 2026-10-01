@@ -24,8 +24,10 @@ extension RuleTables {
         // at-keywords repaint over the generic Less `@var` rule.
         lineComment,
         blockComment,
-        doubleQuoted,
-        singleQuoted,
+        // Strings end on their line (a backslash continues them) and may carry `#{…}` interpolation,
+        // whose own quotes (`"#{f("a")}"`) must not close the string early.
+        interpolatedString(quote: "\""),
+        interpolatedString(quote: "'"),
         ("\\b\\d+(\\.\\d+)?(px|em|rem|%|vh|vw|s|ms|fr|deg)?\\b", .number),
         ("[.#%][a-zA-Z_-][\\w-]*", .function),  // selectors (+ SCSS %placeholders)
         ("#[0-9a-fA-F]{3,8}\\b", .number),  // hex colours, after `#fff`-shaped selectors
@@ -37,4 +39,12 @@ extension RuleTables {
         ),
         ("\\$[a-zA-Z_-][\\w-]*", .property),  // SCSS/Sass $variables
     ]
+
+    /// A `quote`-delimited Sass string: single-line, escapes, and `#{…}` holes that may hold quoted strings.
+    private static func interpolatedString(quote: String) -> (String, TokenKind) {
+        let plain = "[^\(quote)\\\\\\n#]|\\\\[\\s\\S]|#(?!\\{)"
+        let inner = "\"(?:[^\"\\\\\\n]|\\\\.)*\"|'(?:[^'\\\\\\n]|\\\\.)*'"
+        let hole = "#\\{(?:[^{}\"'\\n]|\(inner))*\\}"
+        return ("\(quote)(?:\(plain)|\(hole))*\(quote)", .string)
+    }
 }
