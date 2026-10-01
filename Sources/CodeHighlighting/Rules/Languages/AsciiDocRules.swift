@@ -26,7 +26,7 @@ extension RuleTables {
         ("\\b(NOTE|TIP|IMPORTANT|WARNING|CAUTION):", .removed),
         ("<<[^>]+>>", .function),
         ("\\b(https?|link|xref|image|include|mailto):[^\\s\\[]+(\\[[^\\]]*\\])?", .string),
-        ("`[^`]+`", .string),
+        ("`[^`\\n]+`", .string),
         ("\\*[^*\\n]+\\*", .type),
         ("_[^_\\n]+_", .variable),
         ("^\\|", .comment),

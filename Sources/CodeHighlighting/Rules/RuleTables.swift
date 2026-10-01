@@ -89,6 +89,8 @@ enum RuleTables {
         case .quarto, .rmarkdown: return quarto
         case .strings: return strings
         case .texinfo: return texinfo
+        case .coffeescript: return coffeescript
+        case .elixir: return elixir
         default: return table(for: lang.family)
         }
     }
