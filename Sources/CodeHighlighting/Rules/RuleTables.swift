@@ -108,6 +108,7 @@ enum RuleTables {
         case .powershell: return powershell
         case .purescript: return purescript
         case .coffeescript: return coffeescript
+        case .org: return org
         case .elixir: return elixir
         default: return table(for: lang.family)
         }

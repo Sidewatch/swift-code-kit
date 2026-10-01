@@ -98,4 +98,16 @@ final class CommentRecognitionTests: XCTestCase {
         XCTAssertTrue(paintedAsComment("# a real Org comment", .org))
         XCTAssertFalse(paintedAsComment("#+TITLE: Inventory service notes", .org))
     }
+
+    /// Org prose is full of apostrophes; the markup family's `'…'` rule paired them across lines and
+    /// painted whole paragraphs — and the comments after them — as strings.
+    func testOrgApostrophesDoNotOpenStrings() {
+        let org = "It's fine to pair quotes.\n# a real comment\nDon't stop.\n"
+        let storage = NSTextStorage(string: org, attributes: [.foregroundColor: NSColor.black])
+        SyntaxHighlighter(language: .org, colors: OneColourPerKind()).highlight(storage, in: NSRange(location: 0, length: storage.length))
+        let at = (storage.string as NSString).range(of: "a real comment").location
+        XCTAssertEqual(storage.attribute(.foregroundColor, at: at, effectiveRange: nil) as? NSColor, .systemGreen)
+        let prose = (storage.string as NSString).range(of: "pair quotes").location
+        XCTAssertNotEqual(storage.attribute(.foregroundColor, at: prose, effectiveRange: nil) as? NSColor, .systemRed)
+    }
 }
