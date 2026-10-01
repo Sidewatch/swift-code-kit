@@ -98,6 +98,11 @@ enum RuleTables {
         case .quarto, .rmarkdown: return quarto
         case .strings: return strings
         case .texinfo: return texinfo
+        case .nim: return nim
+        case .ninja: return ninja
+        case .objectivecpp: return objectiveCpp
+        case .powershell: return powershell
+        case .purescript: return purescript
         default: return table(for: lang.family)
         }
     }
