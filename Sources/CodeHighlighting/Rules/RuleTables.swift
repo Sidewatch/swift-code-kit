@@ -107,6 +107,8 @@ enum RuleTables {
         case .objectivecpp: return objectiveCpp
         case .powershell: return powershell
         case .purescript: return purescript
+        case .coffeescript: return coffeescript
+        case .elixir: return elixir
         default: return table(for: lang.family)
         }
     }
