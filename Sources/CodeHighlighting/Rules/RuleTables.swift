@@ -42,6 +42,11 @@ enum RuleTables {
         case .dart: return dart
         case .markdown: return markdown
         case .bash: return bash
+        case .fish: return fish
+        case .fsharp: return fsharp
+        case .haskell: return haskell
+        case .gitcommit: return gitcommit
+        case .ini: return ini
         case .dockerfile: return dockerfile
         case .yaml: return yaml
         case .xml: return xml
