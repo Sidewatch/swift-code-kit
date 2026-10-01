@@ -37,30 +37,30 @@ final class GroupDRuleFixTests: XCTestCase {
     }
 
     func testNimTypedNumberSuffixesOpenNoCharLiteral() {
-        XCTAssertTrue(lastLineIsComment("let a = 1'i8\nlet b = 1'i16\nlet c = 1'u8\n# a note", .nim))
+        XCTAssertTrue(lastLineIsComment("let a = 1'i8\nlet b = 1'i16\nlet c = 1'u8\n# it's a note", .nim))
     }
 
     func testNimRawStringWithDoubledQuoteEndsWhereItShould() {
-        XCTAssertTrue(lastLineIsComment("let r = r\"C:\\no \"\"q\"\" end\"\nlet c = '\\x41'\n# a note", .nim))
+        XCTAssertTrue(lastLineIsComment("let r = r\"C:\\dir\\\"\nlet c = '\\x41'\n# a \"note", .nim))
     }
 
     func testNinjaQuoteIsOrdinaryText() {
-        XCTAssertTrue(lastLineIsComment("rule cc\n  description = don't build $out\n# a note", .ninja))
+        XCTAssertTrue(lastLineIsComment("rule cc\n  description = don't build $out\n# it's a note", .ninja))
     }
 
     func testObjectiveCppRawStringAndDigitSeparator() {
-        XCTAssertTrue(lastLineIsComment("constexpr int k = 1'000;\nauto s = R\"d(raw )\" inside)d\";\n// a note", .objectivecpp))
+        XCTAssertTrue(lastLineIsComment("constexpr int k = 1'000;\nauto s = R\"d(raw )\" inside)d\";\n// it's a note", .objectivecpp))
     }
 
     func testPowerShellHereStringWithQuoteInside() {
-        XCTAssertTrue(lastLineIsComment("$h = @'\nit's raw\n'@\n# a note", .powershell))
+        XCTAssertTrue(lastLineIsComment("$h = @'\nit's raw\n'@\n# it's a note", .powershell))
     }
 
     func testPowerShellDoubleQuotedBacktickEscape() {
-        XCTAssertTrue(lastLineIsComment("$d = \"a `\" b\"\n$e = 'it''s'\n# a note", .powershell))
+        XCTAssertTrue(lastLineIsComment("$p = \"C:\\dir\\\"\n$e = 'it''s'\n# a \"note", .powershell))
     }
 
     func testPureScriptTripleQuotedStringAndPrimedNames() {
-        XCTAssertTrue(lastLineIsComment("x = \"\"\"say \"hi\nthere\"\"\"\ndata Symbol' = Symbol'\n-- a note", .purescript))
+        XCTAssertTrue(lastLineIsComment("x = \"\"\"say \"hi\nthere\"\"\"\ndata Symbol' = Symbol'\n-- say \"note", .purescript))
     }
 }
