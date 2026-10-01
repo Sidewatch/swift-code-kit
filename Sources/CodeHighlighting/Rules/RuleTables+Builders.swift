@@ -47,10 +47,15 @@ extension RuleTables {
 
     // MARK: Numbers and calls
 
-    /// Integers and decimals.
-    static let decimal: (String, TokenKind) = ("\\b\\d+(\\.\\d+)?\\b", .number)
-    /// Integers, decimals and `0x` hex literals.
-    static let decimalOrHex: (String, TokenKind) = ("\\b\\d+(\\.\\d+)?\\b|\\b0x[0-9a-fA-F]+\\b", .number)
+    /// Numbers the way most languages spell them: decimals with `_` digit separators, a fraction and an
+    /// exponent, `0x` / `0o` / `0b` prefixed forms, and a short type suffix — `1_000`, `0xFF_FF`, `0o755`,
+    /// `0b1010`, `1.5e-3`, `255uy`, `12L`, `3.0f32`.
+    static let decimal: (String, TokenKind) = (
+        "\\b(?:0[xX][0-9a-fA-F][0-9a-fA-F_]*|0[oO][0-7][0-7_]*|0[bB][01][01_]*|\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:[eE][+-]?\\d[\\d_]*)?)(?:[a-zA-Z]{1,3}\\d{0,3})?\\b",
+        .number
+    )
+    /// The same numbers; kept as its own name for the tables that ask for hex explicitly.
+    static let decimalOrHex: (String, TokenKind) = decimal
     /// An identifier followed by `(`: the callee is captured as group 1.
     static let call: (String, TokenKind) = ("\\b([a-zA-Z_]\\w*)\\s*\\(", .function)
 

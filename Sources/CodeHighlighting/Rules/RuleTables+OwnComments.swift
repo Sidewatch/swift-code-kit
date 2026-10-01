@@ -43,10 +43,30 @@ extension RuleTables {
             }
         }
         if let block = lang.blockComment, !block.open.isEmpty, !block.close.isEmpty {
-            let open = NSRegularExpression.escapedPattern(for: block.open)
-            let close = NSRegularExpression.escapedPattern(for: block.close)
-            rules.append(("\(open)[\\s\\S]*?\(close)", .comment))
+            rules.append(nestingLanguages.contains(lang) ? nestedBlock(block.open, block.close) : flatBlock(block.open, block.close))
         }
+        if lang == .d { rules.append(nestedBlock("/+", "+/")) }  // D's nesting comment, beside its `/* */`
         return rules
+    }
+
+    /// Languages whose block comments nest: a flat `open…close` ends at the INNER close and leaves the
+    /// rest of the outer comment painted as code.
+    static let nestingLanguages: Set<Language> = [
+        .fsharp, .ocaml, .reason, .sml, .coq, .wolfram, .haskell, .elm, .idris, .agda, .dhall, .purescript, .lean,
+        .commonlisp, .scheme, .racket, .nim, .swift, .rust, .kotlin, .scala, .dart, .odin,
+    ]
+
+    /// `open … close` across lines, ending at the first close.
+    static func flatBlock(_ open: String, _ close: String) -> (String, TokenKind) {
+        let o = NSRegularExpression.escapedPattern(for: open), c = NSRegularExpression.escapedPattern(for: close)
+        return ("\(o)[\\s\\S]*?\(c)", .comment)
+    }
+
+    /// `open … close` across lines with one level of nesting inside (`(* a (* b *) c *)`): a regex cannot
+    /// count, and two levels is what real files use.
+    static func nestedBlock(_ open: String, _ close: String) -> (String, TokenKind) {
+        let o = NSRegularExpression.escapedPattern(for: open), c = NSRegularExpression.escapedPattern(for: close)
+        let plain = "(?:(?!\(o)|\(c))[\\s\\S])"
+        return ("\(o)(?:\(plain)|\(o)\(plain)*\(c))*\(c)", .comment)
     }
 }
