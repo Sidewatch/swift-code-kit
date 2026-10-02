@@ -30,7 +30,7 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | rust | tree-sitter/tree-sitter-rust | v0.24.2 | v0.24.2 | current (= main) |
 | scala | tree-sitter/tree-sitter-scala | v0.26.2 | v0.26.2 | current; updated 2 Oct 2026 from v0.26.0, upstream's query changes merged into ours |
 | sql | DerekStride/tree-sitter-sql | v0.3.11 | v0.3.11 | current (upstream publishes generated sources only in releases) |
-| swift | alex-pinkus/tree-sitter-swift | upstream main 35245fbf, generated here with CLI 0.25.10 | 0.7.3 | current; main adds SE-0458 `unsafe`, Swift 6.2 raw identifiers, case-pattern `where`, `if let … try await` |
+| swift | alex-pinkus/tree-sitter-swift | upstream main 35245fbf + local patch `sidewatch-swift-6.patch`, generated with CLI 0.25.10 | 0.7.3 | patched: Swift 6 syntax (see below) |
 | toml | tree-sitter-grammars/tree-sitter-toml | v0.7.0 | v0.7.0 | current (= main) |
 | typescript, tsx | tree-sitter/tree-sitter-typescript | v0.23.2 | v0.23.2 | current (= main) |
 | xml | tree-sitter-grammars/tree-sitter-xml | upstream main (Jan 2026; scanner UB fix) | v0.7.0 | current |
@@ -57,6 +57,16 @@ Upstream's own tests pass (their expected trees updated where `@layer` and id na
 `test/corpus/modern.txt`. Not handled: `if()` (it explodes the generator's state count), the IE `*prop` hack, `<!--`
 `-->` markers, and `{}` blocks inside custom-property values. `ModernCSSGrammarTests` fails on an unpatched parser.
 To re-apply on a new upstream: `git am` the patch in a checkout, `tree-sitter generate` with CLI 0.25.10, copy `src/`.
+Proposed upstream as tree-sitter/tree-sitter-css#105 (2 Oct 2026); drop the patch once a release carries it.
+
+**swift — `tree-sitter-swift/sidewatch-swift-6.patch`** (2 Oct 2026). On top of upstream main 35245fbf: `sending` and
+`isolated` parameter modifiers and `-> sending T` results, `isolated deinit`, `copy x`, value generics
+(`<let rows: Int>`) and integer type arguments (`InlineArray<4, Int>`), inline array sugar (`[3 of Int]`), freestanding
+macros with no arguments (`#isolation`), labeled version arguments (`@backDeployed(before: macOS 14)`), and
+`[Int].Index?`. The new keywords stay contextual (`let sending = 1` parses). Upstream's 292 tests pass unchanged;
+new corpus `test/corpus/swift6.txt`. The parser grows 21.2 → 23.1 MB. Not handled: range patterns in `if case`
+(upstream allows only non-expression patterns there), and the experimental `@lifetime` / underscored `@_specialize`.
+`Swift6GrammarTests` fails on all 11 constructs with the unpatched parser.
 
 ## The runtime
 

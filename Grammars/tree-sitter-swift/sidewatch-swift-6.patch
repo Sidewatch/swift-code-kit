@@ -1,0 +1,420 @@
+From 9599a89070d7aa0355fe86acf0ae1ae49120d5fb Mon Sep 17 00:00:00 2001
+From: David Michael <22668877+arraypress@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 14:49:27 +0700
+Subject: [PATCH] Parse Swift 6 syntax: sending, isolated, copy, value
+ generics, inline arrays, and more
+
+- `sending` and `isolated` parameter modifiers (SE-0430, SE-0313), `-> sending T` results, and
+  `isolated deinit` (SE-0371)
+- `copy x` (SE-0377), beside `consume x`
+- Value generics `<let rows: Int>` and integer type arguments `InlineArray<4, Int>` (SE-0452)
+- Inline array sugar `[3 of Int]` (SE-0483)
+- Freestanding macros with no arguments, such as `#isolation` as a default value
+- Labeled version arguments in attributes: `@backDeployed(before: macOS 14)`
+- Optional of a bracket-qualified type: `[Int].Index?`
+
+The new keywords stay contextual: `let sending = 1`, `let copy = 3` still parse.
+New corpus: test/corpus/swift6.txt.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ grammar.js             |  50 +++++++--
+ test/corpus/swift6.txt | 241 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 283 insertions(+), 8 deletions(-)
+ create mode 100644 test/corpus/swift6.txt
+
+diff --git a/grammar.js b/grammar.js
+index 3a24191..df917bf 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -300,6 +300,7 @@ module.exports = grammar({
+         "actor",
+         "async",
+         "consume",
++        "copy",
+         "discard",
+         "each",
+         "lazy",
+@@ -497,7 +498,17 @@ module.exports = grammar({
+         $._arrow_operator,
+         field("return_type", $._type)
+       ),
+-    array_type: ($) => seq("[", field("element", $._type), "]"),
++    array_type: ($) =>
++      choice(
++        seq("[", field("element", $._type), "]"),
++        seq(
++          "[",
++          field("count", choice($.integer_literal, $.simple_identifier)),
++          "of",
++          field("element", $._type),
++          "]"
++        )
++      ),
+     dictionary_type: ($) =>
+       seq("[", field("key", $._type), ":", field("value", $._type), "]"),
+     optional_type: ($) =>
+@@ -505,7 +516,13 @@ module.exports = grammar({
+         seq(
+           field(
+             "wrapped",
+-            choice($.user_type, $.tuple_type, $.array_type, $.dictionary_type)
++            choice(
++              $.user_type,
++              $.tuple_type,
++              $.array_type,
++              $.dictionary_type,
++              $.bracket_qualified_type
++            )
+           ),
+           repeat1(
+             choice(
+@@ -820,7 +837,10 @@ module.exports = grammar({
+       seq("(", optional(sep1Opt($.value_argument, ",")), ")"),
+     _fn_call_lambda_arguments: ($) =>
+       sep1($.lambda_literal, seq(field("name", $.simple_identifier), ":")),
+-    type_arguments: ($) => prec.left(seq("<", sep1Opt($._type, ","), ">")),
++    type_arguments: ($) =>
++      prec.left(
++        seq("<", sep1Opt(choice($._type, $.integer_literal), ","), ">")
++      ),
+     value_arguments: ($) =>
+       seq(
+         choice(
+@@ -920,7 +940,8 @@ module.exports = grammar({
+           )
+         )
+       ),
+-    _consume_operator: ($) => alias("consume", "consume"),
++    _consume_operator: ($) =>
++      choice(alias("consume", "consume"), alias("copy", "copy")),
+     // `unsafe` marks an expression as containing unsafe constructs, e.g. `unsafe someBuffer[i]`. Composes with `try`
+     // and `await` in either order, exactly like a Swift 6.2 strict-memory-safety `unsafe` expression: `try unsafe
+     // f()`, `unsafe try f()`, `await unsafe f()`, and `try await unsafe f()` all keep the real callee intact.
+@@ -979,7 +1000,7 @@ module.exports = grammar({
+         prec.dynamic(DYNAMIC_PRECS.call, seq($._expression, $.call_suffix))
+       ),
+     macro_invocation: ($) =>
+-      prec(
++      prec.right(
+         PRECS.call,
+         prec.dynamic(
+           DYNAMIC_PRECS.call,
+@@ -987,7 +1008,8 @@ module.exports = grammar({
+             $._hash_symbol,
+             $.simple_identifier,
+             optional($.type_parameters),
+-            $.call_suffix
++            // A freestanding macro may take no arguments at all: `#isolation`
++            optional($.call_suffix)
+           )
+         )
+       ),
+@@ -1105,6 +1127,7 @@ module.exports = grammar({
+           optional(
+             seq(
+               $._arrow_operator,
++              optional($.parameter_modifiers),
+               field("return_type", $._possibly_implicitly_unwrapped_type)
+             )
+           )
+@@ -1598,6 +1621,7 @@ module.exports = grammar({
+           optional(
+             seq(
+               $._arrow_operator,
++              optional($.parameter_modifiers),
+               field("return_type", $._possibly_implicitly_unwrapped_type)
+             )
+           ),
+@@ -1683,6 +1707,7 @@ module.exports = grammar({
+     type_parameter: ($) =>
+       seq(
+         optional($.type_parameter_modifiers),
++        optional("let"),
+         $._type_parameter_possibly_packed,
+         optional(seq(":", $._type))
+       ),
+@@ -1899,6 +1924,7 @@ module.exports = grammar({
+           optional(
+             seq(
+               $._arrow_operator,
++              optional($.parameter_modifiers),
+               field("return_type", $._possibly_implicitly_unwrapped_type)
+             )
+           ),
+@@ -1988,7 +2014,14 @@ module.exports = grammar({
+         // References to param names (used in `@objc(foo:bar:)`)
+         repeat1(seq($.simple_identifier, ":")),
+         // Version restrictions (iOS 3.4.5, Swift 5.0.0)
+-        seq(repeat1($.simple_identifier), sep1($.integer_literal, "."))
++        seq(repeat1($.simple_identifier), sep1($.integer_literal, ".")),
++        // Labeled version restrictions (`@backDeployed(before: macOS 14)`)
++        seq(
++          $.simple_identifier,
++          ":",
++          repeat1($.simple_identifier),
++          sep1($.integer_literal, ".")
++        )
+       ),
+     ////////////////////////////////
+     // Patterns - https://docs.swift.org/swift-book/ReferenceManual/Patterns.html
+@@ -2145,7 +2178,8 @@ module.exports = grammar({
+       ),
+     ownership_modifier: ($) =>
+       choice("weak", "unowned", "unowned(safe)", "unowned(unsafe)"),
+-    _parameter_ownership_modifier: ($) => choice("borrowing", "consuming"),
++    _parameter_ownership_modifier: ($) =>
++      choice("borrowing", "consuming", "sending", "isolated"),
+     use_site_target: ($) =>
+       seq(
+         choice(
+diff --git a/test/corpus/swift6.txt b/test/corpus/swift6.txt
+new file mode 100644
+index 0000000..f91fd25
+--- /dev/null
++++ b/test/corpus/swift6.txt
+@@ -0,0 +1,241 @@
++================================================================================
++Sending param
++================================================================================
++
++func f(_ x: sending Item) {}
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (function_declaration
++    (simple_identifier)
++    (parameter
++      (simple_identifier)
++      (simple_identifier)
++      (parameter_modifiers
++        (parameter_modifier))
++      (user_type
++        (type_identifier)))
++    (function_body)))
++
++================================================================================
++Sending result
++================================================================================
++
++func f() -> sending Item { Item() }
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (function_declaration
++    (simple_identifier)
++    (parameter_modifiers
++      (parameter_modifier))
++    (user_type
++      (type_identifier))
++    (function_body
++      (statements
++        (call_expression
++          (simple_identifier)
++          (call_suffix
++            (value_arguments)))))))
++
++================================================================================
++Isolated param
++================================================================================
++
++func f(actor: isolated Ledger) {}
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (function_declaration
++    (simple_identifier)
++    (parameter
++      (simple_identifier)
++      (parameter_modifiers
++        (parameter_modifier))
++      (user_type
++        (type_identifier)))
++    (function_body)))
++
++================================================================================
++Isolation default
++================================================================================
++
++func f(isolation: isolated (any Actor)? = #isolation) async {}
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (function_declaration
++    (simple_identifier)
++    (parameter
++      (simple_identifier)
++      (parameter_modifiers
++        (parameter_modifier))
++      (optional_type
++        (tuple_type
++          (tuple_type_item
++            (existential_type
++              (user_type
++                (type_identifier)))))))
++    (macro_invocation
++      (simple_identifier))
++    (function_body)))
++
++================================================================================
++Isolated deinit
++================================================================================
++
++actor A { isolated deinit { print("x") } }
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (class_declaration
++    (type_identifier)
++    (class_body
++      (deinit_declaration
++        (modifiers
++          (parameter_modifier))
++        (function_body
++          (statements
++            (call_expression
++              (simple_identifier)
++              (call_suffix
++                (value_arguments
++                  (value_argument
++                    (line_string_literal
++                      (line_str_text))))))))))))
++
++================================================================================
++Copy expr
++================================================================================
++
++let y = copy x
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (property_declaration
++    (value_binding_pattern)
++    (pattern
++      (simple_identifier))
++    (consume_expression
++      (simple_identifier))))
++
++================================================================================
++Integer generic
++================================================================================
++
++struct Matrix<let rows: Int, let cols: Int> {}
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (class_declaration
++    (type_identifier)
++    (type_parameters
++      (type_parameter
++        (type_identifier)
++        (user_type
++          (type_identifier)))
++      (type_parameter
++        (type_identifier)
++        (user_type
++          (type_identifier))))
++    (class_body)))
++
++================================================================================
++Inline array
++================================================================================
++
++let a: [3 of Int] = [1, 2, 3]
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (property_declaration
++    (value_binding_pattern)
++    (pattern
++      (simple_identifier))
++    (type_annotation
++      (array_type
++        (integer_literal)
++        (user_type
++          (type_identifier))))
++    (array_literal
++      (integer_literal)
++      (integer_literal)
++      (integer_literal))))
++
++================================================================================
++Inline array type
++================================================================================
++
++var b = InlineArray<4, Int>(repeating: 0)
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (property_declaration
++    (value_binding_pattern)
++    (pattern
++      (simple_identifier))
++    (constructor_expression
++      (user_type
++        (type_identifier)
++        (type_arguments
++          (integer_literal)
++          (user_type
++            (type_identifier))))
++      (constructor_suffix
++        (value_arguments
++          (value_argument
++            (value_argument_label
++              (simple_identifier))
++            (integer_literal)))))))
++
++================================================================================
++Back deployed
++================================================================================
++
++@backDeployed(before: macOS 14) public func f() {}
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (function_declaration
++    (modifiers
++      (attribute
++        (user_type
++          (type_identifier))
++        (simple_identifier)
++        (simple_identifier)
++        (integer_literal))
++      (visibility_modifier))
++    (simple_identifier)
++    (function_body)))
++
++================================================================================
++Array type member optional
++================================================================================
++
++let i: [Int].Index? = nil
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (property_declaration
++    (value_binding_pattern)
++    (pattern
++      (simple_identifier))
++    (type_annotation
++      (optional_type
++        (bracket_qualified_type
++          (array_type
++            (user_type
++              (type_identifier)))
++          (type_identifier))))
++    (nil_literal)))
+-- 
+2.56.0
+

@@ -1101,6 +1101,20 @@
     "type": "array_type",
     "named": true,
     "fields": {
+      "count": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "integer_literal",
+            "named": true
+          },
+          {
+            "type": "simple_identifier",
+            "named": true
+          }
+        ]
+      },
       "element": {
         "multiple": true,
         "required": true,
@@ -12953,6 +12967,10 @@
           "named": true
         },
         {
+          "type": "parameter_modifiers",
+          "named": true
+        },
+        {
           "type": "property_behavior_modifier",
           "named": true
         },
@@ -16595,6 +16613,10 @@
       "types": [
         {
           "type": "lambda_function_type_parameters",
+          "named": true
+        },
+        {
+          "type": "parameter_modifiers",
           "named": true
         },
         {
@@ -20598,6 +20620,10 @@
             "named": true
           },
           {
+            "type": "bracket_qualified_type",
+            "named": true
+          },
+          {
             "type": "dictionary_type",
             "named": true
           },
@@ -23467,6 +23493,10 @@
           "named": true
         },
         {
+          "type": "parameter_modifiers",
+          "named": true
+        },
+        {
           "type": "statements",
           "named": true
         },
@@ -26318,6 +26348,10 @@
         },
         {
           "type": "parameter",
+          "named": true
+        },
+        {
+          "type": "parameter_modifiers",
           "named": true
         },
         {
@@ -29230,7 +29264,7 @@
     "fields": {
       "name": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "array_type",
@@ -29295,6 +29329,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "integer_literal",
+          "named": true
+        },
         {
           "type": "type_modifiers",
           "named": true
@@ -32531,6 +32569,10 @@
     "named": false
   },
   {
+    "type": "copy",
+    "named": false
+  },
+  {
     "type": "default_keyword",
     "named": true
   },
@@ -32687,6 +32729,10 @@
     "named": false
   },
   {
+    "type": "isolated",
+    "named": false
+  },
+  {
     "type": "keyPath",
     "named": false
   },
@@ -32734,6 +32780,10 @@
   {
     "type": "oct_literal",
     "named": true
+  },
+  {
+    "type": "of",
+    "named": false
   },
   {
     "type": "open",
@@ -32821,6 +32871,10 @@
   },
   {
     "type": "self",
+    "named": false
+  },
+  {
+    "type": "sending",
     "named": false
   },
   {
