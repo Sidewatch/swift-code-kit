@@ -16,6 +16,9 @@
 "~=" @operator
 "$=" @operator
 "*=" @operator
+"<" @operator
+"<=" @operator
+">=" @operator
 
 "and" @operator
 "or" @operator
@@ -34,6 +37,9 @@
 (namespace_name) @property
 (property_name) @property
 (feature_name) @property
+(layer_name) @property
+(container_name) @property
+(page_selector) @attribute
 
 (pseudo_element_selector (tag_name) @attribute)
 (pseudo_class_selector (class_name) @attribute)
@@ -47,12 +53,20 @@
 "@namespace" @keyword
 "@supports" @keyword
 "@keyframes" @keyword
+"@container" @keyword
+"@layer" @keyword
+"@page" @keyword
+"@function" @keyword
+"@scope" @keyword
+"returns" @keyword
+(attribute_flag) @keyword
 (at_keyword) @keyword
 (to) @keyword
 (from) @keyword
 (important) @keyword
 
 (string_value) @string
+(url_call (arguments (plain_value) @string))
 (color_value) @string.special
 
 (integer_value) @number

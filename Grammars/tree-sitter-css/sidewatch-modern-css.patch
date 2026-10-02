@@ -1,0 +1,2336 @@
+From 987dd49a6b282d8268512a357c22b58ea326ca66 Mon Sep 17 00:00:00 2001
+From: sidewatch <build@local>
+Date: Fri, 2 Oct 2026 11:59:43 +0700
+Subject: [PATCH] Modern CSS: range queries, @container/@layer/@page/@function,
+ url(), attribute flags, escapes, Unicode identifiers
+
+---
+ grammar.js                   | 130 ++++++-
+ src/scanner.c                |   2 +-
+ test/corpus/declarations.txt | 327 +++++++++++-----
+ test/corpus/modern.txt       | 714 +++++++++++++++++++++++++++++++++++
+ test/corpus/selectors.txt    | 363 ++++++++++++++----
+ test/corpus/statements.txt   | 261 ++++++++++---
+ test/corpus/stylesheets.txt  |  10 +-
+ 7 files changed, 1590 insertions(+), 217 deletions(-)
+ create mode 100644 test/corpus/modern.txt
+
+diff --git a/grammar.js b/grammar.js
+index 4e7a49d..33362ea 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -41,7 +41,12 @@ export default grammar({
+       $.keyframes_statement,
+       $.supports_statement,
+       $.scope_statement,
++      $.container_statement,
++      $.layer_statement,
++      $.page_statement,
++      $.function_statement,
+       $.at_rule,
++      ';',
+     ),
+ 
+     // Statements
+@@ -49,10 +54,63 @@ export default grammar({
+     import_statement: $ => seq(
+       '@import',
+       $._value,
++      optional(choice(
++        alias('layer', $.keyword_query),
++        seq(alias('layer', $.function_name), token.immediate('('), alias($._layer_name, $.layer_name), ')'),
++      )),
++      optional(seq($.style_query, sep1(',', $._query))),
+       sep(',', $._query),
+       ';',
+     ),
+ 
++    // @container [name] <query> { … }
++    container_statement: $ => seq(
++      '@container',
++      optional(alias($.identifier, $.container_name)),
++      sep1(',', $._query),
++      $.block,
++    ),
++
++    // @layer a, b.c;  @layer a.b { … }  @layer { … }
++    layer_statement: $ => seq(
++      '@layer',
++      sep(',', alias($._layer_name, $.layer_name)),
++      choice(';', $.block),
++    ),
++
++    _layer_name: _ => token(/[a-zA-Z_-][a-zA-Z0-9_-]*(\.[a-zA-Z_-][a-zA-Z0-9_-]*)*/),
++
++    // @page [name][:left|:right|:first|:blank] { … }
++    page_statement: $ => seq(
++      '@page',
++      sep(',', alias($._page_selector, $.page_selector)),
++      $.block,
++    ),
++
++    _page_selector: _ => token(choice(
++      /[a-zA-Z_-][a-zA-Z0-9_-]*(:[a-zA-Z-]+)*/,
++      /(:[a-zA-Z-]+)+/,
++    )),
++
++    // @function --name(--arg <type> [: default], …) [returns <type>] { … }
++    function_statement: $ => seq(
++      '@function',
++      alias($.identifier, $.function_name),
++      token.immediate('('),
++      sep(',', alias($._function_parameter, $.parameter)),
++      ')',
++      optional(seq('returns', $._syntax_type)),
++      $.block,
++    ),
++
++    _function_parameter: $ => seq(
++      alias($.identifier, $.plain_value),
++      optional($._syntax_type),
++      optional(seq(':', repeat1($._value))),
++    ),
++
++    _syntax_type: $ => alias(token(prec(1, /<[a-zA-Z-]+(\(\))?>[+#?]?/)), $.plain_value),
++
+     media_statement: $ => seq(
+       '@media',
+       sep1(',', $._query),
+@@ -88,7 +146,7 @@ export default grammar({
+     ),
+ 
+     keyframe_block: $ => seq(
+-      sep1(',', choice($.from, $.to, $.integer_value)),
++      sep1(',', choice($.from, $.to, $.integer_value, $.float_value)),
+       $.block,
+     ),
+ 
+@@ -150,8 +208,13 @@ export default grammar({
+       $.keyframes_statement,
+       $.supports_statement,
+       $.scope_statement,
++      $.container_statement,
++      $.layer_statement,
++      $.page_statement,
++      $.function_statement,
+       $.postcss_statement,
+       $.at_rule,
++      ';',
+     ),
+ 
+     // Selectors
+@@ -232,7 +295,7 @@ export default grammar({
+     id_selector: $ => seq(
+       optional($._selector),
+       '#',
+-      alias($.identifier, $.id_name),
++      alias($.class_name, $.id_name),
+     ),
+ 
+     attribute_selector: $ => seq(
+@@ -242,6 +305,7 @@ export default grammar({
+       optional(seq(
+         choice('=', '~=', '^=', '|=', '*=', '$='),
+         $._value,
++        optional(alias(choice('i', 's', 'I', 'S'), $.attribute_flag)),
+       )),
+       ']',
+     ),
+@@ -319,13 +383,15 @@ export default grammar({
+       optional($.important),
+     )),
+ 
+-    important: _ => '!important',
++    important: _ => token(seq('!', /\s*/, /[iI][mM][pP][oO][rR][tT][aA][nN][tT]/)),
+ 
+     // Media queries
+ 
+     _query: $ => choice(
+       alias($.identifier, $.keyword_query),
+       $.feature_query,
++      $.range_query,
++      $.style_query,
+       $.binary_query,
+       $.unary_query,
+       $.selector_query,
+@@ -340,6 +406,35 @@ export default grammar({
+       ')',
+     ),
+ 
++    // Media Queries 4 range syntax: (width < 600px), (400px <= width <= 700px)
++    range_query: $ => seq(
++      '(',
++      $._range_operand,
++      $._range_comparison,
++      $._range_operand,
++      optional(seq($._range_comparison, $._range_operand)),
++      ')',
++    ),
++
++    _range_operand: $ => choice(
++      alias($.identifier, $.feature_name),
++      $.integer_value,
++      $.float_value,
++      $.call_expression,
++    ),
++
++    _range_comparison: _ => choice('<', '>', '<=', '>=', '='),
++
++    // style(--theme: dark), scroll-state(stuck: top), and the like inside @container / @supports / if()
++    style_query: $ => seq(
++      alias(choice('style', 'scroll-state', 'media', 'supports'), $.function_name),
++      token.immediate('('),
++      choice($._declaration_query, $._query),
++      ')',
++    ),
++
++    _declaration_query: $ => seq(alias($.identifier, $.feature_name), ':', repeat1($._value)),
++
+     parenthesized_query: $ => seq(
+       '(',
+       $._query,
+@@ -377,9 +472,23 @@ export default grammar({
+       $.binary_expression,
+       $.parenthesized_value,
+       $.call_expression,
++      $.url_call,
++      $._syntax_type,
+       $.important,
+     )),
+ 
++    // url(../a.png), url(#mask), url("x") — an unquoted url is one raw token
++    url_call: $ => prec(1, seq(
++      alias(/[uU][rR][lL]/, $.function_name),
++      alias($._url_arguments, $.arguments),
++    )),
++
++    _url_arguments: $ => seq(
++      token.immediate('('),
++      optional(choice($.string_value, alias(token(prec(-1, /[^"'()\s]([^()\s]|\\.)*/)), $.plain_value))),
++      ')',
++    ),
++
+     parenthesized_value: $ => seq(
+       '(',
+       $._value,
+@@ -412,6 +521,7 @@ export default grammar({
+       choice(
+         /[0-9a-fA-F]{1,6}\s?/,
+         /[^0-9a-fA-F\n\r]/,
++        /\r?\n/,
+       ),
+     )),
+ 
+@@ -457,19 +567,27 @@ export default grammar({
+ 
+     arguments: $ => seq(
+       token.immediate('('),
+-      sep(choice(',', ';'), repeat1($._value)),
++      sep(choice(',', ';'), choice(repeat1($._value), $.if_branch)),
++      optional(';'),
+       ')',
+     ),
+ 
++    // if(media(width >= 600px): 50%; else: 100%)
++    if_branch: $ => seq(
++      choice($.style_query, alias('else', $.plain_value)),
++      ':',
++      repeat1($._value),
++    ),
++
+     class_name: $ => seq(
+       choice($.identifier, $.escape_sequence),
+       repeat(choice(
+-        alias(/[a-zA-Z0-9-_\xA0-\xFF]+/, $.identifier),
++        alias(/[a-zA-Z0-9-_\u00A0-\uFFFF]+/, $.identifier),
+         $.escape_sequence,
+       )),
+     ),
+ 
+-    identifier: _ => /(--|-?[a-zA-Z_\xA0-\xFF])[a-zA-Z0-9-_\xA0-\xFF]*/,
++    identifier: _ => /(--|-?[a-zA-Z_\u00A0-\uFFFF])[a-zA-Z0-9-_\u00A0-\uFFFF]*/,
+ 
+     at_keyword: _ => /@[a-zA-Z-_]+/,
+ 
+diff --git a/src/scanner.c b/src/scanner.c
+index ba7dc65..e7479d3 100644
+--- a/src/scanner.c
++++ b/src/scanner.c
+@@ -35,7 +35,7 @@ bool tree_sitter_css_external_scanner_scan(void *payload, TSLexer *lexer, const
+         lexer->mark_end(lexer);
+ 
+         if (lexer->lookahead == '#' || lexer->lookahead == '.' || lexer->lookahead == '[' || lexer->lookahead == '-' ||
+-            lexer->lookahead == '*' || iswalnum(lexer->lookahead)) {
++            lexer->lookahead == '*' || lexer->lookahead == '&' || iswalnum(lexer->lookahead)) {
+             return true;
+         }
+ 
+diff --git a/test/corpus/declarations.txt b/test/corpus/declarations.txt
+index ec3c62f..124e59e 100644
+--- a/test/corpus/declarations.txt
++++ b/test/corpus/declarations.txt
+@@ -10,15 +10,18 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+       (declaration
+         (property_name)
+-        (call_expression (function_name) (arguments
+-          (integer_value)
+-          (integer_value)
+-          (integer_value)
+-          (float_value)))))))
++        (call_expression
++          (function_name)
++          (arguments
++            (integer_value)
++            (integer_value)
++            (integer_value)
++            (float_value)))))))
+ 
+ =============================================
+ Calls where each argument has multiple values
+@@ -32,32 +35,56 @@ div {
+ ---
+ 
+ (stylesheet
+-  (rule_set (selectors (tag_name)) (block
+-    (declaration
+-      (property_name)
+-      (call_expression (function_name) (arguments
+-        (plain_value)
+-        (plain_value)
+-        (integer_value (unit)))))
+-    (declaration
+-      (property_name)
+-      (call_expression (function_name) (arguments
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))))))))
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (plain_value)
++            (plain_value)
++            (integer_value
++              (unit)))))
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))))))))
+ 
+ ============================
+ Color literals
+@@ -72,10 +99,15 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (color_value))
+-      (declaration (property_name) (color_value)))))
++      (declaration
++        (property_name)
++        (color_value))
++      (declaration
++        (property_name)
++        (color_value)))))
+ 
+ ============================
+ Numbers
+@@ -93,13 +125,34 @@ a {
+ ---
+ 
+ (stylesheet
+-  (rule_set (selectors (tag_name)) (block
+-    (declaration (property_name) (float_value (unit)))
+-    (declaration (property_name) (integer_value (unit)))
+-    (declaration (property_name) (float_value (unit)))
+-    (declaration (property_name) (float_value (unit)))
+-    (declaration (property_name) (integer_value (unit)))
+-    (declaration (property_name) (float_value (unit))))))
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (float_value
++          (unit)))
++      (declaration
++        (property_name)
++        (integer_value
++          (unit)))
++      (declaration
++        (property_name)
++        (float_value
++          (unit)))
++      (declaration
++        (property_name)
++        (float_value
++          (unit)))
++      (declaration
++        (property_name)
++        (integer_value
++          (unit)))
++      (declaration
++        (property_name)
++        (float_value
++          (unit))))))
+ 
+ ============================
+ Binary arithmetic operators
+@@ -115,14 +168,24 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+       (declaration
+         (property_name)
+-        (call_expression (function_name) (arguments (binary_expression (integer_value (unit)) (integer_value (unit))))))
++        (call_expression
++          (function_name)
++          (arguments
++            (binary_expression
++              (integer_value
++                (unit))
++              (integer_value
++                (unit))))))
+       (declaration
+         (property_name)
+-        (binary_expression (integer_value) (integer_value)))
++        (binary_expression
++          (integer_value)
++          (integer_value)))
+       (declaration
+         (property_name)
+         (call_expression
+@@ -130,12 +193,24 @@ a {
+           (arguments
+             (binary_expression
+               (binary_expression
+-                (integer_value (unit))
+-                (parenthesized_value (binary_expression (integer_value) (integer_value))))
++                (integer_value
++                  (unit))
++                (parenthesized_value
++                  (binary_expression
++                    (integer_value)
++                    (integer_value))))
+               (parenthesized_value
+                 (binary_expression
+-                  (parenthesized_value (binary_expression (integer_value (unit)) (integer_value (unit))))
+-                  (parenthesized_value (binary_expression (integer_value) (integer_value))))))))))))
++                  (parenthesized_value
++                    (binary_expression
++                      (integer_value
++                        (unit))
++                      (integer_value
++                        (unit))))
++                  (parenthesized_value
++                    (binary_expression
++                      (integer_value)
++                      (integer_value))))))))))))
+ 
+ ============================
+ Strings
+@@ -150,10 +225,18 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (string_value))
+-      (declaration (property_name) (string_value (escape_sequence) (string_content) (escape_sequence))))))
++      (declaration
++        (property_name)
++        (string_value))
++      (declaration
++        (property_name)
++        (string_value
++          (escape_sequence)
++          (string_content)
++          (escape_sequence))))))
+ 
+ ============================
+ URLs
+@@ -167,9 +250,12 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (plain_value)))))
++      (declaration
++        (property_name)
++        (plain_value)))))
+ 
+ ============================
+ Important declarations
+@@ -183,9 +269,13 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (plain_value) (important)))))
++      (declaration
++        (property_name)
++        (plain_value)
++        (important)))))
+ 
+ ============================
+ Declarations without trailing semicolons
+@@ -200,10 +290,15 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (plain_value))
+-      (declaration (property_name) (plain_value)))))
++      (declaration
++        (property_name)
++        (plain_value))
++      (declaration
++        (property_name)
++        (plain_value)))))
+ 
+ =======================================
+ Comments right after numbers
+@@ -220,19 +315,35 @@ a {
+ (stylesheet
+   (js_comment)
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (call_expression (function_name) (arguments
+-        (integer_value (unit))
+-        (comment)
+-        (plain_value)
+-        (integer_value (unit))
+-        (integer_value (unit)))))
+-      (declaration (property_name) (call_expression (function_name) (arguments
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))
+-        (integer_value (unit))))))))
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (integer_value
++              (unit))
++            (comment)
++            (plain_value)
++            (integer_value
++              (unit))
++            (integer_value
++              (unit)))))
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))
++            (integer_value
++              (unit))))))))
+ 
+ =================================
+ Declarations at the top level
+@@ -244,8 +355,22 @@ a-property: calc(5px + var(--a-variable));
+ ---
+ 
+ (stylesheet
+-  (declaration (property_name) (integer_value (unit)))
+-  (declaration (property_name) (call_expression (function_name) (arguments (binary_expression (integer_value (unit)) (call_expression (function_name) (arguments (plain_value))))))))
++  (declaration
++    (property_name)
++    (integer_value
++      (unit)))
++  (declaration
++    (property_name)
++    (call_expression
++      (function_name)
++      (arguments
++        (binary_expression
++          (integer_value
++            (unit))
++          (call_expression
++            (function_name)
++            (arguments
++              (plain_value))))))))
+ 
+ =============================================
+ Spaces after colons in property declarations
+@@ -284,11 +409,18 @@ div {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (declaration (property_name) (plain_value))
+-      (declaration (property_name) (plain_value))
+-      (declaration (property_name) (plain_value)))))
++      (declaration
++        (property_name)
++        (plain_value))
++      (declaration
++        (property_name)
++        (plain_value))
++      (declaration
++        (property_name)
++        (plain_value)))))
+ 
+ =============================================
+ PostCSS
+@@ -313,7 +445,10 @@ PostCSS
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (class_selector (class_name (identifier))))
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
+     (block
+       (postcss_statement
+         (at_keyword)
+@@ -321,32 +456,35 @@ PostCSS
+         (plain_value)
+         (plain_value)
+         (important))))
+-  (at_rule
+-    (at_keyword)
+-    (keyword_query)
++  (layer_statement
++    (layer_name)
+     (block
+       (rule_set
+-        (selectors (class_selector (class_name (identifier))))
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
+         (block
+           (postcss_statement
+             (at_keyword)
+             (plain_value)
+             (plain_value)
+             (plain_value)
+-            (grid_value (integer_value (unit)))
++            (grid_value
++              (integer_value
++                (unit)))
+             (plain_value)
+             (important)
+             (important_value))))))
+-  (at_rule
+-      (at_keyword)
+-      (keyword_query)
+-      (block
+-        (rule_set
+-          (selectors
+-            (class_selector
+-              (class_name
+-                (identifier))))
+-          (block)))))
++  (layer_statement
++    (layer_name)
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block)))))
+ 
+ ==============================
+ Comments in declarations
+@@ -360,7 +498,8 @@ Comments in declarations
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (nesting_selector))
++    (selectors
++      (nesting_selector))
+     (block
+       (declaration
+         (property_name)
+diff --git a/test/corpus/modern.txt b/test/corpus/modern.txt
+new file mode 100644
+index 0000000..620f8d3
+--- /dev/null
++++ b/test/corpus/modern.txt
+@@ -0,0 +1,714 @@
++=============================================
++Import layer
++=============================================
++
++@import url("reset.css") layer(base);
++
++---
++
++(stylesheet
++  (import_statement
++    (url_call
++      (function_name)
++      (arguments
++        (string_value
++          (string_content))))
++    (function_name)
++    (layer_name)))
++
++=============================================
++Import layer supports
++=============================================
++
++@import url(unquoted.css) layer(theme) supports(display: grid) screen;
++
++---
++
++(stylesheet
++  (import_statement
++    (url_call
++      (function_name)
++      (arguments
++        (plain_value)))
++    (function_name)
++    (layer_name)
++    (style_query
++      (function_name)
++      (feature_name)
++      (plain_value))
++    (keyword_query)))
++
++=============================================
++Page first
++=============================================
++
++@page :first { margin: 1in; }
++
++---
++
++(stylesheet
++  (page_statement
++    (page_selector)
++    (block
++      (declaration
++        (property_name)
++        (integer_value
++          (unit))))))
++
++=============================================
++Attr flag i
++=============================================
++
++a[href$=".pdf" i] { x: y; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (attribute_selector
++        (tag_name)
++        (attribute_name)
++        (string_value
++          (string_content))
++        (attribute_flag)))
++    (block
++      (declaration
++        (property_name)
++        (plain_value)))))
++
++=============================================
++Attr flag s
++=============================================
++
++a[href^='http' s] { x: y; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (attribute_selector
++        (tag_name)
++        (attribute_name)
++        (string_value
++          (string_content))
++        (attribute_flag)))
++    (block
++      (declaration
++        (property_name)
++        (plain_value)))))
++
++=============================================
++Nest amp after
++=============================================
++
++.a { .dense & { padding: 0; } }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (rule_set
++        (selectors
++          (descendant_selector
++            (class_selector
++              (class_name
++                (identifier)))
++            (nesting_selector)))
++        (block
++          (declaration
++            (property_name)
++            (integer_value)))))))
++
++=============================================
++Nest media range
++=============================================
++
++.a { @media (width < 600px) { display: block; } }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (media_statement
++        (range_query
++          (feature_name)
++          (integer_value
++            (unit)))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Media range both
++=============================================
++
++@media (400px <= width <= 700px) { .n { display: block; } }
++
++---
++
++(stylesheet
++  (media_statement
++    (range_query
++      (integer_value
++        (unit))
++      (feature_name)
++      (integer_value
++        (unit)))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Media range ge
++=============================================
++
++@media (width >= 600px) and (width <= 900px), (height > 200px) { .r { display: none; } }
++
++---
++
++(stylesheet
++  (media_statement
++    (binary_query
++      (range_query
++        (feature_name)
++        (integer_value
++          (unit)))
++      (range_query
++        (feature_name)
++        (integer_value
++          (unit))))
++    (range_query
++      (feature_name)
++      (integer_value
++        (unit)))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Container named
++=============================================
++
++@container sidebar (min-width: 400px) { .c { display: flex; } }
++
++---
++
++(stylesheet
++  (container_statement
++    (container_name)
++    (feature_query
++      (feature_name)
++      (integer_value
++        (unit)))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Container range
++=============================================
++
++@container (inline-size > 30em) { .c { gap: 1rem; } }
++
++---
++
++(stylesheet
++  (container_statement
++    (range_query
++      (feature_name)
++      (integer_value
++        (unit)))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (integer_value
++              (unit))))))))
++
++=============================================
++Container style
++=============================================
++
++@container style(--theme: dark) { .c { color: white; } }
++
++---
++
++(stylesheet
++  (container_statement
++    (style_query
++      (function_name)
++      (feature_name)
++      (plain_value))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Container scroll state
++=============================================
++
++@container scroll-state(stuck: top) { .s { top: 0; } }
++
++---
++
++(stylesheet
++  (container_statement
++    (style_query
++      (function_name)
++      (feature_name)
++      (plain_value))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (integer_value)))))))
++
++=============================================
++Container named style and
++=============================================
++
++@container card style(--compact: true) and (min-width: 20em) { .i { padding: 0; } }
++
++---
++
++(stylesheet
++  (container_statement
++    (container_name)
++    (binary_query
++      (style_query
++        (function_name)
++        (feature_name)
++        (plain_value))
++      (feature_query
++        (feature_name)
++        (integer_value
++          (unit))))
++    (block
++      (rule_set
++        (selectors
++          (class_selector
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (integer_value)))))))
++
++=============================================
++Url hash
++=============================================
++
++a { mask: url(#mask) no-repeat; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (url_call
++          (function_name)
++          (arguments
++            (plain_value)))
++        (plain_value)))))
++
++=============================================
++Url relative
++=============================================
++
++a { background: url(../img/a.png); }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (url_call
++          (function_name)
++          (arguments
++            (plain_value)))))))
++
++=============================================
++Esc digit
++=============================================
++
++.\31 0 { margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (escape_sequence)
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (integer_value)))))
++
++=============================================
++Esc colon
++=============================================
++
++.sm\:flex { margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier)
++          (escape_sequence)
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (integer_value)))))
++
++=============================================
++Esc slash
++=============================================
++
++.w-1\/2 { margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier)
++          (escape_sequence)
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (integer_value)))))
++
++=============================================
++Esc id
++=============================================
++
++#\#hash { margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (id_selector
++        (id_name
++          (escape_sequence)
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (integer_value)))))
++
++=============================================
++Unicode class
++=============================================
++
++.ünïcode-class, .日本語 { margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier)))
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (integer_value)))))
++
++=============================================
++String newline escape
++=============================================
++
++.e::before { content: "a \
++continued"; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (pseudo_element_selector
++        (class_selector
++          (class_name
++            (identifier)))
++        (tag_name)))
++    (block
++      (declaration
++        (property_name)
++        (string_value
++          (string_content)
++          (escape_sequence)
++          (string_content))))))
++
++=============================================
++Layer list
++=============================================
++
++@layer reset, base;
++
++---
++
++(stylesheet
++  (layer_statement
++    (layer_name)
++    (layer_name)))
++
++=============================================
++Layer dotted
++=============================================
++
++@layer a.b { x { y: z; } }
++
++---
++
++(stylesheet
++  (layer_statement
++    (layer_name)
++    (block
++      (rule_set
++        (selectors
++          (tag_name))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Function rule
++=============================================
++
++@function --negate(--value <number>) returns <number> { result: calc(-1 * var(--value)); }
++
++---
++
++(stylesheet
++  (function_statement
++    (function_name)
++    (parameter
++      (plain_value)
++      (plain_value))
++    (plain_value)
++    (block
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (binary_expression
++              (integer_value)
++              (call_expression
++                (function_name)
++                (arguments
++                  (plain_value))))))))))
++
++=============================================
++Attr typed
++=============================================
++
++.m { width: attr(data-w type(<length>), 0px); }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (declaration
++        (property_name)
++        (call_expression
++          (function_name)
++          (arguments
++            (plain_value)
++            (call_expression
++              (function_name)
++              (arguments
++                (plain_value)))
++            (integer_value
++              (unit))))))))
++
++=============================================
++Important space
++=============================================
++
++a { color: red ! important; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (plain_value)
++        (important)))))
++
++=============================================
++Keyframes fraction
++=============================================
++
++@keyframes k { 24.99% { opacity: 0; } }
++
++---
++
++(stylesheet
++  (keyframes_statement
++    (keyframes_name)
++    (keyframe_block_list
++      (keyframe_block
++        (float_value
++          (unit))
++        (block
++          (declaration
++            (property_name)
++            (integer_value)))))))
++
++=============================================
++Nest amp hover
++=============================================
++
++.card { &:hover { x: y; } }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (rule_set
++        (selectors
++          (pseudo_class_selector
++            (nesting_selector)
++            (class_name
++              (identifier))))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Nest amp sibling
++=============================================
++
++.card { & + & { x: y; } }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
++    (block
++      (rule_set
++        (selectors
++          (adjacent_sibling_selector
++            (nesting_selector)
++            (nesting_selector)))
++        (block
++          (declaration
++            (property_name)
++            (plain_value)))))))
++
++=============================================
++Semicolons double
++=============================================
++
++a { color: red;; margin: 0; }
++
++---
++
++(stylesheet
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (plain_value))
++      (declaration
++        (property_name)
++        (integer_value)))))
+diff --git a/test/corpus/selectors.txt b/test/corpus/selectors.txt
+index e75190a..d8750ec 100644
+--- a/test/corpus/selectors.txt
++++ b/test/corpus/selectors.txt
+@@ -7,7 +7,10 @@ Universal selectors
+ ---
+ 
+ (stylesheet
+-  (rule_set (selectors (universal_selector)) (block)))
++  (rule_set
++    (selectors
++      (universal_selector))
++    (block)))
+ 
+ =========================
+ Type selectors
+@@ -19,8 +22,18 @@ h1, h2, h3, h4 {}
+ ---
+ 
+ (stylesheet
+-  (rule_set (selectors (tag_name) (tag_name)) (block))
+-  (rule_set (selectors (tag_name) (tag_name) (tag_name) (tag_name)) (block)))
++  (rule_set
++    (selectors
++      (tag_name)
++      (tag_name))
++    (block))
++  (rule_set
++    (selectors
++      (tag_name)
++      (tag_name)
++      (tag_name)
++      (tag_name))
++    (block)))
+ 
+ =========================
+ Class selectors
+@@ -33,12 +46,23 @@ div.class-b, .class-c.class-d {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (class_selector (class_name (identifier))))
++    (selectors
++      (class_selector
++        (class_name
++          (identifier))))
+     (block))
+   (rule_set
+     (selectors
+-      (class_selector (tag_name) (class_name (identifier)))
+-      (class_selector (class_selector (class_name (identifier))) (class_name (identifier))))
++      (class_selector
++        (tag_name)
++        (class_name
++          (identifier)))
++      (class_selector
++        (class_selector
++          (class_name
++            (identifier)))
++        (class_name
++          (identifier))))
+     (block)))
+ 
+ =========================
+@@ -51,7 +75,14 @@ Id selectors
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (id_selector (id_name)) (id_selector (tag_name) (id_name)))
++    (selectors
++      (id_selector
++        (id_name
++          (identifier)))
++      (id_selector
++        (tag_name)
++        (id_name
++          (identifier))))
+     (block)))
+ 
+ =========================
+@@ -66,10 +97,29 @@ a[b] {}
+ ---
+ 
+ (stylesheet
+-  (rule_set (selectors (attribute_selector (attribute_name))) (block))
+-  (rule_set (selectors (attribute_selector (attribute_name) (plain_value))) (block))
+-  (rule_set (selectors (attribute_selector (attribute_name) (plain_value))) (block))
+-  (rule_set (selectors (attribute_selector (tag_name) (attribute_name))) (block)))
++  (rule_set
++    (selectors
++      (attribute_selector
++        (attribute_name)))
++    (block))
++  (rule_set
++    (selectors
++      (attribute_selector
++        (attribute_name)
++        (plain_value)))
++    (block))
++  (rule_set
++    (selectors
++      (attribute_selector
++        (attribute_name)
++        (plain_value)))
++    (block))
++  (rule_set
++    (selectors
++      (attribute_selector
++        (tag_name)
++        (attribute_name)))
++    (block)))
+ 
+ =========================
+ Pseudo-class selectors
+@@ -93,46 +143,140 @@ a:not([href]) {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name (identifier))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name
++          (identifier))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (integer_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (integer_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name) (arguments (tag_name))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (tag_name))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name) (arguments (class_selector (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (class_selector
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name) (arguments (class_selector (tag_name) (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (class_selector
++            (tag_name)
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (universal_selector) (class_name) (arguments (id_selector (tag_name) (id_name)))))
++    (selectors
++      (pseudo_class_selector
++        (universal_selector)
++        (class_name)
++        (arguments
++          (id_selector
++            (tag_name)
++            (id_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name) (arguments (class_selector (class_name (identifier))) (class_selector (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (class_selector
++            (class_name
++              (identifier)))
++          (class_selector
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (tag_name) (class_name) (arguments (attribute_selector (attribute_name)))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (attribute_selector
++            (attribute_name)))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (pseudo_class_selector (attribute_selector (attribute_name) (string_value (string_content))) (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (pseudo_class_selector
++            (attribute_selector
++              (attribute_name)
++              (string_value
++                (string_content)))
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (pseudo_class_selector (attribute_selector (attribute_name) (string_value (string_content))) (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (pseudo_class_selector
++            (attribute_selector
++              (attribute_name)
++              (string_value
++                (string_content)))
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name)))
++    (selectors
++      (pseudo_class_selector
++        (class_name)))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name)))
+-    (block (declaration (property_name) (plain_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)))
++    (block
++      (declaration
++        (property_name)
++        (plain_value))))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (class_selector (tag_name) (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (class_selector
++            (tag_name)
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value) (class_selector (tag_name) (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value)
++          (class_selector
++            (tag_name)
++            (class_name
++              (identifier))))))
+     (block)))
+ 
+ =========================
+@@ -149,24 +293,51 @@ a:not([href]) {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (integer_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (integer_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value))))
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector (class_name) (arguments (plain_value) (class_selector (tag_name) (class_name (identifier))))))
+-    (block))
+-)
++    (selectors
++      (pseudo_class_selector
++        (class_name)
++        (arguments
++          (plain_value)
++          (class_selector
++            (tag_name)
++            (class_name
++              (identifier))))))
++    (block)))
+ 
+ =========================
+ Pseudo-element selectors
+@@ -178,7 +349,10 @@ a::first-line {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (pseudo_element_selector (tag_name) (tag_name)))
++    (selectors
++      (pseudo_element_selector
++        (tag_name)
++        (tag_name)))
+     (block)))
+ 
+ =========================
+@@ -191,11 +365,13 @@ a::first-line {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (pseudo_element_selector (tag_name)
+-      (arguments (tag_name))))
++    (selectors
++      (pseudo_element_selector
++        (tag_name)
++        (arguments
++          (tag_name))))
+     (block)))
+ 
+-
+ =========================
+ Child selectors
+ =========================
+@@ -207,12 +383,18 @@ c > d > e {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (child_selector (tag_name) (tag_name)))
++    (selectors
++      (child_selector
++        (tag_name)
++        (tag_name)))
+     (block))
+   (rule_set
+-    (selectors (child_selector
+-      (child_selector (tag_name) (tag_name))
+-      (tag_name)))
++    (selectors
++      (child_selector
++        (child_selector
++          (tag_name)
++          (tag_name))
++        (tag_name)))
+     (block)))
+ 
+ =========================
+@@ -227,12 +409,18 @@ f * {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (descendant_selector (tag_name) (tag_name)))
++    (selectors
++      (descendant_selector
++        (tag_name)
++        (tag_name)))
+     (block))
+   (rule_set
+-    (selectors (descendant_selector
+-      (descendant_selector (tag_name) (tag_name))
+-      (tag_name)))
++    (selectors
++      (descendant_selector
++        (descendant_selector
++          (tag_name)
++          (tag_name))
++        (tag_name)))
+     (block))
+   (rule_set
+     (selectors
+@@ -255,11 +443,28 @@ a {
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (tag_name))
++    (selectors
++      (tag_name))
+     (block
+-      (rule_set (selectors (class_selector (nesting_selector) (class_name (identifier)))) (block))
+-      (rule_set (selectors (descendant_selector (nesting_selector) (tag_name))) (block))
+-      (rule_set (selectors (child_selector (nesting_selector) (tag_name))) (block)))))
++      (rule_set
++        (selectors
++          (class_selector
++            (nesting_selector)
++            (class_name
++              (identifier))))
++        (block))
++      (rule_set
++        (selectors
++          (descendant_selector
++            (nesting_selector)
++            (tag_name)))
++        (block))
++      (rule_set
++        (selectors
++          (child_selector
++            (nesting_selector)
++            (tag_name)))
++        (block)))))
+ 
+ ===========================
+ Sibling selectors
+@@ -272,14 +477,32 @@ a.b ~ c.d {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (sibling_selector
+-      (class_selector (tag_name) (class_name (identifier)))
+-      (class_selector (tag_name) (class_name (identifier)))))
++    (selectors
++      (sibling_selector
++        (class_selector
++          (tag_name)
++          (class_name
++            (identifier)))
++        (class_selector
++          (tag_name)
++          (class_name
++            (identifier)))))
+     (block))
+   (rule_set
+-    (selectors (adjacent_sibling_selector
+-      (class_selector (class_selector (class_name (identifier))) (class_name (identifier)))
+-      (class_selector (class_selector (class_name (identifier))) (class_name (identifier)))))
++    (selectors
++      (adjacent_sibling_selector
++        (class_selector
++          (class_selector
++            (class_name
++              (identifier)))
++          (class_name
++            (identifier)))
++        (class_selector
++          (class_selector
++            (class_name
++              (identifier)))
++          (class_name
++            (identifier)))))
+     (block)))
+ 
+ ===========================
+@@ -293,16 +516,28 @@ a:not(:hover) {}
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (pseudo_class_selector
+-      (tag_name)
+-      (class_name)
+-      (arguments (pseudo_class_selector (class_name (identifier))))))
++    (selectors
++      (pseudo_class_selector
++        (tag_name)
++        (class_name)
++        (arguments
++          (pseudo_class_selector
++            (class_name
++              (identifier))))))
+     (block))
+   (rule_set
+-    (selectors (pseudo_class_selector
+-      (class_selector (class_name (identifier)))
+-      (class_name)
+-      (arguments (child_selector (tag_name) (class_selector (class_name (identifier)))))))
++    (selectors
++      (pseudo_class_selector
++        (class_selector
++          (class_name
++            (identifier)))
++        (class_name)
++        (arguments
++          (child_selector
++            (tag_name)
++            (class_selector
++              (class_name
++                (identifier)))))))
+     (block)))
+ 
+ ===========================
+diff --git a/test/corpus/statements.txt b/test/corpus/statements.txt
+index 3c0a908..0ecd257 100644
+--- a/test/corpus/statements.txt
++++ b/test/corpus/statements.txt
+@@ -11,11 +11,33 @@ Import statements
+ ---
+ 
+ (stylesheet
+-  (import_statement (call_expression (function_name) (arguments (string_value (string_content)))) (keyword_query))
+-  (import_statement (call_expression (function_name) (arguments (string_value (string_content)))) (keyword_query))
+-  (import_statement (string_value (string_content)))
+-  (import_statement (call_expression (function_name) (arguments (string_value (string_content)))))
+-  (import_statement (string_value (string_content)) (keyword_query)))
++  (import_statement
++    (url_call
++      (function_name)
++      (arguments
++        (string_value
++          (string_content))))
++    (keyword_query))
++  (import_statement
++    (url_call
++      (function_name)
++      (arguments
++        (string_value
++          (string_content))))
++    (keyword_query))
++  (import_statement
++    (string_value
++      (string_content)))
++  (import_statement
++    (url_call
++      (function_name)
++      (arguments
++        (string_value
++          (string_content)))))
++  (import_statement
++    (string_value
++      (string_content))
++    (keyword_query)))
+ 
+ ==============================
+ Namespace statements
+@@ -35,13 +57,36 @@ Namespace statements
+ 
+ (stylesheet
+   (comment)
+-  (namespace_statement (call_expression (function_name) (arguments (plain_value))))
+-  (namespace_statement (string_value (string_content)))
+-  (namespace_statement (call_expression (function_name) (arguments (plain_value))))
+-  (namespace_statement (namespace_name) (call_expression (function_name) (arguments (plain_value))))
++  (namespace_statement
++    (call_expression
++      (function_name)
++      (arguments
++        (plain_value))))
++  (namespace_statement
++    (string_value
++      (string_content)))
++  (namespace_statement
++    (call_expression
++      (function_name)
++      (arguments
++        (plain_value))))
++  (namespace_statement
++    (namespace_name)
++    (call_expression
++      (function_name)
++      (arguments
++        (plain_value))))
+   (comment)
+-  (namespace_statement (namespace_name) (call_expression (function_name) (arguments (plain_value))))
+-  (namespace_statement (namespace_name) (string_value (string_content))))
++  (namespace_statement
++    (namespace_name)
++    (call_expression
++      (function_name)
++      (arguments
++        (plain_value))))
++  (namespace_statement
++    (namespace_name)
++    (string_value
++      (string_content))))
+ 
+ ==============================
+ Keyframes statements
+@@ -60,13 +105,42 @@ Keyframes statements
+ ---
+ 
+ (stylesheet
+-  (keyframes_statement (keyframes_name) (keyframe_block_list
+-    (keyframe_block (from) (block (declaration (property_name) (integer_value (unit)))))
+-    (keyframe_block (integer_value (unit)) (block (declaration (property_name) (integer_value (unit)) (important))))
+-    (comment)
+-    (keyframe_block (to) (block (declaration (property_name) (integer_value (unit)))))))
+-  (keyframes_statement (keyframes_name) (keyframe_block_list
+-    (keyframe_block (integer_value (unit)) (integer_value (unit)) (block)))))
++  (keyframes_statement
++    (keyframes_name)
++    (keyframe_block_list
++      (keyframe_block
++        (from)
++        (block
++          (declaration
++            (property_name)
++            (integer_value
++              (unit)))))
++      (keyframe_block
++        (integer_value
++          (unit))
++        (block
++          (declaration
++            (property_name)
++            (integer_value
++              (unit))
++            (important))))
++      (comment)
++      (keyframe_block
++        (to)
++        (block
++          (declaration
++            (property_name)
++            (integer_value
++              (unit)))))))
++  (keyframes_statement
++    (keyframes_name)
++    (keyframe_block_list
++      (keyframe_block
++        (integer_value
++          (unit))
++        (integer_value
++          (unit))
++        (block)))))
+ 
+ ==============================
+ Media statements
+@@ -87,24 +161,52 @@ Media statements
+     (binary_query
+       (binary_query
+         (keyword_query)
+-        (feature_query (feature_name) (integer_value (unit))))
+-      (feature_query (feature_name) (plain_value)))
++        (feature_query
++          (feature_name)
++          (integer_value
++            (unit))))
++      (feature_query
++        (feature_name)
++        (plain_value)))
+     (block))
+   (media_statement
+-    (feature_query (feature_name) (integer_value (unit)))
+-    (binary_query (keyword_query) (feature_query (feature_name) (plain_value)))
++    (feature_query
++      (feature_name)
++      (integer_value
++        (unit)))
++    (binary_query
++      (keyword_query)
++      (feature_query
++        (feature_name)
++        (plain_value)))
+     (block))
+   (media_statement
+-    (binary_query (unary_query (keyword_query)) (parenthesized_query (keyword_query)))
++    (binary_query
++      (unary_query
++        (keyword_query))
++      (parenthesized_query
++        (keyword_query)))
++    (block))
++  (media_statement
++    (unary_query
++      (keyword_query))
+     (block))
+-  (media_statement (unary_query (keyword_query)) (block))
+   (media_statement
+     (binary_query
+       (keyword_query)
+-      (feature_query (feature_name) (integer_value) (integer_value)))
++      (feature_query
++        (feature_name)
++        (integer_value)
++        (integer_value)))
+     (block
+       (rule_set
+-        (selectors (pseudo_class_selector (class_selector (class_name (identifier))) (class_name (identifier))))
++        (selectors
++          (pseudo_class_selector
++            (class_selector
++              (class_name
++                (identifier)))
++            (class_name
++              (identifier))))
+         (block)))))
+ 
+ ==============================
+@@ -122,24 +224,46 @@ Supports statements
+ 
+ (stylesheet
+   (supports_statement
+-    (feature_query (feature_name) (plain_value))
++    (feature_query
++      (feature_name)
++      (plain_value))
+     (block
+-      (rule_set (selectors (tag_name)) (block
+-        (declaration (property_name) (plain_value))))))
++      (rule_set
++        (selectors
++          (tag_name))
++        (block
++          (declaration
++            (property_name)
++            (plain_value))))))
+   (supports_statement
+     (binary_query
+-      (feature_query (feature_name) (plain_value))
+-      (feature_query (feature_name) (plain_value)))
++      (feature_query
++        (feature_name)
++        (plain_value))
++      (feature_query
++        (feature_name)
++        (plain_value)))
+     (block))
+   (supports_statement
+-    (unary_query (parenthesized_query (binary_query
+-      (feature_query (feature_name) (plain_value))
+-      (feature_query (feature_name) (plain_value)))))
++    (unary_query
++      (parenthesized_query
++        (binary_query
++          (feature_query
++            (feature_name)
++            (plain_value))
++          (feature_query
++            (feature_name)
++            (plain_value)))))
+     (block))
+   (supports_statement
+-    (unary_query (selector_query (pseudo_class_selector
+-      (class_name (identifier))
+-      (arguments (tag_name) (tag_name)))))
++    (unary_query
++      (selector_query
++        (pseudo_class_selector
++          (class_name
++            (identifier))
++          (arguments
++            (tag_name)
++            (tag_name)))))
+     (block)))
+ 
+ ==============================
+@@ -151,7 +275,9 @@ Charset statements
+ ---
+ 
+ (stylesheet
+-  (charset_statement (string_value (string_content))))
++  (charset_statement
++    (string_value
++      (string_content))))
+ 
+ ==============================
+ Scope statements
+@@ -173,18 +299,33 @@ Scope statements
+ 
+ (stylesheet
+   (scope_statement
+-    (class_selector (class_name (identifier)))
++    (class_selector
++      (class_name
++        (identifier)))
+     (block
+-      (rule_set (selectors (tag_name))
++      (rule_set
++        (selectors
++          (tag_name))
+         (block
+-          (declaration (property_name) (plain_value))))))
++          (declaration
++            (property_name)
++            (plain_value))))))
+   (scope_statement
+-    (class_selector (class_name (identifier)))
++    (class_selector
++      (class_name
++        (identifier)))
+     (tag_name)
+     (block
+-      (rule_set (selectors (tag_name))
++      (rule_set
++        (selectors
++          (tag_name))
+         (block
+-          (declaration (property_name) (integer_value (unit)) (plain_value) (plain_value)))))))
++          (declaration
++            (property_name)
++            (integer_value
++              (unit))
++            (plain_value)
++            (plain_value)))))))
+ 
+ ==============================
+ Other at-statements
+@@ -201,9 +342,29 @@ Other at-statements
+   (at_rule
+     (at_keyword)
+     (block
+-      (declaration (property_name) (string_value (string_content)))
+-      (declaration (property_name)
+-        (call_expression (function_name) (arguments (string_value (string_content))))
+-        (call_expression (function_name) (arguments (string_value (string_content))))
+-        (call_expression (function_name) (arguments (string_value (string_content))))
+-        (call_expression (function_name) (arguments (string_value (string_content))))))))
++      (declaration
++        (property_name)
++        (string_value
++          (string_content)))
++      (declaration
++        (property_name)
++        (url_call
++          (function_name)
++          (arguments
++            (string_value
++              (string_content))))
++        (call_expression
++          (function_name)
++          (arguments
++            (string_value
++              (string_content))))
++        (url_call
++          (function_name)
++          (arguments
++            (string_value
++              (string_content))))
++        (call_expression
++          (function_name)
++          (arguments
++            (string_value
++              (string_content))))))))
+diff --git a/test/corpus/stylesheets.txt b/test/corpus/stylesheets.txt
+index d0987c2..35979ab 100644
+--- a/test/corpus/stylesheets.txt
++++ b/test/corpus/stylesheets.txt
+@@ -10,6 +10,12 @@ Rule sets
+ 
+ (stylesheet
+   (rule_set
+-    (selectors (id_selector (id_name)))
++    (selectors
++      (id_selector
++        (id_name
++          (identifier))))
+     (block
+-      (declaration (property_name) (integer_value (unit))))))
++      (declaration
++        (property_name)
++        (integer_value
++          (unit))))))
+-- 
+2.56.0
+

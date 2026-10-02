@@ -13,7 +13,7 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | c | tree-sitter/tree-sitter-c | v0.24.2 | v0.24.2 | current (= main) |
 | cpp | tree-sitter/tree-sitter-cpp | upstream main | v0.23.4 | ahead of the release |
 | csharp | tree-sitter/tree-sitter-c-sharp | upstream main | v0.23.5 | ahead of the release |
-| css | tree-sitter/tree-sitter-css | v0.25.0 | v0.25.0 | current (= main) |
+| css | tree-sitter/tree-sitter-css | v0.25.0 (= main) + local patch `sidewatch-modern-css.patch` | v0.25.0 | patched: modern CSS (see below) |
 | dart | UserNobody14/tree-sitter-dart | upstream main | none tagged | current |
 | dockerfile | camdencheek/tree-sitter-dockerfile | upstream main | v0.2.0 | ahead of the release |
 | go | tree-sitter/tree-sitter-go | v0.25.0 | v0.25.0 | current (= main) |
@@ -43,6 +43,20 @@ carries yet. Their `src/` is generated here from upstream main with the tree-sit
 vendored release byte for byte (checked first: Swift 0.7.3 with CLI 0.25.x, JSON v0.24.8 with CLI 0.24.4 — only the
 header comment differs), e.g. `npx tree-sitter-cli@0.25.10 generate` in a checkout of main. The checker reports
 these as `unmatched`, since upstream has no committed `src/` to compare with. Return to a release once one ships.
+
+## Local patches
+
+**css — `tree-sitter-css/sidewatch-modern-css.patch`** (2 Oct 2026). Upstream v0.25.0 (also its main; ten open PRs,
+the oldest from Nov 2025) put ERROR nodes on CSS browsers ship today, 512 in the corpus showcase. The patch adds:
+Media Queries 4 range syntax, `@container` (named, `style()`, `scroll-state()`), `@layer` with dotted names,
+`@page` selectors, `@function` with typed parameters and `returns`, `@import … layer() supports()`, `<type>` syntax
+values (typed `attr()`), unquoted `url()`, attribute case flags, escapes in id names, all non-ASCII identifier
+characters, `! important` spacing, fractional keyframe percentages, empty `;` statements, string line continuations,
+and `&` ending a descendant selector (upstream PR #93's scanner line). Node names our queries use are unchanged.
+Upstream's own tests pass (their expected trees updated where `@layer` and id names now have structure) plus a new
+`test/corpus/modern.txt`. Not handled: `if()` (it explodes the generator's state count), the IE `*prop` hack, `<!--`
+`-->` markers, and `{}` blocks inside custom-property values. `ModernCSSGrammarTests` fails on an unpatched parser.
+To re-apply on a new upstream: `git am` the patch in a checkout, `tree-sitter generate` with CLI 0.25.10, copy `src/`.
 
 ## The runtime
 
