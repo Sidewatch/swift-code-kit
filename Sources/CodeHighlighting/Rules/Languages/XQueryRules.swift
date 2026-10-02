@@ -10,14 +10,15 @@
 
 import Foundation
 
-/// XQuery: `(: … :)` comments, `$variables`, the FLWOR and declaration words, prefixed
-/// names (`xs:decimal`, `fn:count`), embedded element constructors, `@attributes`.
+/// XQuery: nesting `(: … :)` comments, `<!-- -->` and CDATA in constructors, `$variables`, the FLWOR
+/// and declaration words, prefixed names (`xs:decimal`, `fn:count`), embedded element constructors, `@attributes`.
 extension RuleTables {
     static let xquery: [(String, TokenKind)] = [
-        ("\\(:[\\s\\S]*?:\\)", .comment),
+        nestedBlock("(:", ":)"),  // `(: … (: nested :) … :)` is one comment
+        htmlComment,
+        ("<!\\[CDATA\\[[\\s\\S]*?\\]\\]>", .string),
         doubleQuotedPlain,
         singleQuotedPlain,
-        ("\\$[\\w:.-]+", .variable),
         keywords([
             "xquery", "version", "encoding", "declare", "namespace", "default", "element", "attribute", "function", "variable", "option",
             "boundary-space", "base-uri", "construction", "ordering", "copy-namespaces", "module", "import", "schema", "at", "external",
@@ -30,7 +31,12 @@ extension RuleTables {
         ("\\b(xs|fn|math|map|array|local|ex):[\\w-]+", .type),
         ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
         ("@[\\w:-]+", .attribute),
-        ("\\b[A-Za-z_][\\w-]*(?=\\s*\\()", .function),
+        // A call, but never `if (`, `in (` or another keyword before a parenthesis.
+        (
+            "\\b(?!(?:if|in|return|typeswitch|switch|some|every|for|let|where|then|else|and|or|empty|as|of)\\b)[A-Za-z_][\\w-]*(?=[ \\t]*\\()",
+            .function
+        ),
         ("\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b", .number),
+        ("\\$[\\w:.-]+", .variable),  // last, so `$sliding` and `$x` are never a keyword or a call
     ]
 }

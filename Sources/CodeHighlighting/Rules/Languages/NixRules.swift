@@ -12,17 +12,20 @@ import Foundation
 
 /// Nix: `#` and block comments, `"…"` and `''…''` strings, the expression words, attribute
 /// names before `=`, function arguments before `:`, paths and `<search-paths>`, the standard
-/// library names.
+/// library names. An indented string's `'''`, `''$` and `''\n` are escapes, not its end; a `"…"`
+/// string's `${ … }` may hold quoted strings of its own.
 extension RuleTables {
     static let nix: [(String, TokenKind)] = [
         hashComment,
         blockComment,
-        ("''[\\s\\S]*?''(?!\\$)", .string),
-        doubleQuoted,
+        ("''(?:[^']|'(?!')|''(?:'|\\$|\\\\[\\s\\S]))*''", .string),
+        ("\"" + dollarBraceStringBody(multiline: true) + "\"", .string),
         keywords(["let", "in", "with", "rec", "inherit", "if", "then", "else", "assert", "or", "import", "throw", "abort"]),
         ("\\b(true|false|null)\\b", .number),
         ("<[\\w./-]+>", .string),
-        ("(\\.\\.?|~)?/[\\w./+-]+", .string),
+        // A path segment starts with a name character, so the `//` update operator is no path; a path
+        // may interpolate (`./src/${name}/file.nix`).
+        ("(\\.\\.?|~)?/(?:[\\w.+-]|\\$\\{[^}\\n]*\\})(?:[\\w./+-]|\\$\\{[^}\\n]*\\})*", .string),
         ("\\b(builtins|lib|pkgs|stdenv|self|super|config|options|system|inputs|outputs|nixpkgs|flake-utils)\\b", .type),
         (
             "\\b(mkDerivation|mkShell|fetchurl|fetchFromGitHub|fetchgit|map|filter|toString|concatStringsSep|attrValues|attrNames|mapAttrs|genAttrs|optional|optionals|optionalString|callPackage|writeText|writeShellScriptBin|eachDefaultSystem|eachSystem|listToAttrs|hasAttr|getAttr|readFile|fromJSON|toJSON|elem|length|head|tail|foldl|foldr|substring|stringLength|replaceStrings|splitString|removeSuffix|removePrefix)\\b",

@@ -157,3 +157,7 @@
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "not" "and" "or" ] @keyword.operator
 [ "undef" "BEGIN" "END" "alias" "defined?" "redo" "retry" ] @keyword
+; `super` is a keyword, not a variable; a `%w[…]` / `%i[…]` literal's delimiters belong to the literal.
+(super) @keyword
+(string_array ["%w(" ")"] @string)
+(symbol_array ["%i(" ")"] @string.special.symbol)

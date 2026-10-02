@@ -8,6 +8,10 @@
   (block_scalar)
   (string_scalar)
 ] @string
+;; YAML 1.1 booleans (`yes`, `No`, `ON`…), which the 1.2 core schema reads as strings but most tools
+;; that read config (Ansible, PyYAML, Psych) still take as booleans.
+((string_scalar) @boolean
+  (#match? @boolean "^(yes|Yes|YES|no|No|NO|on|On|ON|off|Off|OFF)$"))
 
 [
   (integer_scalar)

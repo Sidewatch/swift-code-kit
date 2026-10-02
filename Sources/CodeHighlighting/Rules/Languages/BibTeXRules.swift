@@ -10,10 +10,12 @@
 
 import Foundation
 
-/// BibTeX: `%` comments, `@entry{` types, `key = ` fields, `{…}` and `"…"` values, numbers.
+/// BibTeX: `%` comments and `@comment{…}` / `@comment(…)` entries, whose body is ignored; `@entry{` types,
+/// `key = ` fields, `{…}` and `"…"` values, numbers.
 extension RuleTables {
     static let bibtex: [(String, TokenKind)] = [
         ("%.*$", .comment),
+        ("(?i)@comment\\s*(?:\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\}|\\([^()]*\\))", .comment),
         ("@[A-Za-z]+(?=\\s*[{(])", .keyword),
         ("^\\s*[A-Za-z_-]+(?=\\s*=)", .property),
         ("(?<==)\\s*\\{[\\s\\S]*?\\}(?=\\s*[,}\\n])", .string),

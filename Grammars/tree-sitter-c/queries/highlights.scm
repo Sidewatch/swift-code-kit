@@ -60,7 +60,8 @@
 
 (null) @constant
 (number_literal) @number
-(char_literal) @number
+; A character literal is a quoted literal, coloured with the strings.
+(char_literal) @string
 
 (field_identifier) @property
 (statement_identifier) @label

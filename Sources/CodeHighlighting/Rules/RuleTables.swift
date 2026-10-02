@@ -33,6 +33,8 @@ enum RuleTables {
         case .html: return html
         case .css: return css
         case .scss, .sass, .less: return scss
+        case .postcss: return postcss
+        case .stylus: return stylus
         case .json: return json
         case .rust: return rust
         case .go: return go
@@ -41,7 +43,18 @@ enum RuleTables {
         case .csharp: return csharp
         case .dart: return dart
         case .markdown: return markdown
-        case .bash: return bash
+        case .bash, .sh, .zsh: return bash
+        case .batch: return batch
+        case .bicep: return bicep
+        case .crystal: return crystal
+        case .just: return just
+        case .nginx: return nginx
+        case .nushell: return nushell
+        case .prql: return prql
+        case .carbon: return carbon
+        case .d: return d
+        case .solidity: return solidity
+        case .vhdl: return vhdl
         case .fish: return fish
         case .fsharp: return fsharp
         case .haskell: return haskell
@@ -63,6 +76,22 @@ enum RuleTables {
         case .protobuf: return protobuf
         case .toml: return toml
         case .diff: return diff
+        case .pascal: return pascal
+        case .sparql: return sparql
+        case .turtle: return turtle
+        case .twig: return twig
+        case .nunjucks: return nunjucks
+        case .liquid: return liquid
+        case .handlebars: return handlebars
+        case .smarty: return smarty
+        case .velocity: return velocity
+        case .erb: return erb
+        case .jsp: return jsp
+        case .cfml: return cfml
+        case .razor: return razor
+        case .marko: return marko
+        case .blade: return blade
+        case .raku: return raku
         // Languages whose family table paints them flat or nearly flat.
         case .erlang: return erlang
         case .prolog: return prolog
@@ -110,6 +139,63 @@ enum RuleTables {
         case .coffeescript: return coffeescript
         case .org: return org
         case .elixir: return elixir
+        case .stata: return stata
+        case .hack: return hack
+        case .properties: return properties
+        case .jsonnet: return jsonnet
+        case .cypher: return cypher
+        case .move: return move
+        case .capnp: return capnp
+        case .vbnet: return vbnet
+        case .r: return r
+        case .ocaml: return ocaml
+        case .sml: return sml
+        case .gleam: return gleam
+        case .gdscript: return gdscript
+        case .thrift: return thrift
+        case .wolfram: return wolfram
+        case .latex: return latex
+        case .mdx: return mdx
+        case .applescript: return applescript
+        case .actionscript: return actionscript
+        case .ada: return ada
+        case .agda: return agda
+        case .awk: return awk
+        case .haxe: return haxe
+        case .idris: return idris
+        case .perl: return perl
+        case .gitconfig: return gitconfig
+        case .glsl: return glsl
+        case .hlsl: return hlsl
+        case .cuda: return cuda
+        case .metal: return metal
+        case .opencl: return opencl
+        case .wgsl: return wgsl
+        case .objectivec: return objectiveC
+        case .vala: return vala
+        case .shaderlab: return shaderlab
+        case .commonlisp: return commonLisp
+        case .elisp: return emacsLisp
+        case .scheme: return scheme
+        case .racket: return racket
+        case .fennel: return fennel
+        case .wat: return wat
+        case .starlark: return starlark
+        case .rego: return rego
+        case .groovy, .gradle: return groovy
+        case .tcl: return tcl
+        case .vyper: return vyper
+        case .v: return v
+        case .zig: return zig
+        case .reason: return reason
+        case .cue: return cue
+        case .dotenv: return dotenv
+        case .caddyfile: return caddyfile
+        case .mediawiki: return mediawiki
+        case .hiveql: return hiveql
+        case .plsql: return plsql
+        case .plpgsql: return plpgsql
+        case .apacheconf: return apacheconf
         default: return table(for: lang.family)
         }
     }

@@ -156,6 +156,11 @@
 (attribute_item) @attribute
 (inner_attribute_item) @attribute
 
+; A string inside an attribute (`#[doc = "x"]`, `#[cfg(feature = "serde")]`) stays a string: the
+; whole-attribute patterns above paint the item, and these, being later, win on the literals.
+(attribute_item (attribute [(string_literal) (raw_string_literal)] @string))
+(token_tree [(string_literal) (raw_string_literal) (char_literal)] @string)
+
 "*" @operator
 "&" @operator
 "'" @operator

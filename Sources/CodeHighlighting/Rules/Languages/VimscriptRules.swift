@@ -20,6 +20,17 @@ extension RuleTables {
         // Strings end on their line: `\"` escapes in the double-quoted form, `''` in the single-quoted one.
         ("\"(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
         ("'(?:[^'\\n]|'')*'", .string),
+        // Patterns are strings: `:s/pat/rep/flags` and `:g/pat/` with any delimiter after a range,
+        // `catch /pat/`, `match Group /pat/`, `vimgrep /pat/`, and a `/pat/` range that opens a line.
+        (
+            "(?:^|(?<=[\\s%$'<>,.\\d*:]))(?:s|substitute)([/#|])(?:(?!\\1)[^\\\\\\n]|\\\\.)*\\1(?:(?!\\1)[^\\\\\\n]|\\\\.)*\\1[gceiInp&#lr]*",
+            .string
+        ),
+        ("(?:^|(?<=[\\s%$'<>,.\\d]))(?:g|v|global|vglobal)!?([/#])(?:(?!\\1)[^\\\\\\n]|\\\\.)*\\1", .string),
+        ("(?<=\\b(?:catch|vimgrep|match[ \\t]{1,8}\\w{1,60})[ \\t]{1,8})/(?:[^/\\\\\\n]|\\\\.)*/[gj]*", .string),
+        ("^[ \\t]*/(?:[^/\\\\\\n]|\\\\.)*/", .string),
+        // A path-like option value: `set undodir=~/.vim/undo//`, `set shell=/bin/zsh`.
+        ("(?<=\\bset(?:local|global)?\\b[^\\n\"]{0,200}=)[~/][^\\s|\"]*", .string),
         keywords([
             "if", "elseif", "else", "endif", "for", "endfor", "in", "while", "endwhile", "break", "continue",
             "function", "endfunction", "def", "enddef", "return", "call", "let", "const", "unlet", "lockvar",

@@ -191,7 +191,8 @@
 
 (wildcard) @parameter
 
-(annotation) @attribute
+; Only the `@` and the name: an annotation's arguments keep their own colours (strings, numbers).
+(annotation "@" @attribute name: (_) @attribute)
 
 ;; special keywords
 

@@ -20,5 +20,6 @@ extension RuleTables {
         hashComment,
         doubleQuoted,
         ("^(msgid_plural|msgid|msgstr(\\[\\d+\\])?|msgctxt)\\b", .keyword),
+        ("(?<=^msgstr\\[)\\d+(?=\\])", .number),  // the plural index of `msgstr[1]`
     ]
 }

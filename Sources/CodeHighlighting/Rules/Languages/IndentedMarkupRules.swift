@@ -15,15 +15,20 @@ import Foundation
 /// `=` code lines, `#{…}` interpolation, `|` piped text, `+mixin` calls.
 extension RuleTables {
     static let indentedMarkup: [(String, TokenKind)] = [
-        ("^\\s*(//-?|-#|/!?)\\s.*$", .comment),
-        ("^\\s*(//-?|-#)$", .comment),
+        // A comment line (`//`, `//-`, Haml's `-#` and `/`) and every line indented deeper below it: a
+        // marker alone on its line opens a block comment. A conditional comment (`/[if IE]`) is its line
+        // only; the markup nested under it is rendered.
+        ("^([ \\t]*)(?:-#|/(?!\\[)).*(?:\\n\\1[ \\t]+\\S.*|\\n[ \\t]*(?=\\n))*", .comment),
+        ("^[ \\t]*/\\[.*$", .comment),
         ("#\\{[^}]*\\}|\\$\\{[^}]*\\}|!\\{[^}]*\\}", .property),
-        doubleQuotedPlain,
-        singleQuotedPlain,
+        // Quotes delimit code strings and attribute values, which end on their line: an apostrophe in
+        // the text cannot pair with one lines away.
+        ("\"(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
+        ("'(?:[^'\\\\\\n]|\\\\.)*'", .string),
         ("^\\s*\\|.*$", .string),
         ("^\\s*(doctype|!!!)\\b.*$", .keyword),
         (
-            "\\b(if|else|elif|elsif|unless|each|for|in|of|while|case|when|default|mixin|include|extends|block|append|prepend|yield|end|do|render|javascript|css|coffee|markdown|sass|scss)\\b",
+            "\\b(if|else|elif|elsif|unless|each|for|in|of|while|case|when|default|mixin|include|extends|block|append|prepend|yield|end|do|render|javascript|css|coffee|markdown|sass|scss|var|let|const|return|function)\\b",
             .keyword
         ),
         ("^\\s*%[\\w:-]+", .keyword),
@@ -32,6 +37,6 @@ extension RuleTables {
         ("\\+[\\w-]+", .function),
         ("\\b[\\w:-]+(?==)", .attribute),
         ("^\\s*[-=!]=?", .variable),
-        ("\\b\\d+(\\.\\d+)?\\b", .number),
+        decimal,
     ]
 }

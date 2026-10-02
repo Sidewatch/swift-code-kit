@@ -11,8 +11,9 @@
 import Foundation
 
 /// CoffeeScript: `#` comments and `### … ###` block comments; `'…'` and `"…"` strings with backslash
-/// escapes (a `\'` does not end one), `#{ … }` interpolation that may itself hold a string, `'''` and
-/// `"""` heredocs, `///` block regexes, backtick JavaScript, `->` / `=>` arrows, `@` members.
+/// escapes (a `\'` does not end one), `#{ … }` interpolation that may itself hold a string with its own
+/// interpolation, three levels deep, `'''` and `"""` heredocs, `///` block regexes, backtick JavaScript,
+/// `->` / `=>` arrows, `@` members.
 extension RuleTables {
     static let coffeescript: [(String, TokenKind)] = [
         ("###[\\s\\S]*?###", .comment),
@@ -20,7 +21,7 @@ extension RuleTables {
         ("\"\"\"[\\s\\S]*?\"\"\"", .string),
         ("'''[\\s\\S]*?'''", .string),
         ("///[\\s\\S]*?///[gimsuy]*", .string),
-        ("\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|#\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\"", .string),
+        ("\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|#\\{(?:[^{}]|\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\})*\\})*\"", .string),
         singleQuoted,
         backQuoted,
         keywords([

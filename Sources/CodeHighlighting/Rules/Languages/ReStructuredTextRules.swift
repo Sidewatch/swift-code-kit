@@ -12,12 +12,14 @@ import Foundation
 
 /// reStructuredText: `..` directives and comments, heading underlines, ``literals``,
 /// `links`_, **bold**, *italic*, list markers, `:field:` names and roles, |substitutions|,
-/// simple tables.
+/// simple tables. A comment is an explicit markup start (`..`) that is not a directive (`.. name::`), a
+/// substitution (`.. |name|`), a footnote or citation (`.. [1]`) or a target (`.. _name:`), together with
+/// the indented lines under it; a bare `..` line comments the indented block that follows.
 extension RuleTables {
     static let restructuredtext: [(String, TokenKind)] = [
         ("^\\.\\. [\\w-]+::.*$", .keyword),
         ("^\\.\\. _[^:]+:.*$", .function),
-        ("^\\.\\. .*$", .comment),
+        ("^\\.\\.(?:[ \\t]+(?![\\[_|])(?![\\w:+.-]+::(?:[ \\t]|$))[^\\n]*|[ \\t]*)$(?:\\n[ \\t]+\\S[^\\n]*)*", .comment),
         ("^(=+|-+|~+|\\^+|\\*+|#+|\"+|\\++|`+)\\s*$", .keyword),
         ("^={2,}(\\s+={2,})+\\s*$", .comment),
         ("``[^`]+``", .string),

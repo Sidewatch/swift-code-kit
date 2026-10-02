@@ -52,15 +52,40 @@ extension RuleTables {
     }
 
     /// Languages whose line comment needs more than "the token to the end of the line": in Org only
-    /// `# text` (or a bare `#`) is a comment — `#+TITLE:` and the other `#+` lines are keywords.
+    /// `# text` (or a bare `#`) is a comment — `#+TITLE:` and the other `#+` lines are keywords. In the
+    /// shells a `#` opens a comment only at the start of a word (`${x##*/}` is code).
     static let exactLineComment: [Language: (String, TokenKind)] = [
-        .org: ("^[ \\t]*#(?:[ \\t].*)?$", .comment)
+        .org: ("^[ \\t]*#(?:[ \\t].*)?$", .comment),
+        .bash: shellComment, .sh: shellComment, .zsh: shellComment, .batch: batchRemComment,
+        // In SPARQL and Turtle a `#` inside an IRI (`<http://…/schema#>`) is part of it: a comment opens
+        // only at a line's start or after whitespace.
+        .sparql: ("(?:^|(?<=\\s))#.*$", .comment), .turtle: ("(?:^|(?<=\\s))#.*$", .comment),
+        // A Pug, Haml or Slim comment marker opens a comment only at a line's start: `</em>` or a URL's
+        // `//` in the text is not one. Their tables paint the indented block below a marker.
+        .pug: ("^[ \\t]*//.*$", .comment), .haml: ("^[ \\t]*-#.*$", .comment), .slim: ("^[ \\t]*/.*$", .comment),
+        // A properties comment is a whole line from its first glyph: `key\#x=1` holds an escaped `#`.
+        .properties: ("^[ \\t]*[#!].*$", .comment),
+        // In LaTeX `\%` is a percent sign; a `%` after an even run of backslashes (`\\%`) opens a comment.
+        .latex: ("(?<!(?<!\\\\)(?:\\\\\\\\){0,4}\\\\)%.*$", .comment),
+        // A Perl `#` after `$` is `$#array`, the last index, and after `\` an escaped hash.
+        .perl: ("(?<![$\\\\])#.*$", .comment),
+        // A Tcl `#` is a comment only where a command starts: `uplevel #0` passes it as an argument.
+        .tcl: ("(?:(?<=^[ \\t]{0,80})|(?<=;[ \\t]{0,20}))#.*$", .comment),
+        // A dotenv `#` opens a comment at a line's start or after whitespace: `value#frag` is one value.
+        .dotenv: ("(?:^|(?<=[ \\t]))#.*$", .comment),
+        // An Apache httpd comment is a whole line: a `#` inside an argument (`IndexIgnore *#`) is literal.
+        .apacheconf: ("^[ \\t]*#.*$", .comment),
+        // A commit message's comment is a whole line: `Fixes #142` refers to an issue.
+        .gitcommit: ("^#.*$", .comment),
+        // A Caddyfile `#` opens a comment only at a token's start: `{path}#frag` is one token.
+        .caddyfile: ("(?:^|(?<=\\s))#.*$", .comment),
+        // A Makefile `\#` is a literal hash (`SPECIAL = \# not a comment`).
+        .makefile: ("(?<!\\\\)#.*$", .comment),
     ]
 
     /// A second comment form some languages have beside the one the language table records.
     static let extraLineComments: [Language: [(String, TokenKind)]] = [
         .thrift: [("#.*$", .comment)],
-        .properties: [("^[ \\t]*!.*$", .comment)],
         .vbnet: [("(?i)^[ \\t]*REM\\b.*$", .comment)],
         .sas: [("^[ \\t]*\\*[^;]*;", .comment)],  // a statement comment ends at its semicolon
         .stata: [("^[ \\t]*\\*.*$", .comment)],

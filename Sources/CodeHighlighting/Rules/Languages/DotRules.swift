@@ -11,7 +11,7 @@
 import Foundation
 
 /// Graphviz DOT: `//`, `/* */` and `#` comments, the graph words, `->` / `--` edges,
-/// `attr=value` pairs, quoted labels, numbers.
+/// `attr=value` pairs (an unquoted value is a string like a quoted one), quoted labels, numbers.
 extension RuleTables {
     static let dot: [(String, TokenKind)] = [
         lineComment,
@@ -19,14 +19,17 @@ extension RuleTables {
         ("^\\s*#.*$", .comment),
         doubleQuoted,
         ("<[^>]*>", .string),
-        keywords(["digraph", "graph", "subgraph", "node", "edge", "strict", "cluster"]),
         ("->|--", .type),
         ("\\b[A-Za-z_][\\w]*(?=\\s*=)", .attribute),
         (
             "\\b(rankdir|label|shape|style|color|fillcolor|fontname|fontsize|penwidth|arrowhead|dir|weight|constraint|splines|nodesep|ranksep|bgcolor|layout|compound|width|height)\\b",
             .attribute
         ),
-        ("#[0-9A-Fa-f]{6}\\b|\\b\\d+(\\.\\d+)?\\b", .number),
+        ("#[0-9A-Fa-f]{6}\\b|(?<![\\w.])-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\\b", .number),
         ("\\b[A-Za-z_]\\w*(?=\\s*(\\[|->|--|;|$))", .variable),
+        // The graph words are case-independent (`NODE`, `SubGraph`) and win over the node-name rule above.
+        ("(?i)\\b(digraph|graph|subgraph|node|edge|strict)\\b", .keyword),
+        // An unquoted attribute value (`shape = box`, `compound = true`) is a value like a quoted one.
+        ("(?<==[ \\t]{0,8})[A-Za-z_][\\w.]*", .string),
     ]
 }

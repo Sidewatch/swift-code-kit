@@ -207,6 +207,7 @@
   (encapsed_string)
   (heredoc)
   (heredoc_body)
+  (nowdoc)
   (nowdoc_body)
 ] @string
 (boolean) @constant.builtin

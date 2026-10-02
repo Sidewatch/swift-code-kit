@@ -34,11 +34,14 @@
 (comment) @comment @spell
 (marginalia) @comment
 
+; Numbers in every spelling the grammar reads as a literal: `42`, `.5`, `5.`, `1e10`, `1.5e+3`, `1_000`,
+; `0xFF`, `0b101`, `0o17`. (A Lua-style `%d` class matches nothing here: the engine is a real regex.)
 ((literal) @number
-   (#match? @number "^[-+]?%d+$"))
+   (#match? @number "^[-+]?([0-9][0-9_]*\\.?[0-9_]*([eE][-+]?[0-9]+)?|\\.[0-9]+([eE][-+]?[0-9]+)?|0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+)$"))
 
-((literal) @float
-  (#match? @float "^[-+]?%d*\.%d*$"))
+; `INTERVAL '1 day'` is one node holding its string: it paints a string, and the later
+; `(keyword_interval) @type.builtin` paints the keyword over it.
+(interval) @string
 
 (parameter) @parameter
 

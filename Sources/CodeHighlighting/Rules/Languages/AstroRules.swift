@@ -14,8 +14,10 @@ import Foundation
 /// Later rules repaint earlier ones; strings and comments paint last.
 extension RuleTables {
     static let astro: [(String, TokenKind)] = [
+        // The body is markup: a `//` in its text is text, and a comment only inside a `{ … }` expression.
+        // Frontmatter and `<script>` are TypeScript regions, painted with their own grammar.
         htmlComment,
-        lineComment,
+        (inside(opens: ["\\{"], closes: ["\\}"], within: 200) + "//.*$", .comment),
         blockComment,
         backQuoted,
         doubleQuoted,

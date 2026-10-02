@@ -342,3 +342,8 @@
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "is" "as" "as?" "as!" "lazy" "actor" "associatedtype" "borrowing" "consuming" "sending" "isolated" "consume" "copy" "of" "async" "await" "inout" "some" "any" "nonisolated" "unowned" "weak" "convenience" "required" "indirect" "dynamic" "optional" "final" "open" "fileprivate" "internal" "private" "public" "static" "override" "mutating" "nonmutating" "prefix" "postfix" "infix" "typealias" "subscript" "operator" "precedencegroup" "repeat" "fallthrough" "try" ] @keyword
 [ (throws) ] @keyword
+; `self` and `super` are keywords in Swift — `Int.self` too; `case` is one wherever it stands (`for case let`,
+; `if case`).
+[ (self_expression) (super_expression) ] @keyword
+((navigation_suffix suffix: (simple_identifier) @keyword) (#eq? @keyword "self"))
+"case" @keyword
