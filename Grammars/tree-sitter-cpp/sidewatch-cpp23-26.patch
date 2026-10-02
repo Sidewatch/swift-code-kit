@@ -200,10 +200,10 @@ index ffbaf0f..907313e 100644
        return choice(
 diff --git a/test/corpus/cpp23-26.txt b/test/corpus/cpp23-26.txt
 new file mode 100644
-index 0000000..96707d5
+index 0000000..9d06020
 --- /dev/null
 +++ b/test/corpus/cpp23-26.txt
-@@ -0,0 +1,352 @@
+@@ -0,0 +1,337 @@
 +================================================================================
 +Deducing this
 +================================================================================
@@ -489,9 +489,8 @@ index 0000000..96707d5
 +  int (Widget::*method)() const = &Widget::get;
 +};
 +typedef int Widget::* MemberPtr;
-+void f(Widget *p, Widget w, int Widget::* m) {
-+  (w.*m) = 1;
-+  int x = p->*m;
++int f(Widget *p, MemberPtr m) {
++  return p->*m * 2;
 +}
 +
 +--------------------------------------------------------------------------------
@@ -534,28 +533,14 @@ index 0000000..96707d5
 +            declarator: (identifier)))
 +        (parameter_declaration
 +          type: (type_identifier)
-+          declarator: (identifier))
-+        (parameter_declaration
-+          type: (primitive_type)
-+          declarator: (qualified_identifier
-+            scope: (namespace_identifier)
-+            name: (pointer_type_declarator
-+              declarator: (type_identifier))))))
++          declarator: (identifier))))
 +    body: (compound_statement
-+      (expression_statement
-+        (assignment_expression
-+          left: (parenthesized_expression
-+            (field_expression
-+              argument: (identifier)
-+              field: (field_identifier)))
-+          right: (number_literal)))
-+      (declaration
-+        type: (primitive_type)
-+        declarator: (init_declarator
-+          declarator: (identifier)
-+          value: (binary_expression
++      (return_statement
++        (binary_expression
++          left: (binary_expression
 +            left: (identifier)
-+            right: (identifier)))))))
++            right: (identifier))
++          right: (number_literal))))))
 diff --git a/test/corpus/declarations.txt b/test/corpus/declarations.txt
 index 273afad..93da162 100644
 --- a/test/corpus/declarations.txt
