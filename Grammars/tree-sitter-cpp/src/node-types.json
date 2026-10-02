@@ -256,6 +256,10 @@
         "named": true
       },
       {
+        "type": "pack_index_expression",
+        "named": true
+      },
+      {
         "type": "parameter_pack_expansion",
         "named": true
       },
@@ -444,6 +448,10 @@
         "named": true
       },
       {
+        "type": "pack_index_type",
+        "named": true
+      },
+      {
         "type": "placeholder_type_specifier",
         "named": true
       },
@@ -556,6 +564,10 @@
         },
         {
           "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "contract_specifier",
           "named": true
         },
         {
@@ -770,6 +782,10 @@
         },
         {
           "type": "preproc_defined",
+          "named": true
+        },
+        {
+          "type": "system_lib_string",
           "named": true
         }
       ]
@@ -1217,6 +1233,21 @@
     }
   },
   {
+    "type": "bit_int_specifier",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "bitfield_clause",
     "named": true,
     "fields": {},
@@ -1278,6 +1309,16 @@
     "type": "case_statement",
     "named": true,
     "fields": {
+      "end": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
       "value": {
         "multiple": false,
         "required": false,
@@ -1723,11 +1764,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -2122,6 +2171,42 @@
     "fields": {}
   },
   {
+    "type": "contract_specifier",
+    "named": true,
+    "fields": {
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "result": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "declaration",
     "named": true,
     "fields": {
@@ -2258,11 +2343,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -2706,7 +2799,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -2746,11 +2839,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -3461,9 +3562,13 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
         {
           "type": "declaration",
           "named": true
@@ -3534,6 +3639,10 @@
         },
         {
           "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "contract_specifier",
           "named": true
         },
         {
@@ -3952,7 +4061,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "condition_clause",
@@ -4101,6 +4210,10 @@
         },
         {
           "type": "initializer_pair",
+          "named": true
+        },
+        {
+          "type": "preproc_call",
           "named": true
         }
       ]
@@ -4476,9 +4589,13 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "identifier",
           "named": true
@@ -4492,7 +4609,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "ms_restrict_modifier",
@@ -4893,6 +5010,58 @@
     }
   },
   {
+    "type": "pack_index_expression",
+    "named": true,
+    "fields": {
+      "index": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "pack": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "pack_index_type",
+    "named": true,
+    "fields": {
+      "index": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "pack": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "parameter_declaration",
     "named": true,
     "fields": {
@@ -5115,6 +5284,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "ms_based_modifier",
           "named": true
         },
@@ -5179,6 +5352,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "ms_based_modifier",
           "named": true
         },
@@ -5188,6 +5365,21 @@
         },
         {
           "type": "type_qualifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pragma_operator",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "string_literal",
           "named": true
         }
       ]
@@ -5382,11 +5574,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -5542,11 +5742,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -5673,11 +5881,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -5897,11 +6113,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -6057,11 +6281,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -6572,6 +6804,10 @@
         "required": false,
         "types": [
           {
+            "type": "bit_int_specifier",
+            "named": true
+          },
+          {
             "type": "primitive_type",
             "named": true
           },
@@ -6807,6 +7043,10 @@
       "required": true,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         }
@@ -6984,6 +7224,10 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "requires_clause",
           "named": true
         },
@@ -7030,10 +7274,32 @@
     "fields": {
       "declarator": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "_declarator",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "splice_type_specifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
             "named": true
           }
         ]
@@ -7360,11 +7626,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "pragma_operator",
           "named": true
         },
         {
@@ -8085,6 +8359,10 @@
     "named": false
   },
   {
+    "type": "...[",
+    "named": false
+  },
+  {
     "type": "/",
     "named": false
   },
@@ -8237,7 +8515,19 @@
     "named": false
   },
   {
+    "type": "_BitInt",
+    "named": false
+  },
+  {
+    "type": "_Complex",
+    "named": false
+  },
+  {
     "type": "_Generic",
+    "named": false
+  },
+  {
+    "type": "_Imaginary",
     "named": false
   },
   {
@@ -8246,6 +8536,14 @@
   },
   {
     "type": "_Noreturn",
+    "named": false
+  },
+  {
+    "type": "_Pragma",
+    "named": false
+  },
+  {
+    "type": "_Thread_local",
     "named": false
   },
   {
@@ -8285,6 +8583,10 @@
     "named": false
   },
   {
+    "type": "__complex__",
+    "named": false
+  },
+  {
     "type": "__declspec",
     "named": false
   },
@@ -8318,6 +8620,14 @@
   },
   {
     "type": "__leave",
+    "named": false
+  },
+  {
+    "type": "__ptr32",
+    "named": false
+  },
+  {
+    "type": "__ptr64",
     "named": false
   },
   {
@@ -8623,6 +8933,14 @@
   },
   {
     "type": "override",
+    "named": false
+  },
+  {
+    "type": "post",
+    "named": false
+  },
+  {
+    "type": "pre",
     "named": false
   },
   {

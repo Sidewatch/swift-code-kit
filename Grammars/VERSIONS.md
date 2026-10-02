@@ -10,15 +10,15 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | Grammar | Upstream | Vendored | Latest release | Status |
 |---|---|---|---|---|
 | bash | tree-sitter/tree-sitter-bash | v0.25.1 | v0.25.1 | current (= main) |
-| c | tree-sitter/tree-sitter-c | v0.24.2 | v0.24.2 | current (= main) |
-| cpp | tree-sitter/tree-sitter-cpp | upstream main | v0.23.4 | ahead of the release |
+| c | tree-sitter/tree-sitter-c | v0.24.2 (= main) + local patch `sidewatch-c23.patch` | v0.24.2 | patched: C23 and extensions (see below) |
+| cpp | tree-sitter/tree-sitter-cpp | upstream main + local patch `sidewatch-cpp23-26.patch`, generated against the patched C | v0.23.4 | patched: C++23/26 (see below) |
 | csharp | tree-sitter/tree-sitter-c-sharp | upstream main | v0.23.5 | ahead of the release |
 | css | tree-sitter/tree-sitter-css | v0.25.0 (= main) + local patch `sidewatch-modern-css.patch` | v0.25.0 | patched: modern CSS (see below) |
 | dart | UserNobody14/tree-sitter-dart | upstream main | none tagged | current |
 | dockerfile | camdencheek/tree-sitter-dockerfile | upstream main | v0.2.0 | ahead of the release |
 | go | tree-sitter/tree-sitter-go | v0.25.0 | v0.25.0 | current (= main) |
 | html | tree-sitter/tree-sitter-html | v0.23.2 | v0.23.2 | current (= main) |
-| java | tree-sitter/tree-sitter-java | v0.23.5 | v0.23.5 | current (= main) |
+| java | tree-sitter/tree-sitter-java | upstream main + local patch `sidewatch-java-25.patch` | v0.23.5 | patched: Java 25 (see below) |
 | javascript | tree-sitter/tree-sitter-javascript | v0.25.0 | v0.25.0 | current (= main) |
 | json | tree-sitter/tree-sitter-json | upstream main 254c42a6, generated here with CLI 0.24.4 | v0.24.8 | current; main fixes `1E+9` (signed exponents) — a real JSON parse error, unreleased since 17 Aug 2026 |
 | kotlin | fwcd/tree-sitter-kotlin | upstream main 1852ea17 (1 Aug 2026) | 0.3.8 | current; updated 2 Oct 2026 from 68f564d4 |
@@ -67,6 +67,23 @@ new corpus `test/corpus/swift6.txt`. The parser grows 21.2 → 23.1 MB. Not hand
 (upstream allows only non-expression patterns there), and the experimental `@lifetime` / underscored `@_specialize`.
 `Swift6GrammarTests` fails on all 12 constructs with the unpatched parser.
 Proposed upstream as alex-pinkus/tree-sitter-swift#629 (2 Oct 2026); drop the patch once a release carries it.
+
+**c — `tree-sitter-c/sidewatch-c23.patch`** (2 Oct 2026). C23: `typeof`/`typeof_unqual`, `auto` inference,
+`_BitInt(N)`, enums with any underlying type, `#embed` in initializers, `__has_include(<…>)` arguments,
+`_Thread_local`, `[[attributes]]` after `*`, delimited and named escapes (`\x{41}`, `\N{…}`); C99 `_Complex`,
+`_Pragma`; GNU case ranges; MSVC `__ptr32/64` and `__declspec(align(16))`. Upstream's 87 tests pass; new corpus
+`test/corpus/c23.txt`. `typeof` is coloured through an extra query on `.c` only, because the C++ grammar has no such
+token and inherits the C query file.
+
+**cpp — `tree-sitter-cpp/sidewatch-cpp23-26.patch`** (2 Oct 2026). `if consteval`, contracts `pre`/`post`, pack
+indexing `Ts...[0]` (`...[` one token so pack expansions are untouched), attributes on structured bindings,
+explicit instantiation of class templates, attributes before `friend`. Generated against the PATCHED C grammar
+(`node_modules/tree-sitter-c` → the C checkout), so C's additions (`#embed`, `_Pragma`, case ranges, escapes) reach
+C++ too; that needs two extra conflict entries in the C++ grammar. Upstream's tests pass.
+
+**java — `tree-sitter-java/sidewatch-java-25.patch`** (2 Oct 2026). `import module` (JEP 511), statements before
+`super(…)` (JEP 513), qualified record patterns and `final` type patterns (as upstream PRs #231 / #230). Upstream's
+tests pass. `ModernCFamilyGrammarTests` fails on every construct of all three with the unpatched parsers.
 
 ## The runtime
 

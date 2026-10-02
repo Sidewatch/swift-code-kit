@@ -78,5 +78,5 @@
 
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
-[ "goto" "register" "extern" "static" "inline" "volatile" "const" "signed" "unsigned" "alignof" "alignas" "decltype" "operator" "noexcept" "constexpr" "consteval" "constinit" "explicit" "virtual" "override" "final" "mutable" "friend" "typename" "template" "namespace" "using" "concept" "requires" "co_return" "co_await" "co_yield" "static_assert" "sizeof" "nullptr" "delete" "new" "try" "catch" "throw" ] @keyword
+[ "goto" "register" "extern" "static" "inline" "volatile" "const" "signed" "unsigned" "alignof" "alignas" "decltype" "operator" "noexcept" "constexpr" "consteval" "constinit" "explicit" "virtual" "override" "final" "mutable" "friend" "typename" "template" "namespace" "using" "concept" "requires" "co_return" "co_await" "co_yield" "static_assert" "pre" "post" "sizeof" "nullptr" "delete" "new" "try" "catch" "throw" ] @keyword
 [ (true) (false) ] @boolean

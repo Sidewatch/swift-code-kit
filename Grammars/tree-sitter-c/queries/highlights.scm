@@ -83,5 +83,5 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; This file is also PREPENDED to the C++ query, so only tokens both grammars define may appear here.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
-[ "goto" "register" "extern" "static" "inline" "volatile" "const" "signed" "unsigned" "restrict" "_Atomic" "_Noreturn" "typedef" "sizeof" ] @keyword
+[ "goto" "register" "extern" "static" "inline" "volatile" "const" "signed" "unsigned" "restrict" "_Atomic" "_Noreturn" "typedef" "sizeof" "_BitInt" "_Complex" "_Imaginary" "_Thread_local" "thread_local" "_Pragma" ] @keyword
 [ (true) (false) ] @boolean
