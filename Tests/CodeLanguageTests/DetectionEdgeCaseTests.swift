@@ -353,4 +353,12 @@ final class DetectionEdgeCaseTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: "yarn.lock"), .yaml)
         XCTAssertEqual(Language.detect(filename: "sidewatch.po").family, .config)
     }
+
+    /// XML dialects with their own extension (GPS tracks, map overlays, outlines, NuGet manifests)
+    /// are XML: the app's structure tree and Quick Look both key off this answer.
+    func testXMLDialectExtensionsAreXML() {
+        for name in ["track.gpx", "sites.kml", "subscriptions.opml", "Inventory.nuspec"] {
+            XCTAssertEqual(Language.detect(filename: name), .xml, name)
+        }
+    }
 }

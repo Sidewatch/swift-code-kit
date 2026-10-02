@@ -3,7 +3,6 @@
 //  CodeLanguage
 //
 //  Filename/extension → Language detection.
-//  GENERATED tables — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -202,6 +201,7 @@ public extension Language {
         "gleam": .gleam,
         "glsl": .glsl,
         "go": .go,
+        "gpx": .xml,
         "gql": .graphql,
         "gradle": .gradle,
         "graphql": .graphql,
@@ -269,6 +269,7 @@ public extension Language {
         "jsx": .jsx,
         "just": .just,
         "kdl": .kdl,
+        "kml": .xml,
         "ksh": .sh,
         "kt": .kotlin,
         "ktm": .kotlin,
@@ -332,7 +333,9 @@ public extension Language {
         "nu": .nushell,
         "nunjs": .nunjucks,
         "nunjucks": .nunjucks,
+        "nuspec": .xml,
         "odin": .odin,
+        "opml": .xml,
         "org": .org,
         "p6": .raku,
         "pas": .pascal,
