@@ -74,6 +74,7 @@ Proposed upstream as alex-pinkus/tree-sitter-swift#629 (2 Oct 2026); drop the pa
 `_Pragma`; GNU case ranges and computed `goto *p`; MSVC `__ptr32/64` and `__declspec(align(16))`. Upstream's 87 tests pass; new corpus
 `test/corpus/c23.txt`. `typeof` is coloured through an extra query on `.c` only, because the C++ grammar has no such
 token and inherits the C query file.
+Proposed upstream as tree-sitter/tree-sitter-c#331 (2 Oct 2026); drop the patch once a release carries it.
 
 **cpp — `tree-sitter-cpp/sidewatch-cpp23-26.patch`** (2 Oct 2026). `if consteval`, contracts `pre`/`post`, pack
 indexing `Ts...[0]` (`...[` one token so pack expansions are untouched), attributes on structured bindings,
@@ -82,10 +83,13 @@ pointer-to-member fields and typedefs (`int W::* p;`), and `= default` / `= dele
 (upstream left a MISSING node, and read `friend … = default;` as a variable named `default`). Generated against the PATCHED C grammar
 (`node_modules/tree-sitter-c` → the C checkout), so C's additions (`#embed`, `_Pragma`, case ranges, escapes) reach
 C++ too; that needs two extra conflict entries in the C++ grammar. Upstream's tests pass.
+Proposed upstream as tree-sitter/tree-sitter-cpp#375 (2 Oct 2026), generated against UPSTREAM tree-sitter-c, so
+without those two conflicts and the escape tests; drop the patch once releases of both carry it.
 
 **java — `tree-sitter-java/sidewatch-java-25.patch`** (2 Oct 2026). `import module` (JEP 511), statements before
 `super(…)` (JEP 513), qualified record patterns and `final` type patterns (as upstream PRs #231 / #230). Upstream's
 tests pass. `ModernCFamilyGrammarTests` fails on every construct of all three with the unpatched parsers.
+Proposed upstream as tree-sitter/tree-sitter-java#233 (2 Oct 2026); drop the patch once a release carries it.
 
 ## The runtime
 
