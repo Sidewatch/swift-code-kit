@@ -78,7 +78,8 @@ token and inherits the C query file.
 **cpp — `tree-sitter-cpp/sidewatch-cpp23-26.patch`** (2 Oct 2026). `if consteval`, contracts `pre`/`post`, pack
 indexing `Ts...[0]` (`...[` one token so pack expansions are untouched), attributes on structured bindings,
 explicit instantiation of class templates, attributes before `friend`, `= delete("reason")`, the `->*` operator,
-pointer-to-member fields and typedefs (`int W::* p;`). Generated against the PATCHED C grammar
+pointer-to-member fields and typedefs (`int W::* p;`), and `= default` / `= delete` on functions outside a class
+(upstream left a MISSING node, and read `friend … = default;` as a variable named `default`). Generated against the PATCHED C grammar
 (`node_modules/tree-sitter-c` → the C checkout), so C's additions (`#embed`, `_Pragma`, case ranges, escapes) reach
 C++ too; that needs two extra conflict entries in the C++ grammar. Upstream's tests pass.
 

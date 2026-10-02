@@ -62,6 +62,25 @@ final class ModernCFamilyGrammarTests: XCTestCase {
     func testCpp23And26ParseWithoutErrors() { XCTAssertEqual(failing(Self.cpp, .cpp), []) }
     func testJava25ParsesWithoutErrors() { XCTAssertEqual(failing(Self.java, .java), []) }
 
+    /// Upstream had `= delete` only inside a class: at namespace scope it read the plain form with a MISSING
+    /// operand and the reason form as a `delete` expression initialising a variable.
+    func testDeleteOutsideAClassIsADefinition() throws {
+        for code in ["void f(int) = delete;", "void g(double) = delete(\"use f\");"] {
+            let tree = try XCTUnwrap(TreeSitterHighlighter.syntaxTree(of: code, language: .cpp))
+            XCTAssertTrue(tree.hasPrefix("(translation_unit (function_definition"), tree)
+            XCTAssertTrue(tree.contains("(delete_method_clause"), tree)
+            XCTAssertFalse(tree.contains("MISSING"), tree)
+        }
+    }
+
+    /// Upstream read `= default` on a friend as an initialiser naming a variable called `default`.
+    func testFriendDefaultIsADefinition() throws {
+        let code = "struct A { friend auto operator<=>(A const &, A const &) = default; };"
+        let tree = try XCTUnwrap(TreeSitterHighlighter.syntaxTree(of: code, language: .cpp))
+        XCTAssertTrue(tree.contains("(friend_declaration (function_definition"), tree)
+        XCTAssertTrue(tree.contains("(default_method_clause)"), tree)
+    }
+
     /// Plain pack expansions must still parse after `...[` became pack indexing.
     func testPackExpansionsStillParse() {
         let code = "template <typename... Args> void g(Args... args) { f(args...); container<A, B, C...> t; }"
