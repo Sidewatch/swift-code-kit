@@ -65,7 +65,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // `injectHTMLText` adds an HTML injection for inline `text` (PHP templates).
         func g(
             _ ptr: OpaquePointer?, _ product: String, inherits: [String] = [], injectHTMLText: Bool = false, extra: String = "",
-            templateTags: Bool = false
+            templateTags: Bool = false, names: [String] = []
         ) -> Grammar? {
             guard let ptr else { return nil }
             let language = SwiftTreeSitter.Language(ptr)
@@ -83,7 +83,14 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             // later-pattern-wins precedence (e.g. distinguishing JSON keys from values).
             let own = (queryText(product) ?? "") + (extra.isEmpty ? "" : "\n" + extra)
             let combined = inherits.compactMap { queryText($0) }.joined(separator: "\n") + "\n" + own
-            guard let highlights = buildHighlights(combined) ?? buildHighlights(own) else { return nil }
+            // `names` are the grammar's plain-name nodes, captured FIRST so every other pattern outranks them:
+            // a name no other pattern claims wears the identifier colour, and anything a pattern does claim
+            // (a call, a type, a string interpolation) keeps its own.
+            let lead = names.map { "(\($0)) @identifier.plain" }.joined(separator: "\n")
+            guard
+                let highlights = (lead.isEmpty ? nil : buildHighlights(lead + "\n" + combined)) ?? buildHighlights(combined)
+                    ?? buildHighlights(own)
+            else { return nil }
             var injSrc = queryText(product, "injections.scm") ?? ""
             if injectHTMLText { injSrc += "\n((text) @injection.content (#set! injection.language \"html\"))\n" }
             return Grammar(
@@ -112,20 +119,23 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // nodes (the JS grammar parses JSX natively; TSX is TypeScript+JSX).
         // The patterns only match jsx_* nodes, so non-JSX files are unaffected.
         let jsx = queryText("TreeSitterJavaScript", "highlights-jsx.scm") ?? ""
-        m[.javascript] = { g(tree_sitter_javascript(), "TreeSitterJavaScript", extra: jsx) }
-        m[.python] = { g(tree_sitter_python(), "TreeSitterPython") }
-        m[.rust] = { g(tree_sitter_rust(), "TreeSitterRust") }
-        m[.go] = { g(tree_sitter_go(), "TreeSitterGo") }
+        let jsNames = ["identifier", "shorthand_property_identifier", "shorthand_property_identifier_pattern"]
+        m[.javascript] = { g(tree_sitter_javascript(), "TreeSitterJavaScript", extra: jsx, names: jsNames) }
+        m[.python] = { g(tree_sitter_python(), "TreeSitterPython", names: ["identifier"]) }
+        m[.rust] = { g(tree_sitter_rust(), "TreeSitterRust", names: ["identifier"]) }
+        m[.go] = { g(tree_sitter_go(), "TreeSitterGo", names: ["identifier"]) }
         m[.html] = { g(tree_sitter_html(), "TreeSitterHTML", templateTags: true) }
         m[.bash] = { g(tree_sitter_bash(), "TreeSitterBash") }
         // C23 `typeof` / `typeof_unqual` exist only in the C grammar; the C++ grammar inherits the C query
         // file, where a token C++ lacks would stop the whole query compiling. So they live here.
-        m[.c] = { g(tree_sitter_c(), "TreeSitterC", extra: "[\"typeof\" \"typeof_unqual\" \"__typeof__\"] @keyword") }
-        m[.java] = { g(tree_sitter_java_orchard(), "TreeSitterJava") }
-        m[.ruby] = { g(tree_sitter_ruby(), "TreeSitterRuby") }
-        m[.typescript] = { g(tree_sitter_typescript(), "TreeSitterTypeScript", inherits: ["TreeSitterJavaScript"]) }
-        m[.cpp] = { g(tree_sitter_cpp(), "TreeSitterCPP", inherits: ["TreeSitterC"]) }
-        m[.csharp] = { g(tree_sitter_c_sharp(), "TreeSitterCSharp") }
+        m[.c] = {
+            g(tree_sitter_c(), "TreeSitterC", extra: "[\"typeof\" \"typeof_unqual\" \"__typeof__\"] @keyword", names: ["identifier"])
+        }
+        m[.java] = { g(tree_sitter_java_orchard(), "TreeSitterJava", names: ["identifier"]) }
+        m[.ruby] = { g(tree_sitter_ruby(), "TreeSitterRuby", names: ["identifier"]) }
+        m[.typescript] = { g(tree_sitter_typescript(), "TreeSitterTypeScript", inherits: ["TreeSitterJavaScript"], names: jsNames) }
+        m[.cpp] = { g(tree_sitter_cpp(), "TreeSitterCPP", inherits: ["TreeSitterC"], names: ["identifier"]) }
+        m[.csharp] = { g(tree_sitter_c_sharp(), "TreeSitterCSharp", names: ["identifier"]) }
         // PHP `$vars` are captured `(variable_name) @variable` upstream — nil'd by the
         // bare-variable role. Like bash's `$VAR`, they're sigiled tokens VS Code
         // keeps colored, so re-capture as `@property` — except `$this`, whose inner
@@ -133,16 +143,16 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         m[.php] = {
             g(
                 tree_sitter_php(), "TreeSitterPHP", injectHTMLText: true,
-                extra: "((variable_name) @property (#not-eq? @property \"$this\"))")
+                extra: "((variable_name) @property (#not-eq? @property \"$this\"))", names: ["name"])
         }
         m[.yaml] = { g(tree_sitter_yaml(), "TreeSitterYAML") }
         m[.toml] = { g(tree_sitter_toml(), "TreeSitterTOML") }
-        m[.lua] = { g(tree_sitter_lua(), "TreeSitterLua") }
-        m[.kotlin] = { g(tree_sitter_kotlin(), "TreeSitterKotlin") }
-        m[.dart] = { g(tree_sitter_dart(), "TreeSitterDart") }
+        m[.lua] = { g(tree_sitter_lua(), "TreeSitterLua", names: ["identifier"]) }
+        m[.kotlin] = { g(tree_sitter_kotlin(), "TreeSitterKotlin", names: ["simple_identifier"]) }
+        m[.dart] = { g(tree_sitter_dart(), "TreeSitterDart", names: ["identifier"]) }
         m[.dockerfile] = { g(tree_sitter_dockerfile(), "TreeSitterDockerfile") }
-        m[.swift] = { g(tree_sitter_swift(), "TreeSitterSwift") }
-        m[.scala] = { g(tree_sitter_scala(), "TreeSitterScala") }
+        m[.swift] = { g(tree_sitter_swift(), "TreeSitterSwift", names: ["simple_identifier"]) }
+        m[.scala] = { g(tree_sitter_scala(), "TreeSitterScala", names: ["identifier"]) }
         m[.xml] = { g(tree_sitter_xml(), "TreeSitterXML") }
         // Upstream's number/float patterns use Lua-style classes ("%d"), which
         // NSRegularExpression matches literally — so numeric literals would stay on
@@ -179,7 +189,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // overlay appended last. JSX files use it too — TSX is a superset that
         // parses plain JSX, and the shared queries keep tags/attributes/components
         // colored identically across .jsx/.tsx.
-        m[.tsx] = { g(tree_sitter_tsx(), "TreeSitterTypeScript", inherits: ["TreeSitterJavaScript"], extra: jsx) }
+        m[.tsx] = { g(tree_sitter_tsx(), "TreeSitterTypeScript", inherits: ["TreeSitterJavaScript"], extra: jsx, names: jsNames) }
         m[.jsx] = m[.tsx]
         // SCSS/Sass/Less deliberately have NO entry: the CSS grammar tokenizes
         // their variables (`$var`, Less `@var`) as ERROR nodes that swallow the
@@ -767,11 +777,11 @@ public final class TreeSitterHighlighter: CodeHighlighter {
                 guard let name = capture.name, let color = color(for: name) else { continue }
                 let r = capture.range
                 guard r.length > 0, NSMaxRange(r) <= ns.length else { continue }
-                hits.append(
-                    (
-                        NSRange(location: offset + r.location, length: r.length),
-                        base + capture.patternIndex, color
-                    ))
+                // A plain name only fills what nothing else paints, in any pass: its hit sorts below every
+                // pass's window, so an injected layer's name catch-all cannot repaint the host's colour (a
+                // type in a Rust macro, a script in PHP's HTML) and within a pass it is the lowest pattern.
+                let pattern = name == "identifier.plain" ? -1 : base + capture.patternIndex
+                hits.append((NSRange(location: offset + r.location, length: r.length), pattern, color))
             }
         }
         return hits
@@ -1111,6 +1121,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// identifier. Qualified captures (`@variable.builtin`, `@variable.parameter`) stay coloured;
     /// sigiled variables (`$VAR`, `--custom-prop`) are re-captured as `@property` instead.
     public static func role(for capture: String) -> String? {
+        if capture == "identifier.plain" { return "identifier" }  // the lead catch-all `names` adds (see `g`)
         if capture == "variable" || capture == "identifier" { return nil }  // bare catch-alls
         // Checked before the first-component split: bare "namespace" stays a type-colored
         // module name, while the PREFIX of a qualified name recedes (PhpStorm-style).
@@ -1153,6 +1164,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         case "type": return HighlightTheme.colors.color(for: .type)
         case "function": return HighlightTheme.colors.color(for: .function)
         case "variable": return HighlightTheme.colors.color(for: .variable)
+        case "identifier": return HighlightTheme.colors.color(for: .identifier)
         case "property": return HighlightTheme.colors.color(for: .property)
         // Receded, not recolored: the theme's own foreground at reduced alpha keeps
         // the dimming correct on every palette, light or dark, with no new token role.

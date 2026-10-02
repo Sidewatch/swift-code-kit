@@ -18,7 +18,7 @@ private struct MockColors: TokenColorProviding {
     static let map: [TokenKind: NSColor] = [
         .comment: .red, .string: .green, .keyword: .blue, .type: .purple,
         .number: .orange, .function: .brown, .attribute: .magenta,
-        .property: .systemPink, .added: .cyan, .removed: .yellow,
+        .property: .systemPink, .added: .cyan, .removed: .yellow, .identifier: .black,
     ]
     func color(for kind: TokenKind) -> NSColor { MockColors.map[kind]! }
     var foreground: NSColor { .black }

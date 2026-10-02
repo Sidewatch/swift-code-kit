@@ -27,8 +27,11 @@ public enum TokenKind: Sendable {
     case function
     /// Attributes, annotations, and decorators (`@Published`, `#[derive]`, …).
     case attribute
-    /// Plain identifiers — variables and parameters.
+    /// Variables a grammar singles out — `self`, parameters, built-in variables.
     case variable
+    /// Plain names no other role claims. A theme paints them a quiet tint of the foreground, or the
+    /// foreground itself where names are meant to stay plain.
+    case identifier
     /// Properties, fields, and object keys.
     case property
     /// Added lines in a diff/patch (themes map this to their diff-added tint).

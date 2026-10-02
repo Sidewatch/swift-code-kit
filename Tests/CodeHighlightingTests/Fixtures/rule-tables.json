@@ -334,6 +334,10 @@
   ],
   "lang:actionscript" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -384,6 +388,10 @@
   ],
   "lang:ada" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "--.*$",
       "comment"
     ],
@@ -421,6 +429,10 @@
     ]
   ],
   "lang:agda" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
     [
       "--.*$",
       "comment"
@@ -497,6 +509,10 @@
     ]
   ],
   "lang:applescript" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "--.*$",
       "comment"
@@ -772,6 +788,10 @@
   ],
   "lang:awk" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "#.*$",
       "comment"
     ],
@@ -1044,6 +1064,10 @@
   ],
   "lang:c" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -1128,6 +1152,10 @@
   ],
   "lang:cairo" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -1203,6 +1231,10 @@
     ]
   ],
   "lang:carbon" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "(#+)'''[\\s\\S]*?'''\\1",
       "string"
@@ -1342,6 +1374,10 @@
   ],
   "lang:clojure" : [
     [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
+    [
       ";.*$",
       "comment"
     ],
@@ -1452,6 +1488,10 @@
   ],
   "lang:coffeescript" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "###[\\s\\S]*?###",
       "comment"
     ],
@@ -1522,6 +1562,10 @@
   ],
   "lang:commonlisp" : [
     [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
+    [
       ";.*$",
       "comment"
     ],
@@ -1572,6 +1616,10 @@
   ],
   "lang:coq" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "--.*$",
       "comment"
     ],
@@ -1605,6 +1653,10 @@
     ]
   ],
   "lang:cpp" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -1686,6 +1738,10 @@
   ],
   "lang:crystal" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\"(?>[^\"\\\\#]+|\\\\[\\s\\S]|#\\{(?>[^{}\"]+|\"(?>[^\"\\\\#]+|\\\\[\\s\\S]|#\\{(?>[^{}\"]+|\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\}|#)*\"|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\}|#)*\"",
       "string"
     ],
@@ -1739,6 +1795,10 @@
     ]
   ],
   "lang:csharp" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -1845,6 +1905,10 @@
     ]
   ],
   "lang:cuda" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -2028,6 +2092,10 @@
   ],
   "lang:d" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "q\"(\\w+)\\n[\\s\\S]*?\\n\\1\"",
       "string"
     ],
@@ -2093,6 +2161,10 @@
     ]
   ],
   "lang:dart" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/\/.*$",
       "comment"
@@ -2464,6 +2536,10 @@
   ],
   "lang:elisp" : [
     [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
+    [
       ";.*$",
       "comment"
     ],
@@ -2505,6 +2581,10 @@
     ]
   ],
   "lang:elixir" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "#.*$",
       "comment"
@@ -2575,6 +2655,10 @@
     ]
   ],
   "lang:elm" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
     [
       "--.*$",
       "comment"
@@ -2692,6 +2776,10 @@
   ],
   "lang:erlang" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "%.*$",
       "comment"
     ],
@@ -2745,6 +2833,10 @@
     ]
   ],
   "lang:fennel" : [
+    [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
     [
       ";.*$",
       "comment"
@@ -2813,6 +2905,10 @@
     ]
   ],
   "lang:fortran" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "!.*$",
       "comment"
@@ -2889,6 +2985,10 @@
     ]
   ],
   "lang:fsharp" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -3096,6 +3196,10 @@
   ],
   "lang:gleam" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
       "string"
     ],
@@ -3125,6 +3229,10 @@
     ]
   ],
   "lang:glsl" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -3187,6 +3295,10 @@
     ]
   ],
   "lang:go" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -3267,6 +3379,10 @@
     ]
   ],
   "lang:gradle" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -3376,6 +3492,10 @@
   ],
   "lang:groovy" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -3441,6 +3561,10 @@
     ]
   ],
   "lang:hack" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "#.*$",
       "comment"
@@ -3636,6 +3760,10 @@
   ],
   "lang:haskell" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "(?<![!#$%&*+.\/<=>?@\\\\^|~:-])--+(?![!#$%&*+.\/<=>?@\\\\^|~:-]).*$",
       "comment"
     ],
@@ -3677,6 +3805,10 @@
     ]
   ],
   "lang:haxe" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -3890,6 +4022,10 @@
   ],
   "lang:hlsl" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -4012,6 +4148,10 @@
   ],
   "lang:idris" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "\\|\\|\\|.*$",
       "comment"
     ],
@@ -4108,6 +4248,10 @@
   ],
   "lang:java" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -4153,6 +4297,10 @@
     ]
   ],
   "lang:javascript" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -4540,6 +4688,10 @@
   ],
   "lang:jsx" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -4581,6 +4733,10 @@
     ]
   ],
   "lang:julia" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "#=(?:[^=#]|=(?!#)|#(?!=)|#=(?:[^=]|=(?!#))*=#)*=#",
       "comment"
@@ -4772,6 +4928,10 @@
   ],
   "lang:kotlin" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -4847,6 +5007,10 @@
     ]
   ],
   "lang:lean" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
     [
       "--.*$",
       "comment"
@@ -5192,6 +5356,10 @@
   ],
   "lang:lua" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "--.*$",
       "comment"
     ],
@@ -5425,6 +5593,10 @@
     ]
   ],
   "lang:matlab" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "%.*$",
       "comment"
@@ -5692,6 +5864,10 @@
   ],
   "lang:metal" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -5761,6 +5937,10 @@
     ]
   ],
   "lang:move" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\\b[bx]?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
       "string"
@@ -5917,6 +6097,10 @@
     ]
   ],
   "lang:nim" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "##\\[[\\s\\S]*?\\]##",
       "comment"
@@ -6204,6 +6388,10 @@
   ],
   "lang:objectivec" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -6265,6 +6453,10 @@
     ]
   ],
   "lang:objectivecpp" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -6328,6 +6520,10 @@
   ],
   "lang:ocaml" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "\\{([a-z_]*)\\|[\\s\\S]*?\\|\\1\\}",
       "string"
     ],
@@ -6361,6 +6557,10 @@
     ]
   ],
   "lang:odin" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -6403,6 +6603,10 @@
     ]
   ],
   "lang:opencl" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -6524,6 +6728,10 @@
   ],
   "lang:pascal" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\\{[\\s\\S]*?\\}",
       "comment"
     ],
@@ -6586,6 +6794,10 @@
   ],
   "lang:perl" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "^=[a-zA-Z]\\w*[\\s\\S]*?(?:^=cut\\b.*$|\\z)",
       "comment"
     ],
@@ -6643,6 +6855,10 @@
     ]
   ],
   "lang:php" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -7005,6 +7221,10 @@
   ],
   "lang:powershell" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "<#[\\s\\S]*?#>",
       "comment"
     ],
@@ -7096,6 +7316,10 @@
     ]
   ],
   "lang:prolog" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "%.*$",
       "comment"
@@ -7323,6 +7547,10 @@
   ],
   "lang:purescript" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "\\{-(?:[^-{]|-(?!\\})|\\{(?!-)|\\{-(?:[^-{]|-(?!\\})|\\{(?!-))*-\\})*-\\}",
       "comment"
     ],
@@ -7368,6 +7596,10 @@
     ]
   ],
   "lang:python" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\"\"\"[\\s\\S]*?\"\"\"",
       "string"
@@ -7418,6 +7650,10 @@
     ]
   ],
   "lang:qsharp" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -7539,6 +7775,10 @@
   ],
   "lang:r" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "#.*$",
       "comment"
     ],
@@ -7597,6 +7837,10 @@
   ],
   "lang:racket" : [
     [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
+    [
       ";.*$",
       "comment"
     ],
@@ -7654,6 +7898,10 @@
     ]
   ],
   "lang:raku" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "#.*$",
       "comment"
@@ -7823,6 +8071,10 @@
   ],
   "lang:reason" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -7906,6 +8158,10 @@
     ]
   ],
   "lang:rescript" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
     [
       "--.*$",
       "comment"
@@ -8147,6 +8403,10 @@
   ],
   "lang:ruby" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "#.*$",
       "comment"
     ],
@@ -8184,6 +8444,10 @@
     ]
   ],
   "lang:rust" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -8347,6 +8611,10 @@
   ],
   "lang:scala" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -8388,6 +8656,10 @@
     ]
   ],
   "lang:scheme" : [
+    [
+      "\\b[A-Za-z_][\\w*+!?<>=\/-]*",
+      "identifier"
+    ],
     [
       ";.*$",
       "comment"
@@ -8675,6 +8947,10 @@
   ],
   "lang:smalltalk" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\"[^\"]*\"",
       "comment"
     ],
@@ -8783,6 +9059,10 @@
   ],
   "lang:sml" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_']*",
+      "identifier"
+    ],
+    [
       "#?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
       "string"
     ],
@@ -8808,6 +9088,10 @@
     ]
   ],
   "lang:solidity" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\\b(?:hex|unicode)(?:\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"|'(?:[^'\\\\]|\\\\[\\s\\S])*')",
       "string"
@@ -8992,6 +9276,10 @@
     ]
   ],
   "lang:starlark" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "(?i:[rb]{0,2})\"\"\"[\\s\\S]*?\"\"\"",
       "string"
@@ -9243,6 +9531,10 @@
   ],
   "lang:swift" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -9339,6 +9631,10 @@
   ],
   "lang:systemverilog" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -9392,6 +9688,10 @@
     ]
   ],
   "lang:tcl" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
       "string"
@@ -9681,6 +9981,10 @@
   ],
   "lang:tsx" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -9843,6 +10147,10 @@
   ],
   "lang:typescript" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -9896,6 +10204,10 @@
     ]
   ],
   "lang:v" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"
@@ -9954,6 +10266,10 @@
     ]
   ],
   "lang:vala" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\"\"\"[\\s\\S]*?\"\"\"",
       "string"
@@ -10059,6 +10375,10 @@
   ],
   "lang:vbscript" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "'.*$",
       "comment"
     ],
@@ -10147,6 +10467,10 @@
   ],
   "lang:verilog" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "\/\/.*$",
       "comment"
     ],
@@ -10200,6 +10524,10 @@
     ]
   ],
   "lang:vhdl" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "(?<![A-Za-z0-9\"])\"(?:[^\"\\n]|\"\")*\"",
       "string"
@@ -10347,6 +10675,10 @@
   ],
   "lang:vyper" : [
     [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
       "#.*$",
       "comment"
     ],
@@ -10480,6 +10812,10 @@
     ]
   ],
   "lang:wolfram" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
       "string"
@@ -10746,6 +11082,10 @@
     ]
   ],
   "lang:zig" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
     [
       "\/\/.*$",
       "comment"

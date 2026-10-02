@@ -24,7 +24,7 @@ import CodeLanguage
 struct RoleColors: TokenColorProviding {
     static let roles: [(TokenKind, String)] = [
         (.comment, "comment"), (.string, "string"), (.keyword, "keyword"), (.type, "type"), (.number, "number"),
-        (.function, "function"), (.attribute, "attribute"), (.variable, "variable"), (.property, "property"),
+        (.function, "function"), (.attribute, "attribute"), (.variable, "variable"), (.identifier, "identifier"), (.property, "property"),
         (.added, "added"), (.removed, "removed"),
     ]
     func color(for kind: TokenKind) -> NSColor {
@@ -50,7 +50,10 @@ guard args.count >= 3 else {
 }
 let root = URL(fileURLWithPath: args[1], isDirectory: true)
 let out = URL(fileURLWithPath: args[2], isDirectory: true)
-let only = args.count > 3 ? Set(args[3].split(separator: ",").map(String.init)) : nil
+let only = args.count > 3 && !args[3].hasPrefix("--") ? Set(args[3].split(separator: ",").map(String.init)) : nil
+/// `--time`: paint only and print the seconds the painting took (what the editor pays), no role files.
+let timeOnly = args.contains("--time")
+var painting: TimeInterval = 0
 let fm = FileManager.default
 try? fm.createDirectory(at: out, withIntermediateDirectories: true)
 
@@ -69,6 +72,7 @@ MainActor.assumeIsolated {
             let language = Language.detect(for: url)
             let storage = NSTextStorage(string: text, attributes: [.foregroundColor: colors.foreground])
             let full = NSRange(location: 0, length: storage.length)
+            let started = Date()
             storage.beginEditing()
             if let tree = TreeSitterHighlighter(language: language) {
                 tree.highlight(storage, in: full)
@@ -78,6 +82,8 @@ MainActor.assumeIsolated {
                 SyntaxHighlighter(language: language, colors: colors).highlight(storage, in: full)
             }
             storage.endEditing()
+            painting += Date().timeIntervalSince(started)
+            if timeOnly { continue }
             var runs: [[Any]] = []
             storage.enumerateAttribute(.foregroundColor, in: full) { value, range, _ in
                 let role = colors.role(of: value as? NSColor)
@@ -96,5 +102,9 @@ MainActor.assumeIsolated {
             }
         }
     }
-    print("wrote \(written) role files to \(out.path)")
+    if timeOnly {
+        print(String(format: "painting %.3f s", painting))
+    } else {
+        print("wrote \(written) role files to \(out.path)")
+    }
 }

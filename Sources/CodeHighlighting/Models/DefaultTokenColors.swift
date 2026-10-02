@@ -27,6 +27,7 @@ public struct DefaultTokenColors: TokenColorProviding {
         case .function: return .systemBlue
         case .attribute: return .systemTeal
         case .variable: return .labelColor
+        case .identifier: return .labelColor
         case .property: return .systemIndigo
         case .added: return .systemGreen
         case .removed: return .systemRed

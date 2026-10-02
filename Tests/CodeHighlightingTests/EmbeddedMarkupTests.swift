@@ -22,6 +22,7 @@ private struct SFCColors: TokenColorProviding {
         case .keyword: return .blue
         case .type: return .purple
         case .number: return .orange
+        case .identifier: return .black  // plain names read as plain text here
         default: return .brown
         }
     }

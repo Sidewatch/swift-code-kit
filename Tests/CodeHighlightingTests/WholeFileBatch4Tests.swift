@@ -23,6 +23,7 @@ final class WholeFileBatch4Tests: XCTestCase {
         static let kinds: [TokenKind] = [.comment, .string, .keyword, .type, .number, .function, .attribute, .variable, .property]
         let foreground = NSColor.black
         func color(for kind: TokenKind) -> NSColor {
+            if kind == .identifier { return foreground }  // plain names read as plain text here
             let index = Self.kinds.firstIndex(of: kind) ?? Self.kinds.count
             return NSColor(srgbRed: CGFloat(index + 1) / 16, green: 0.5, blue: 0.25, alpha: 1)
         }

@@ -24,6 +24,7 @@ final class NumberAndNestingTests: XCTestCase {
             switch kind {
             case .number: return .systemOrange
             case .comment: return .systemGreen
+            case .identifier: return foreground  // plain names read as plain text here
             default: return .systemRed
             }
         }

@@ -22,7 +22,8 @@ final class WholeFileBatch3Tests: XCTestCase {
         static let kinds: [TokenKind] = [.comment, .string, .keyword, .type, .number, .function, .attribute, .variable, .property]
         let foreground = NSColor.black
         func color(for kind: TokenKind) -> NSColor {
-            NSColor(srgbRed: CGFloat((Self.kinds.firstIndex(of: kind) ?? 0) + 1) / 16, green: 0.5, blue: 0.25, alpha: 1)
+            if kind == .identifier { return foreground }  // plain names read as plain text here
+            return NSColor(srgbRed: CGFloat((Self.kinds.firstIndex(of: kind) ?? 0) + 1) / 16, green: 0.5, blue: 0.25, alpha: 1)
         }
     }
 

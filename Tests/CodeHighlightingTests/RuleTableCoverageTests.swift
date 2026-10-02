@@ -24,6 +24,7 @@ final class RuleTableCoverageTests: XCTestCase {
             .comment, .string, .keyword, .type, .number, .function, .attribute, .variable, .property, .added, .removed,
         ]
         func color(for kind: TokenKind) -> NSColor {
+            if kind == .identifier { return foreground }  // plain names read as plain text here
             let i = Self.kinds.firstIndex(of: kind) ?? 0
             return NSColor(hue: CGFloat(i + 1) / CGFloat(Self.kinds.count + 2), saturation: 1, brightness: 1, alpha: 1)
         }

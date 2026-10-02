@@ -26,6 +26,7 @@ final class WholeFileBatch1Tests: XCTestCase {
     private struct OneColourPerKind: TokenColorProviding {
         let foreground = NSColor.black
         func color(for kind: TokenKind) -> NSColor {
+            if kind == .identifier { return foreground }  // plain names read as plain text here
             let index = WholeFileBatch1Tests.kinds.firstIndex(of: kind) ?? 0
             return NSColor(srgbRed: CGFloat(index + 1) / 16, green: 0.5, blue: 0.25, alpha: 1)
         }

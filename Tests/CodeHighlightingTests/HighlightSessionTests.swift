@@ -28,6 +28,7 @@ private struct SessionMockColors: TokenColorProviding {
         case .function: return .brown
         case .attribute: return .magenta
         case .variable: return .cyan
+        case .identifier: return .gray
         case .property: return .yellow
         case .added: return .systemGreen
         case .removed: return .systemRed

@@ -22,7 +22,8 @@ final class HTTPRequestHighlighterTests: XCTestCase {
     private struct Markers: TokenColorProviding {
         static let kinds: [TokenKind] = [.comment, .string, .keyword, .type, .number, .function, .attribute, .variable, .property]
         func color(for kind: TokenKind) -> NSColor {
-            NSColor(deviceRed: CGFloat((Self.kinds.firstIndex(of: kind) ?? -1) + 1) / 100, green: 0, blue: 0, alpha: 1)
+            if kind == .identifier { return foreground }  // plain names read as plain text here
+            return NSColor(deviceRed: CGFloat((Self.kinds.firstIndex(of: kind) ?? -1) + 1) / 100, green: 0, blue: 0, alpha: 1)
         }
         var foreground: NSColor { NSColor(deviceRed: 0, green: 0, blue: 0, alpha: 1) }
         static func kind(of color: NSColor) -> TokenKind? {

@@ -32,7 +32,7 @@ public struct CustomPattern: Codable, Equatable, Sendable {
     /// built-in tables color `true`/`false`/`nil`.
     public static let validKinds: [String] = [
         "comment", "string", "keyword", "type", "number",
-        "function", "attribute", "property", "variable", "constant",
+        "function", "attribute", "property", "variable", "identifier", "constant",
     ]
 
     /// Memberwise initializer for building patterns in code.
@@ -55,6 +55,7 @@ public struct CustomPattern: Codable, Equatable, Sendable {
         case "attribute": return .attribute
         case "property": return .property
         case "variable": return .variable
+        case "identifier": return .identifier
         case "constant": return .number  // constants share the literal color, like the built-in tables
         default: return nil
         }
