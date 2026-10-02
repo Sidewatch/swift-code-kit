@@ -66,6 +66,7 @@ macros with no arguments (`#isolation`), labeled version arguments (`@backDeploy
 new corpus `test/corpus/swift6.txt`. The parser grows 21.2 → 23.1 MB. Not handled: range patterns in `if case`
 (upstream allows only non-expression patterns there), and the experimental `@lifetime` / underscored `@_specialize`.
 `Swift6GrammarTests` fails on all 12 constructs with the unpatched parser.
+Proposed upstream as alex-pinkus/tree-sitter-swift#629 (2 Oct 2026); drop the patch once a release carries it.
 
 ## The runtime
 
