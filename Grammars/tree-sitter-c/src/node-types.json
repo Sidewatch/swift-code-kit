@@ -2185,6 +2185,10 @@
         "required": true,
         "types": [
           {
+            "type": "expression",
+            "named": true
+          },
+          {
             "type": "statement_identifier",
             "named": true
           }

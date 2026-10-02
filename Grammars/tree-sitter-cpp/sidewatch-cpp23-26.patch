@@ -1,37 +1,14 @@
-From 3298b6ef112780aebd99769a284966d2e7f45732 Mon Sep 17 00:00:00 2001
-From: David Michael <22668877+arraypress@users.noreply.github.com>
-Date: Fri, 2 Oct 2026 18:11:51 +0700
-Subject: [PATCH] Parse C++23 and C++26 syntax: if consteval, contracts, pack
- indexing, and more
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-- `if consteval` / `if !consteval` (C++23, as in #362)
-- Contracts: `pre(…)`, `post(r: …)` on function declarators (C++26)
-- Pack indexing `Ts...[0]` in types and expressions (C++26); `...[` is one token, so a pack
-  expansion followed by a subscript is never misread
-- Attributes on structured bindings: `auto [a [[maybe_unused]], b]` (C++26)
-- Explicit instantiation of a class template: `template class Ring<int, 4>;`
-- Attributes before `friend` (as in #366)
-
-New corpus: test/corpus/cpp23-26.txt.
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
----
- grammar.js               |  62 +++++++++-
- test/corpus/cpp23-26.txt | 244 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 300 insertions(+), 6 deletions(-)
- create mode 100644 test/corpus/cpp23-26.txt
-
 diff --git a/grammar.js b/grammar.js
-index ffbaf0f..723b7b6 100644
+index ffbaf0f..738dc9d 100644
 --- a/grammar.js
 +++ b/grammar.js
-@@ -63,6 +63,11 @@ module.exports = grammar(C, {
+@@ -63,6 +63,14 @@ module.exports = grammar(C, {
    ],
  
    conflicts: $ => [
++    [$._type_declarator, $.template_type],
++    [$._string, $.delete_method_clause],
++    [$.binary_expression, $.cast_expression],
 +    [$._declaration_modifiers, $.friend_declaration],
 +    [$._declaration_modifiers, $.friend_declaration, $.using_declaration],
 +    [$.type_specifier, $._top_level_expression_statement],
@@ -40,7 +17,7 @@ index ffbaf0f..723b7b6 100644
      // C
      [$.type_specifier, $._declarator],
      [$.type_specifier, $.expression],
-@@ -195,6 +200,7 @@ module.exports = grammar(C, {
+@@ -195,6 +203,7 @@ module.exports = grammar(C, {
        $.enum_specifier,
        $.class_specifier,
        $.sized_type_specifier,
@@ -48,7 +25,7 @@ index ffbaf0f..723b7b6 100644
        $.primitive_type,
        $.template_type,
        $.dependent_type,
-@@ -430,11 +436,22 @@ module.exports = grammar(C, {
+@@ -430,11 +439,22 @@ module.exports = grammar(C, {
      template_instantiation: $ => prec(1, seq(
        optional('extern'),
        'template',
@@ -73,7 +50,13 @@ index ffbaf0f..723b7b6 100644
      template_parameter_list: $ => seq(
        '<',
        commaSep(choice(
-@@ -655,6 +672,7 @@ module.exports = grammar(C, {
+@@ -651,10 +671,12 @@ module.exports = grammar(C, {
+     ),
+ 
+     default_method_clause: _ => seq('=', 'default', ';'),
+-    delete_method_clause: _ => seq('=', 'delete', ';'),
++    // C++26: = delete("reason")
++    delete_method_clause: $ => seq('=', 'delete', optional(seq('(', $.string_literal, ')')), ';'),
      pure_virtual_clause: _ => seq('=', /0/, ';'),
  
      friend_declaration: $ => seq(
@@ -81,7 +64,34 @@ index ffbaf0f..723b7b6 100644
        optional('constexpr'),
        'friend',
        choice(
-@@ -710,7 +728,7 @@ module.exports = grammar(C, {
+@@ -705,12 +727,34 @@ module.exports = grammar(C, {
+     ),
+ 
+     reference_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&'), $._declarator))),
++    // pointer to member: `int Widget::* p`, `int (Widget::*fn)() const`
++    pointer_type_declarator: ($, original) => choice(
++      original,
++      prec.dynamic(1, prec.right(seq(
++        field('scope', choice($._namespace_identifier, $.template_type)),
++        '::',
++        '*',
++        repeat($.type_qualifier),
++        field('declarator', $._type_declarator),
++      ))),
++    ),
++    pointer_field_declarator: ($, original) => choice(
++      original,
++      prec.dynamic(1, prec.right(seq(
++        field('scope', choice($._namespace_identifier, $.template_type)),
++        '::',
++        '*',
++        repeat($.type_qualifier),
++        field('declarator', $._field_declarator),
++      ))),
++    ),
++
+     reference_field_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&'), $._field_declarator))),
+     reference_type_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&'), $._type_declarator))),
      abstract_reference_declarator: $ => prec.right(seq(choice('&', '&&'), optional($._abstract_declarator))),
  
      structured_binding_declarator: $ => prec.dynamic(PREC.STRUCTURED_BINDING, seq(
@@ -90,7 +100,7 @@ index ffbaf0f..723b7b6 100644
      )),
  
      ref_qualifier: _ => choice('&', '&&'),
-@@ -746,8 +764,19 @@ module.exports = grammar(C, {
+@@ -746,8 +790,19 @@ module.exports = grammar(C, {
      _function_postfix: $ => prec.right(choice(
        repeat1($.virtual_specifier),
        $.requires_clause,
@@ -110,7 +120,7 @@ index ffbaf0f..723b7b6 100644
      function_declarator: $ => prec.dynamic(1, seq(
        field('declarator', $._declarator),
        $._function_declarator_seq,
-@@ -930,9 +959,19 @@ module.exports = grammar(C, {
+@@ -930,9 +985,19 @@ module.exports = grammar(C, {
  
      if_statement: $ => prec.right(seq(
        'if',
@@ -133,7 +143,7 @@ index ffbaf0f..723b7b6 100644
        optional(field('alternative', $.else_clause)),
      )),
  
-@@ -1038,6 +1077,7 @@ module.exports = grammar(C, {
+@@ -1038,6 +1103,7 @@ module.exports = grammar(C, {
        $.delete_expression,
        $.lambda_expression,
        $.parameter_pack_expansion,
@@ -141,7 +151,7 @@ index ffbaf0f..723b7b6 100644
        $.this,
        $.user_defined_literal,
        $.fold_expression,
-@@ -1321,6 +1361,16 @@ module.exports = grammar(C, {
+@@ -1321,6 +1387,16 @@ module.exports = grammar(C, {
        '...',
      )),
  
@@ -158,12 +168,21 @@ index ffbaf0f..723b7b6 100644
      type_parameter_pack_expansion: $ => seq(
        field('pattern', $.type_descriptor),
        '...',
+@@ -1358,6 +1434,8 @@ module.exports = grammar(C, {
+         ['xor', PREC.EXCLUSIVE_OR],
+         ['bitand', PREC.BITWISE_AND],
+         ['not_eq', PREC.EQUAL],
++        // pointer-to-member through a pointer: binds tighter than *, looser than unary
++        ['->*', PREC.MULTIPLY + 1],
+       ];
+ 
+       return choice(
 diff --git a/test/corpus/cpp23-26.txt b/test/corpus/cpp23-26.txt
 new file mode 100644
-index 0000000..136274d
+index 0000000..d3fda5e
 --- /dev/null
 +++ b/test/corpus/cpp23-26.txt
-@@ -0,0 +1,244 @@
+@@ -0,0 +1,354 @@
 +================================================================================
 +Deducing this
 +================================================================================
@@ -408,6 +427,113 @@ index 0000000..136274d
 +          (function_declarator
 +            (identifier)
 +            (parameter_list)))))))
--- 
-2.56.0
-
++
++================================================================================
++Deleted function with a reason
++================================================================================
++
++struct S {
++  S(const S &) = delete("not copyable");
++  void g() = delete;
++};
++
++--------------------------------------------------------------------------------
++
++(translation_unit
++  (struct_specifier
++    name: (type_identifier)
++    body: (field_declaration_list
++      (function_definition
++        declarator: (function_declarator
++          declarator: (identifier)
++          parameters: (parameter_list
++            (parameter_declaration
++              (type_qualifier)
++              type: (type_identifier)
++              declarator: (abstract_reference_declarator))))
++        (delete_method_clause
++          (string_literal
++            (string_content))))
++      (function_definition
++        type: (primitive_type)
++        declarator: (function_declarator
++          declarator: (field_identifier)
++          parameters: (parameter_list))
++        (delete_method_clause)))))
++
++================================================================================
++Pointer to member declarators and operators
++================================================================================
++
++struct S {
++  int Widget::* field;
++  int (Widget::*method)() const = &Widget::get;
++};
++typedef int Widget::* MemberPtr;
++void f(Widget *p, Widget w, int Widget::* m) {
++  (w.*m) = 1;
++  int x = p->*m;
++}
++
++--------------------------------------------------------------------------------
++
++(translation_unit
++  (struct_specifier
++    name: (type_identifier)
++    body: (field_declaration_list
++      (field_declaration
++        type: (primitive_type)
++        declarator: (pointer_declarator
++          scope: (namespace_identifier)
++          declarator: (field_identifier)))
++      (field_declaration
++        type: (primitive_type)
++        declarator: (function_declarator
++          declarator: (parenthesized_declarator
++            (pointer_declarator
++              scope: (namespace_identifier)
++              declarator: (field_identifier)))
++          parameters: (parameter_list)
++          (type_qualifier))
++        default_value: (pointer_expression
++          argument: (qualified_identifier
++            scope: (namespace_identifier)
++            name: (identifier))))))
++  (type_definition
++    type: (primitive_type)
++    declarator: (pointer_declarator
++      scope: (namespace_identifier)
++      declarator: (type_identifier)))
++  (function_definition
++    type: (primitive_type)
++    declarator: (function_declarator
++      declarator: (identifier)
++      parameters: (parameter_list
++        (parameter_declaration
++          type: (type_identifier)
++          declarator: (pointer_declarator
++            declarator: (identifier)))
++        (parameter_declaration
++          type: (type_identifier)
++          declarator: (identifier))
++        (parameter_declaration
++          type: (primitive_type)
++          declarator: (qualified_identifier
++            scope: (namespace_identifier)
++            name: (pointer_type_declarator
++              declarator: (type_identifier))))))
++    body: (compound_statement
++      (expression_statement
++        (assignment_expression
++          left: (parenthesized_expression
++            (field_expression
++              argument: (identifier)
++              field: (field_identifier)))
++          right: (number_literal)))
++      (declaration
++        type: (primitive_type)
++        declarator: (init_declarator
++          declarator: (identifier)
++          value: (binary_expression
++            left: (identifier)
++            right: (identifier)))))))

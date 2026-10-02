@@ -30,6 +30,7 @@ final class ModernCFamilyGrammarTests: XCTestCase {
         ("attribute after *", "int *[[gnu::unused]] p;"),
         ("__declspec with arguments", "__declspec(align(16)) struct S { int x; };"),
         ("delimited escapes", "const char *s = \"\\x{41}\\N{LATIN SMALL LETTER A}\";"),
+        ("computed goto", "void f(void) { void *t = &&done; goto *t; done: return; }"),
     ]
     static let cpp: [(String, String)] = [
         ("if consteval", "constexpr int f() { if consteval { return 1; } else { return 2; } }"),
@@ -41,6 +42,10 @@ final class ModernCFamilyGrammarTests: XCTestCase {
         ("friend attribute", "struct S { [[maybe_unused]] friend void f(); };"),
         ("#embed", "const unsigned char d[] = {\n#embed \"data.bin\"\n};"),
         ("delimited escapes", "auto s = \"\\x{41}\\o{101}\\u{1F4E6}\";"),
+        ("delete with a reason", "struct S { S(const S &) = delete(\"not copyable\"); };"),
+        ("pointer-to-member field", "struct S { int Widget::* field; int (Widget::*method)() const; };"),
+        ("pointer-to-member typedef", "typedef int Widget::* MemberPtr;"),
+        ("->* operator", "int f(Widget *p, int Widget::* m) { return p->*m + 1; }"),
     ]
     static let java: [(String, String)] = [
         ("import module", "import module java.base;\nclass A {}"),

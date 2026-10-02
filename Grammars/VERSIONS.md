@@ -71,13 +71,14 @@ Proposed upstream as alex-pinkus/tree-sitter-swift#629 (2 Oct 2026); drop the pa
 **c — `tree-sitter-c/sidewatch-c23.patch`** (2 Oct 2026). C23: `typeof`/`typeof_unqual`, `auto` inference,
 `_BitInt(N)`, enums with any underlying type, `#embed` in initializers, `__has_include(<…>)` arguments,
 `_Thread_local`, `[[attributes]]` after `*`, delimited and named escapes (`\x{41}`, `\N{…}`); C99 `_Complex`,
-`_Pragma`; GNU case ranges; MSVC `__ptr32/64` and `__declspec(align(16))`. Upstream's 87 tests pass; new corpus
+`_Pragma`; GNU case ranges and computed `goto *p`; MSVC `__ptr32/64` and `__declspec(align(16))`. Upstream's 87 tests pass; new corpus
 `test/corpus/c23.txt`. `typeof` is coloured through an extra query on `.c` only, because the C++ grammar has no such
 token and inherits the C query file.
 
 **cpp — `tree-sitter-cpp/sidewatch-cpp23-26.patch`** (2 Oct 2026). `if consteval`, contracts `pre`/`post`, pack
 indexing `Ts...[0]` (`...[` one token so pack expansions are untouched), attributes on structured bindings,
-explicit instantiation of class templates, attributes before `friend`. Generated against the PATCHED C grammar
+explicit instantiation of class templates, attributes before `friend`, `= delete("reason")`, the `->*` operator,
+pointer-to-member fields and typedefs (`int W::* p;`). Generated against the PATCHED C grammar
 (`node_modules/tree-sitter-c` → the C checkout), so C's additions (`#embed`, `_Pragma`, case ranges, escapes) reach
 C++ too; that needs two extra conflict entries in the C++ grammar. Upstream's tests pass.
 

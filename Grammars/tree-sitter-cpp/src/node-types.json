@@ -1143,6 +1143,10 @@
             "named": false
           },
           {
+            "type": "->*",
+            "named": false
+          },
+          {
             "type": "/",
             "named": false
           },
@@ -2455,7 +2459,17 @@
   {
     "type": "delete_method_clause",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "string_literal",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "dependent_name",
@@ -4038,6 +4052,10 @@
         "required": true,
         "types": [
           {
+            "type": "expression",
+            "named": true
+          },
+          {
             "type": "statement_identifier",
             "named": true
           }
@@ -5277,6 +5295,20 @@
             "named": true
           }
         ]
+      },
+      "scope": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "namespace_identifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -5342,6 +5374,20 @@
         "types": [
           {
             "type": "_type_declarator",
+            "named": true
+          }
+        ]
+      },
+      "scope": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "namespace_identifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
             "named": true
           }
         ]

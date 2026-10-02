@@ -1,31 +1,5 @@
-From 44f0f8a18d6d9ca4ae0aded0dd6ba1f8cc2ab678 Mon Sep 17 00:00:00 2001
-From: David Michael <22668877+arraypress@users.noreply.github.com>
-Date: Fri, 2 Oct 2026 15:14:32 +0700
-Subject: [PATCH] Parse C23 and common extensions: typeof, auto, _BitInt, enum
- underlying types, #embed, and more
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-- C23: `typeof` / `typeof_unqual`, `auto` type inference, `_BitInt(N)`, enums with any underlying
-  type (`enum E : unsigned char`, also anonymous), `#embed` in initializer lists,
-  `__has_include(<…>)` / `__has_embed("…")` arguments, `_Thread_local`, `[[attributes]]` after `*`
-- C99: `_Complex` / `_Imaginary`, the `_Pragma("…")` operator
-- GNU: case ranges `case 1 ... 3:`
-- MSVC: `__ptr32` / `__ptr64`, `__declspec(align(16))`, `__declspec` before a bare struct
-  declaration
-
-New corpus: test/corpus/c23.txt.
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
----
- grammar.js          |  63 +++-
- test/corpus/c23.txt | 721 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 779 insertions(+), 5 deletions(-)
- create mode 100644 test/corpus/c23.txt
-
 diff --git a/grammar.js b/grammar.js
-index 7cdde6e..f055fd8 100644
+index 7cdde6e..8ad253d 100644
 --- a/grammar.js
 +++ b/grammar.js
 @@ -36,6 +36,9 @@ module.exports = grammar({
@@ -235,7 +209,20 @@ index 7cdde6e..f055fd8 100644
          'default',
        ),
        ':',
-@@ -1226,6 +1275,7 @@ module.exports = grammar({
+@@ -916,7 +965,11 @@ module.exports = grammar({
+ 
+     goto_statement: $ => seq(
+       'goto',
+-      field('label', $._statement_identifier),
++      choice(
++        field('label', $._statement_identifier),
++        // GNU computed goto: goto *ptr;
++        seq('*', field('label', $.expression)),
++      ),
+       ';',
+     ),
+ 
+@@ -1226,6 +1279,7 @@ module.exports = grammar({
          $.initializer_pair,
          $.expression,
          $.initializer_list,
@@ -243,7 +230,7 @@ index 7cdde6e..f055fd8 100644
        )),
        optional(','),
        '}',
-@@ -1318,6 +1368,8 @@ module.exports = grammar({
+@@ -1318,6 +1372,8 @@ module.exports = grammar({
        '\\',
        choice(
          /[^xuU]/,
@@ -252,7 +239,7 @@ index 7cdde6e..f055fd8 100644
          /\d{2,3}/,
          /x[0-9a-fA-F]{1,4}/,
          /u[0-9a-fA-F]{4}/,
-@@ -1346,6 +1398,7 @@ module.exports = grammar({
+@@ -1346,6 +1402,7 @@ module.exports = grammar({
      _statement_identifier: $ => alias($.identifier, $.statement_identifier),
  
      _empty_declaration: $ => seq(
@@ -262,10 +249,10 @@ index 7cdde6e..f055fd8 100644
      ),
 diff --git a/test/corpus/c23.txt b/test/corpus/c23.txt
 new file mode 100644
-index 0000000..43f3c50
+index 0000000..d665cf1
 --- /dev/null
 +++ b/test/corpus/c23.txt
-@@ -0,0 +1,721 @@
+@@ -0,0 +1,757 @@
 +================================================================================
 +Nullptr
 +================================================================================
@@ -987,6 +974,39 @@ index 0000000..43f3c50
 +        (escape_sequence)
 +        (escape_sequence)
 +        (escape_sequence)))))
--- 
-2.56.0
-
++
++================================================================================
++Computed goto
++================================================================================
++
++void f(void) {
++  void *target = &&done;
++  goto *target;
++done:
++  return;
++}
++
++--------------------------------------------------------------------------------
++
++(translation_unit
++  (function_definition
++    type: (primitive_type)
++    declarator: (function_declarator
++      declarator: (identifier)
++      parameters: (parameter_list
++        (parameter_declaration
++          type: (primitive_type))))
++    body: (compound_statement
++      (declaration
++        type: (primitive_type)
++        declarator: (init_declarator
++          declarator: (pointer_declarator
++            declarator: (identifier))
++          value: (pointer_expression
++            argument: (pointer_expression
++              argument: (identifier)))))
++      (goto_statement
++        label: (identifier))
++      (labeled_statement
++        label: (statement_identifier)
++        (return_statement)))))
