@@ -81,6 +81,10 @@ let package = Package(
             resources: [.copy("Builtins"), .process("Localizable.xcstrings")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
+        // Dev tool: each showcase's colours as roles, for scripts/highlight-oracle in the app.
+        .executableTarget(
+            name: "HighlightRoles", dependencies: ["CodeHighlighting", "CodeLanguage"],
+            swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "CodeLanguageTests", dependencies: ["CodeLanguage"]),
         .testTarget(
             name: "CodeHighlightingTests",
