@@ -480,6 +480,10 @@
         {
           "type": "interface_declaration",
           "named": true
+        },
+        {
+          "type": "record_declaration",
+          "named": true
         }
       ]
     }
@@ -761,6 +765,10 @@
           },
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
             "named": true
           }
         ]
@@ -1079,7 +1087,7 @@
       "required": true,
       "types": [
         {
-          "type": "_unannotated_type",
+          "type": "_type",
           "named": true
         }
       ]
@@ -2135,7 +2143,39 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "assignment_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
+          "named": true
+        },
+        {
+          "type": "instanceof_expression",
+          "named": true
+        },
+        {
+          "type": "primary_expression",
+          "named": true
+        },
+        {
+          "type": "switch_expression",
+          "named": true
+        },
+        {
+          "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "update_expression",
           "named": true
         }
       ]
@@ -2254,11 +2294,21 @@
         "required": false,
         "types": [
           {
-            "type": "_type",
+            "type": "_unannotated_type",
             "named": true
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "modifiers",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -2654,12 +2704,17 @@
     }
   },
   {
+    "type": "modifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "modifiers",
     "named": true,
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "annotation",
@@ -2667,6 +2722,14 @@
         },
         {
           "type": "marker_annotation",
+          "named": true
+        },
+        {
+          "type": "modifier",
+          "named": true
+        },
+        {
+          "type": "visibility",
           "named": true
         }
       ]
@@ -2944,7 +3007,7 @@
       },
       "provider": {
         "multiple": true,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "identifier",
@@ -2956,20 +3019,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "scoped_identifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -3129,6 +3178,10 @@
         },
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "modifiers",
           "named": true
         },
         {
@@ -3335,27 +3388,46 @@
   {
     "type": "spread_parameter",
     "named": true,
-    "fields": {},
+    "fields": {
+      "annotations": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "annotation",
+            "named": true
+          },
+          {
+            "type": "marker_annotation",
+            "named": true
+          }
+        ]
+      },
+      "modifiers": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "modifiers",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_unannotated_type",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "_unannotated_type",
-          "named": true
-        },
-        {
-          "type": "annotation",
-          "named": true
-        },
-        {
-          "type": "marker_annotation",
-          "named": true
-        },
-        {
-          "type": "modifiers",
-          "named": true
-        },
         {
           "type": "variable_declarator",
           "named": true
@@ -3523,7 +3595,11 @@
       "required": false,
       "types": [
         {
-          "type": "expression",
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
           "named": true
         },
         {
@@ -3531,7 +3607,23 @@
           "named": true
         },
         {
+          "type": "instanceof_expression",
+          "named": true
+        },
+        {
           "type": "pattern",
+          "named": true
+        },
+        {
+          "type": "primary_expression",
+          "named": true
+        },
+        {
+          "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
           "named": true
         }
       ]
@@ -3858,6 +3950,10 @@
         {
           "type": "identifier",
           "named": true
+        },
+        {
+          "type": "modifiers",
+          "named": true
         }
       ]
     }
@@ -3909,7 +4005,7 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "primary_expression",
           "named": true
         }
       ]
@@ -3978,6 +4074,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "visibility",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "while_statement",
@@ -4213,10 +4314,6 @@
   },
   {
     "type": "@",
-    "named": false
-  },
-  {
-    "type": "@interface",
     "named": false
   },
   {

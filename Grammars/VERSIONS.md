@@ -18,7 +18,7 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | dockerfile | camdencheek/tree-sitter-dockerfile | upstream main | v0.2.0 | ahead of the release |
 | go | tree-sitter/tree-sitter-go | v0.25.0 | v0.25.0 | current (= main) |
 | html | tree-sitter/tree-sitter-html | v0.23.2 | v0.23.2 | current (= main) |
-| java | tree-sitter/tree-sitter-java | upstream main + local patch `sidewatch-java-25.patch` | v0.23.5 | patched: Java 25 (see below) |
+| java | grammar-orchard/tree-sitter-java-orchard (codeberg) | v0.5.22 (7dc7faa) | v0.5.22 | current; the maintained fork (see below) |
 | javascript | tree-sitter/tree-sitter-javascript | v0.25.0 | v0.25.0 | current (= main) |
 | json | tree-sitter/tree-sitter-json | upstream main 254c42a6, generated here with CLI 0.24.4 | v0.24.8 | current; main fixes `1E+9` (signed exponents) — a real JSON parse error, unreleased since 17 Aug 2026 |
 | kotlin | fwcd/tree-sitter-kotlin | upstream main 1852ea17 (1 Aug 2026) | 0.3.8 | current; updated 2 Oct 2026 from 68f564d4 |
@@ -86,10 +86,13 @@ C++ too; that needs two extra conflict entries in the C++ grammar. Upstream's te
 Proposed upstream as tree-sitter/tree-sitter-cpp#375 (2 Oct 2026), generated against UPSTREAM tree-sitter-c, so
 without those two conflicts and the escape tests; drop the patch once releases of both carry it.
 
-**java — `tree-sitter-java/sidewatch-java-25.patch`** (2 Oct 2026). `import module` (JEP 511), statements before
-`super(…)` (JEP 513), qualified record patterns and `final` type patterns (as upstream PRs #231 / #230). Upstream's
-tests pass. `ModernCFamilyGrammarTests` fails on every construct of all three with the unpatched parsers.
-Proposed upstream as tree-sitter/tree-sitter-java#233 (2 Oct 2026); drop the patch once a release carries it.
+**java — the grammar-orchard fork** (2 Oct 2026). tree-sitter/tree-sitter-java rarely merges outside PRs, and its
+contributors maintain codeberg.org/grammar-orchard/tree-sitter-java-orchard (MIT, regular releases) instead. When our
+Java 25 patch was proposed upstream (#233, closed), the fork already parsed every construct in it, so it replaced the
+patch: `src/` generated from the fork's `grammar.js` with the 0.25.10 CLI (ABI 15; the fork ships no `parser.c`), its
+LICENSE beside it, our `queries/` kept unchanged (every node they name exists in the fork). The fork names its
+language `java_orchard`, so the binding header and `TreeSitterHighlighter` call `tree_sitter_java_orchard()`; the
+SwiftPM target stays `TreeSitterJava`. To update: clone the fork, `tree-sitter generate`, copy `src/`.
 
 ## The runtime
 

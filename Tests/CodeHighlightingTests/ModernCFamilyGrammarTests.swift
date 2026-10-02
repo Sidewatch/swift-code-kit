@@ -13,7 +13,8 @@ import CodeLanguage
 @testable import CodeHighlighting
 
 /// Upstream tree-sitter-c v0.24.2, tree-sitter-cpp (main, Sep 2026) and tree-sitter-java (main) produced ERROR
-/// nodes on each of these. The local patches (`Grammars/tree-sitter-{c,cpp,java}/sidewatch-*.patch`) fix them;
+/// nodes on each of these. The local C and C++ patches (`Grammars/tree-sitter-{c,cpp}/sidewatch-*.patch`) and the
+/// grammar-orchard Java fork fix them;
 /// this pins it, so re-vendoring an unpatched upstream fails here.
 final class ModernCFamilyGrammarTests: XCTestCase {
     static let c: [(String, String)] = [

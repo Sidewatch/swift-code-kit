@@ -121,7 +121,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // C23 `typeof` / `typeof_unqual` exist only in the C grammar; the C++ grammar inherits the C query
         // file, where a token C++ lacks would stop the whole query compiling. So they live here.
         m[.c] = { g(tree_sitter_c(), "TreeSitterC", extra: "[\"typeof\" \"typeof_unqual\" \"__typeof__\"] @keyword") }
-        m[.java] = { g(tree_sitter_java(), "TreeSitterJava") }
+        m[.java] = { g(tree_sitter_java_orchard(), "TreeSitterJava") }
         m[.ruby] = { g(tree_sitter_ruby(), "TreeSitterRuby") }
         m[.typescript] = { g(tree_sitter_typescript(), "TreeSitterTypeScript", inherits: ["TreeSitterJavaScript"]) }
         m[.cpp] = { g(tree_sitter_cpp(), "TreeSitterCPP", inherits: ["TreeSitterC"]) }

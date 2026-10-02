@@ -20,7 +20,8 @@ M=[ # local dir/path, repo, upstream path
 ('tree-sitter-dockerfile/src','camdencheek/tree-sitter-dockerfile','src'),
 ('tree-sitter-go/src','tree-sitter/tree-sitter-go','src'),
 ('tree-sitter-html/src','tree-sitter/tree-sitter-html','src'),
-('tree-sitter-java/src','tree-sitter/tree-sitter-java','src'),
+# Java is the grammar-orchard fork on Codeberg, which commits no src/grammar.json: compare its latest tag
+# (codeberg.org/api/v1/repos/grammar-orchard/tree-sitter-java-orchard/tags) with Grammars/VERSIONS.md by hand.
 ('tree-sitter-javascript/src','tree-sitter/tree-sitter-javascript','src'),
 ('tree-sitter-json/src','tree-sitter/tree-sitter-json','src'),
 ('tree-sitter-kotlin/src','fwcd/tree-sitter-kotlin','src'),
