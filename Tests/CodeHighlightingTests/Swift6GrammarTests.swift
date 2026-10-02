@@ -28,6 +28,7 @@ final class Swift6GrammarTests: XCTestCase {
         ("integer type argument", "var b = InlineArray<4, Int>(repeating: 0)"),
         ("@backDeployed", "@backDeployed(before: macOS 14) public func f() {}"),
         ("optional bracket-qualified type", "let i: [Int].Index? = nil"),
+        ("multiline regex with an indented close", "let r = #/\n    (?<sku> [A-Z]+ )  # letters\n    /#\n"),
     ]
 
     func testSwift6SyntaxParsesWithoutErrors() {

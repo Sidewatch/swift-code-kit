@@ -62,11 +62,10 @@ Proposed upstream as tree-sitter/tree-sitter-css#105 (2 Oct 2026); drop the patc
 **swift — `tree-sitter-swift/sidewatch-swift-6.patch`** (2 Oct 2026). On top of upstream main 35245fbf: `sending` and
 `isolated` parameter modifiers and `-> sending T` results, `isolated deinit`, `copy x`, value generics
 (`<let rows: Int>`) and integer type arguments (`InlineArray<4, Int>`), inline array sugar (`[3 of Int]`), freestanding
-macros with no arguments (`#isolation`), labeled version arguments (`@backDeployed(before: macOS 14)`), and
-`[Int].Index?`. The new keywords stay contextual (`let sending = 1` parses). Upstream's 292 tests pass unchanged;
+macros with no arguments (`#isolation`), labeled version arguments (`@backDeployed(before: macOS 14)`), `[Int].Index?`, and a multiline extended regex whose closing `/#` is indented. The new keywords stay contextual (`let sending = 1` parses). Upstream's 292 tests pass unchanged;
 new corpus `test/corpus/swift6.txt`. The parser grows 21.2 → 23.1 MB. Not handled: range patterns in `if case`
 (upstream allows only non-expression patterns there), and the experimental `@lifetime` / underscored `@_specialize`.
-`Swift6GrammarTests` fails on all 11 constructs with the unpatched parser.
+`Swift6GrammarTests` fails on all 12 constructs with the unpatched parser.
 
 ## The runtime
 
