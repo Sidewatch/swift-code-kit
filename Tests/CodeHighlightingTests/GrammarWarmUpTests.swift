@@ -48,4 +48,22 @@ final class GrammarWarmUpTests: XCTestCase {
         }
         XCTAssertTrue(TreeSitterHighlighter.supports(.swift))
     }
+
+    /// Opening a file must not block on a compile: the host asks whether the grammar is ready, and
+    /// otherwise compiles it in the background and hears back on the main queue.
+    @MainActor
+    func testABackgroundCompileReportsReadinessWithoutBlocking() throws {
+        let language = CodeLanguage.Language.lua
+        try XCTSkipUnless(TreeSitterHighlighter.grammarBuilders[language] != nil)
+        TreeSitterHighlighter.forgetGrammarForTesting(language)
+        XCTAssertFalse(TreeSitterHighlighter.isGrammarReady(language), "forgotten: not ready")
+        XCTAssertTrue(TreeSitterHighlighter.isGrammarReady(.plainText), "no grammar at all: nothing to wait for")
+        let done = expectation(description: "compiled")
+        TreeSitterHighlighter.compileGrammarInBackground(language) {
+            XCTAssertTrue(Thread.isMainThread)
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 10)
+        XCTAssertTrue(TreeSitterHighlighter.isGrammarReady(language))
+    }
 }

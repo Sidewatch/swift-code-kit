@@ -230,6 +230,26 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         return built
     }
 
+    /// Whether asking for `language`'s grammar would return without compiling or waiting: it is
+    /// compiled (or known not to compile), or the language has no grammar at all. A host that
+    /// must not block — opening a file — checks this, shows the regex tier meanwhile, and calls
+    /// ``compileGrammarInBackground(_:then:)``.
+    public static func isGrammarReady(_ language: CodeLanguage.Language) -> Bool {
+        grammarCondition.lock(); defer { grammarCondition.unlock() }
+        return grammarCache[language] != nil || grammarBuilders[language] == nil
+    }
+
+    /// Compiles `language`'s grammar on a background queue (or joins a compile already running)
+    /// and calls `then` on the main queue when it is ready.
+    public static func compileGrammarInBackground(
+        _ language: CodeLanguage.Language, then: @escaping @MainActor @Sendable () -> Void
+    ) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = grammar(for: language)
+            DispatchQueue.main.async { MainActor.assumeIsolated { then() } }
+        }
+    }
+
     /// Whether `language` is being compiled on some thread right now. Test seam.
     static func isCompilingGrammar(_ language: CodeLanguage.Language) -> Bool {
         grammarCondition.lock(); defer { grammarCondition.unlock() }
