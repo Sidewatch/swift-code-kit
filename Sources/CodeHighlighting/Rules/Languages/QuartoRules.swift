@@ -22,4 +22,8 @@ extension RuleTables {
             ("^[\\w-]+:(?=\\s)", .property),
             ("^---\\s*$", .comment),
         ] + markdown
+
+    /// Quarto without its fence rules, for ``EmbeddedMarkupHighlighter``, which finds the fenced blocks
+    /// itself and paints each chunk in its own language.
+    static let quartoMarkup: [(String, TokenKind)] = quarto.filter { rule in !markdownFences.contains { $0.0 == rule.0 } }
 }

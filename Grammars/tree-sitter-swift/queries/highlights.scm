@@ -342,6 +342,8 @@
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "is" "as" "as?" "as!" "lazy" "actor" "associatedtype" "borrowing" "consuming" "sending" "isolated" "consume" "copy" "of" "async" "await" "inout" "some" "any" "nonisolated" "unowned" "weak" "convenience" "required" "indirect" "dynamic" "optional" "final" "open" "fileprivate" "internal" "private" "public" "static" "override" "mutating" "nonmutating" "prefix" "postfix" "infix" "typealias" "subscript" "operator" "precedencegroup" "repeat" "fallthrough" "try" ] @keyword
 [ (throws) ] @keyword
+; `defer { … }` parses as a call with a trailing closure (upstream's shape, kept); the name is the keyword.
+((call_expression (simple_identifier) @keyword) (#eq? @keyword "defer"))
 ; `self` and `super` are keywords in Swift — `Int.self` too; `case` is one wherever it stands (`for case let`,
 ; `if case`).
 [ (self_expression) (super_expression) ] @keyword

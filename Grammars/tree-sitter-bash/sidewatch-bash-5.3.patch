@@ -1,0 +1,185 @@
+From 6d48e0efe90712f8576646a9536c5e06dcb771df Mon Sep 17 00:00:00 2001
+From: Sidewatch <noreply@example.com>
+Date: Sat, 3 Oct 2026 15:19:06 +0700
+Subject: [PATCH] Bash 5.3 function substitutions, <> redirects, escaped test
+ operators
+
+${ cmd; } and ${| cmd; } (bash 5.3), the read-write redirect <>, and the [
+builtin's escaped \< \> comparisons and \( \) grouping all produced ERROR
+nodes; an ERROR early in a file swallowed every line after it.
+---
+ grammar.js                 | 16 ++++++----
+ test/corpus/commands.txt   | 61 ++++++++++++++++++++++++++++++++++++++
+ test/corpus/statements.txt | 42 ++++++++++++++++++++++++++
+ 3 files changed, 113 insertions(+), 6 deletions(-)
+
+diff --git a/grammar.js b/grammar.js
+index 513f485..be303dd 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -529,7 +529,7 @@ module.exports = grammar({
+       field('descriptor', optional($.file_descriptor)),
+       choice(
+         seq(
+-          choice('<', '>', '>>', '&>', '&>>', '<&', '>&', '>|'),
++          choice('<', '>', '>>', '&>', '&>>', '<&', '>&', '>|', '<>'),
+           field('destination', repeat1($._literal)),
+         ),
+         seq(
+@@ -618,7 +618,7 @@ module.exports = grammar({
+         ['^', PREC.BITWISE_XOR],
+         ['&', PREC.BITWISE_AND],
+         [choice('==', '!='), PREC.EQUALITY],
+-        [choice('<', '>', '<=', '>='), PREC.COMPARE],
++        [choice('<', '>', '<=', '>=', '\\<', '\\>'), PREC.COMPARE],
+         [$.test_operator, PREC.TEST],
+         [choice('<<', '>>'), PREC.SHIFT],
+         [choice('+', '-'), PREC.ADD],
+@@ -681,10 +681,9 @@ module.exports = grammar({
+       field('operator', choice('++', '--')),
+     )),
+ 
+-    parenthesized_expression: $ => seq(
+-      '(',
+-      $._expression,
+-      ')',
++    parenthesized_expression: $ => choice(
++      seq('(', $._expression, ')'),
++      seq('\\(', $._expression, '\\)'),
+     ),
+ 
+     // Literals
+@@ -1080,6 +1079,11 @@ module.exports = grammar({
+ 
+     command_substitution: $ => choice(
+       seq('$(', $._statements, ')'),
++      // bash 5.3: `${ cmd; }` runs in the current shell, `${| cmd; }` expands to $REPLY. The blank after
++      // `${` is what tells it from a parameter expansion, so it is part of the token.
++      // The closing brace is the one `{ …; }` uses: the scanner's own `}` would glue `ls -l` into one word.
++      seq(alias(token(seq('${', /[ \t\n]/)), '${'), optional($._terminated_statement), token(prec(-1, '}'))),
++      seq('${|', optional($._terminated_statement), token(prec(-1, '}'))),
+       seq('$(', field('redirect', $.file_redirect), ')'),
+       prec(1, seq('`', $._statements, '`')),
+       seq('$`', $._statements, '`'),
+diff --git a/test/corpus/commands.txt b/test/corpus/commands.txt
+index 5c868df..ed0e33c 100644
+--- a/test/corpus/commands.txt
++++ b/test/corpus/commands.txt
+@@ -991,3 +991,64 @@ bin/ls /usr/bin
+     (command_name
+       (word))
+     (word)))
++
++================================================================================
++Read-write redirections
++================================================================================
++
++cmd <> rw
++exec 5<>/tmp/rw.txt
++
++--------------------------------------------------------------------------------
++
++(program
++  (redirected_statement
++    (command
++      (command_name
++        (word)))
++    (file_redirect
++      (word)))
++  (redirected_statement
++    (command
++      (command_name
++        (word)))
++    (file_redirect
++      (file_descriptor)
++      (word))))
++
++================================================================================
++Function substitutions (bash 5.3)
++================================================================================
++
++text=${ echo "no subshell"; }
++count=${| REPLY=42; }
++echo "${ date +%F; }" ${HOME}
++
++--------------------------------------------------------------------------------
++
++(program
++  (variable_assignment
++    (variable_name)
++    (command_substitution
++      (command
++        (command_name
++          (word))
++        (string
++          (string_content)))))
++  (variable_assignment
++    (variable_name)
++    (command_substitution
++      (variable_assignment
++        (variable_name)
++        (number))))
++  (command
++    (command_name
++      (word))
++    (string
++      (command_substitution
++        (command
++          (command_name
++            (word))
++          (word))))
++    (expansion
++      (variable_name))))
+diff --git a/test/corpus/statements.txt b/test/corpus/statements.txt
+index a00eb94..37a7067 100644
+--- a/test/corpus/statements.txt
++++ b/test/corpus/statements.txt
+@@ -1889,3 +1889,45 @@ while (echo $BASHPID; true); do echo $BASHPID; break; done
+       (command
+         (command_name
+           (word))))))
++
++================================================================================
++Escaped operators in single-bracket tests
++================================================================================
++
++[ "$a" \< "b" ]
++[ "$a" \> "b" ]
++[ \( -f /etc/passwd -o -d /etc \) -a ! -e /nope ]
++
++--------------------------------------------------------------------------------
++
++(program
++  (test_command
++    (binary_expression
++      (string
++        (simple_expansion
++          (variable_name)))
++      (string
++        (string_content))))
++  (test_command
++    (binary_expression
++      (string
++        (simple_expansion
++          (variable_name)))
++      (string
++        (string_content))))
++  (test_command
++    (binary_expression
++      (parenthesized_expression
++        (unary_expression
++          (test_operator)
++          (binary_expression
++            (word)
++            (test_operator)
++            (unary_expression
++              (test_operator)
++              (word)))))
++      (test_operator)
++      (unary_expression
++        (unary_expression
++          (test_operator)
++          (word))))))
+-- 
+2.56.0
+

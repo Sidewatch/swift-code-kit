@@ -8871,8 +8871,13 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_throws_keyword"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_throws_keyword"
+          },
+          "named": true,
+          "value": "throws"
         },
         {
           "type": "STRING",

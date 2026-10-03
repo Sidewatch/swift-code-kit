@@ -16,18 +16,24 @@ import Foundation
 /// of backticks or tildes, closes only on a fence of its own character at least as long, so a four-backtick
 /// block can show a three-backtick fence inside it.
 extension RuleTables {
-    static let markdown: [(String, TokenKind)] = [
-        ("^>+\\s?.*$", .comment),
-        ("^\\s*(\\*{3,}|-{3,}|_{3,})\\s*$", .comment),
-        ("^\\s*[\\-\\*+]\\s", .keyword),
-        ("^\\s*\\d+\\.\\s", .keyword),
-        ("!?\\[([^\\]]+)\\]\\(([^)]+)\\)", .type),
-        ("(?<!\\*)\\*(?![\\s*])[^*\\n]+?(?<![\\s*])\\*(?!\\*)", .type),
-        ("(?<!\\w)_(?![\\s_])[^_\\n]+?(?<![\\s_])_(?!\\w)", .type),
-        ("\\*\\*(?:[^*\\n]|\\*(?!\\*))+?\\*\\*", .function),
-        ("__(?:[^_\\n]|_(?!_))+?__", .function),
-        ("^#{1,6}\\s+.*$", .keyword),
-        ("(?<!`)(`+)(?!`)[^\\n]*?(?<!`)\\1(?!`)", .string),
+    static let markdown: [(String, TokenKind)] =
+        [
+            ("^>+\\s?.*$", .comment),
+            ("^\\s*(\\*{3,}|-{3,}|_{3,})\\s*$", .comment),
+            ("^\\s*[\\-\\*+]\\s", .keyword),
+            ("^\\s*\\d+\\.\\s", .keyword),
+            ("!?\\[([^\\]]+)\\]\\(([^)]+)\\)", .type),
+            ("(?<!\\*)\\*(?![\\s*])[^*\\n]+?(?<![\\s*])\\*(?!\\*)", .type),
+            ("(?<!\\w)_(?![\\s_])[^_\\n]+?(?<![\\s_])_(?!\\w)", .type),
+            ("\\*\\*(?:[^*\\n]|\\*(?!\\*))+?\\*\\*", .function),
+            ("__(?:[^_\\n]|_(?!_))+?__", .function),
+            ("^#{1,6}\\s+.*$", .keyword),
+            ("(?<!`)(`+)(?!`)[^\\n]*?(?<!`)\\1(?!`)", .string),
+        ] + markdownFences
+
+    /// Fenced blocks, of backticks or tildes, painted whole as text. Kept apart so Quarto and R Markdown,
+    /// whose chunks are painted in their own languages, can run the rest of the table without them.
+    static let markdownFences: [(String, TokenKind)] = [
         ("^[ \\t]{0,3}(`{3,})[^`\\n]*\\n[\\s\\S]*?^[ \\t]{0,3}\\1`*[ \\t]*$", .string),
         ("^[ \\t]{0,3}(~{3,}).*\\n[\\s\\S]*?^[ \\t]{0,3}\\1~*[ \\t]*$", .string),
     ]

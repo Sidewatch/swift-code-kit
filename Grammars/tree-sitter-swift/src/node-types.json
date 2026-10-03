@@ -28177,6 +28177,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "throws",
+          "named": true
+        }
+      ]
     }
   },
   {

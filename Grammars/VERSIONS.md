@@ -9,13 +9,13 @@ head, which is ahead of the last tag (some repositories rarely tag).
 
 | Grammar | Upstream | Vendored | Latest release | Status |
 |---|---|---|---|---|
-| bash | tree-sitter/tree-sitter-bash | v0.25.1 | v0.25.1 | current (= main) |
+| bash | tree-sitter/tree-sitter-bash | v0.25.1 + local patch `sidewatch-bash-5.3.patch`, generated with CLI 0.25.10 | v0.25.1 | patched: bash 5.3 and test operators (see below) |
 | c | tree-sitter/tree-sitter-c | v0.24.2 (= main) + local patch `sidewatch-c23.patch` | v0.24.2 | patched: C23 and extensions (see below) |
 | cpp | tree-sitter/tree-sitter-cpp | upstream main + local patch `sidewatch-cpp23-26.patch`, generated against the patched C | v0.23.4 | patched: C++23/26 (see below) |
 | csharp | tree-sitter/tree-sitter-c-sharp | upstream main | v0.23.5 | ahead of the release |
 | css | tree-sitter/tree-sitter-css | v0.25.0 (= main) + local patch `sidewatch-modern-css.patch` | v0.25.0 | patched: modern CSS (see below) |
 | dart | UserNobody14/tree-sitter-dart | upstream main | none tagged | current |
-| dockerfile | camdencheek/tree-sitter-dockerfile | upstream main | v0.2.0 | ahead of the release |
+| dockerfile | camdencheek/tree-sitter-dockerfile | upstream main 971acdd + local patch `sidewatch-dockerfile-buildkit.patch`, generated with CLI 0.25.10 | v0.2.0 | patched: several ARGs, valueless flags (see below) |
 | go | tree-sitter/tree-sitter-go | v0.25.0 | v0.25.0 | current (= main) |
 | html | tree-sitter/tree-sitter-html | v0.23.2 | v0.23.2 | current (= main) |
 | java | grammar-orchard/tree-sitter-java-orchard (codeberg) | v0.5.22 (7dc7faa) | v0.5.22 | current; the maintained fork (see below) |
@@ -30,7 +30,7 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | rust | tree-sitter/tree-sitter-rust | v0.24.2 | v0.24.2 | current (= main) |
 | scala | tree-sitter/tree-sitter-scala | v0.26.2 | v0.26.2 | current; updated 2 Oct 2026 from v0.26.0, upstream's query changes merged into ours |
 | sql | DerekStride/tree-sitter-sql | v0.3.11 | v0.3.11 | current (upstream publishes generated sources only in releases) |
-| swift | alex-pinkus/tree-sitter-swift | upstream main 35245fbf + local patch `sidewatch-swift-6.patch`, generated with CLI 0.25.10 | 0.7.3 | patched: Swift 6 syntax (see below) |
+| swift | alex-pinkus/tree-sitter-swift | upstream main 35245fbf + local patches `sidewatch-swift-6.patch` then `sidewatch-swift-typed-throws.patch`, generated with CLI 0.25.10 | 0.7.3 | patched: Swift 6 syntax, typed-throws keyword (see below) |
 | toml | tree-sitter-grammars/tree-sitter-toml | v0.7.0 | v0.7.0 | current (= main) |
 | typescript, tsx | tree-sitter/tree-sitter-typescript | v0.23.2 | v0.23.2 | current (= main) |
 | xml | tree-sitter-grammars/tree-sitter-xml | upstream main (Jan 2026; scanner UB fix) | v0.7.0 | current |
@@ -67,6 +67,31 @@ new corpus `test/corpus/swift6.txt`. The parser grows 21.2 → 23.1 MB. Not hand
 (upstream allows only non-expression patterns there), and the experimental `@lifetime` / underscored `@_specialize`.
 `Swift6GrammarTests` fails on all 12 constructs with the unpatched parser.
 Proposed upstream as alex-pinkus/tree-sitter-swift#629 (2 Oct 2026); drop the patch once a release carries it.
+
+**swift — `tree-sitter-swift/sidewatch-swift-typed-throws.patch`** (3 Oct 2026), applied after the Swift 6 patch.
+`throws(E)` kept its keyword in an anonymous external token, so the query could colour a bare `throws` but never the
+one in a typed throws clause; the clause now holds a `(throws)` node, which the existing `(throws) @keyword`
+pattern paints. Upstream's four typed-throws tests gain that node in their expected trees. `defer { … }` is a query
+change only: upstream parses it as a call with a trailing closure (its own corpus pins that shape), so
+`highlights.scm` paints the name `defer` as a keyword. `ShellDockerSwiftGrammarTests` fails on both without them.
+
+**bash — `tree-sitter-bash/sidewatch-bash-5.3.patch`** (3 Oct 2026). On top of v0.25.1: bash 5.3's function
+substitutions `${ cmd; }` and `${| cmd; }` (as `command_substitution`; the blank after `${` is part of the token, and
+the closing brace is the one `{ …; }` uses, because the scanner's own `}` glued `ls -l` into one word), the
+read-write redirect `<>`, and the `[` builtin's escaped `\<` `\>` comparisons and `\(` `\)` grouping. An escaped
+`\<` early in a script made everything after it one ERROR: the corpus `.profile` lost every colour from line 109,
+which the highlighting pass had read as "a here-document inside `"$( … )"`" (that parses fine). Upstream's tests pass
+unchanged; new tests in `commands.txt` and `statements.txt`. Not handled: extglob outside `case` and `[[ ]]`
+(upstream issue #313) and a comma inside nested arithmetic parentheses (`$(( (1, 2) ))`); both stay one-line errors.
+
+**dockerfile — `tree-sitter-dockerfile/sidewatch-dockerfile-buildkit.patch`** (3 Oct 2026). On top of upstream main
+971acdd: several arguments in one `ARG` (`ARG TARGETARCH TARGETOS=linux`, repeated `name` / `default` fields, so a
+single argument's tree is unchanged), boolean flags (`COPY --link`, `--parents`), and `--mount` options with no value
+(`,rw`). The multi-name `ARG` took the next lines with it; in the corpus showcase string recall went 29 % → 72 % and
+keyword recall 50 % → 99 %. Regenerating with CLI 0.25.10 also replaces `src/tree_sitter/parser.h` and `array.h` (the
+vendored parser had been generated by an older CLI, ABI 14). Upstream's tests pass; new tests in `arg.txt`,
+`copy.txt`, `run.txt`. Not handled: a quoted stage name (`AS "x"`), a quoted `WORKDIR`, `${VAR:-x}` inside a `FROM`
+image, and `\$` in an unquoted `ENV` value.
 
 **c — `tree-sitter-c/sidewatch-c23.patch`** (2 Oct 2026). C23: `typeof`/`typeof_unqual`, `auto` inference,
 `_BitInt(N)`, enums with any underlying type, `#embed` in initializers, `__has_include(<…>)` arguments,

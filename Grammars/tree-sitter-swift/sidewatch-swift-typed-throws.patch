@@ -1,0 +1,76 @@
+From 7f2c0f99b427646daf739b295892d09ae65f5498 Mon Sep 17 00:00:00 2001
+From: Sidewatch <noreply@example.com>
+Date: Sat, 3 Oct 2026 15:18:29 +0700
+Subject: [PATCH] Typed throws: expose the keyword as a (throws) node
+
+throws(E) hid its keyword in an anonymous external token, so a highlight
+query could colour a bare throws but never the one in a typed throws clause.
+---
+ grammar.js                 | 3 ++-
+ test/corpus/functions.txt  | 2 ++
+ test/corpus/statements.txt | 1 +
+ test/corpus/types.txt      | 1 +
+ 4 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/grammar.js b/grammar.js
+index 2ee959f..c4ec6a3 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -1817,8 +1817,9 @@ module.exports = grammar({
+     _async_keyword: ($) => alias($._async_keyword_custom, "async"),
+     _async_modifier: ($) => token("async"),
+     throws: ($) => choice($._throws_keyword, $._rethrows_keyword),
++    // The keyword is a `(throws)` node here as well, so `throws(E)` colours like a bare `throws`.
+     throws_clause: ($) =>
+-      seq($._throws_keyword, "(", field("type", $._unannotated_type), ")"),
++      seq(alias($._throws_keyword, $.throws), "(", field("type", $._unannotated_type), ")"),
+     enum_class_body: ($) =>
+       seq(
+         "{",
+diff --git a/test/corpus/functions.txt b/test/corpus/functions.txt
+index 80af7e6..13b2ae1 100755
+--- a/test/corpus/functions.txt
++++ b/test/corpus/functions.txt
+@@ -443,6 +443,7 @@ func mayFail() throws(MyError) -> Int { return -1 }
+   (function_declaration
+     (simple_identifier)
+     (throws_clause
++      (throws)
+       (user_type
+         (type_identifier)))
+     (user_type
+@@ -470,6 +471,7 @@ func generic<E: Error>() throws(E) {}
+         (user_type
+           (type_identifier))))
+     (throws_clause
++      (throws)
+       (user_type
+         (type_identifier)))
+     (function_body)))
+diff --git a/test/corpus/statements.txt b/test/corpus/statements.txt
+index a0284f4..204ccdf 100755
+--- a/test/corpus/statements.txt
++++ b/test/corpus/statements.txt
+@@ -653,6 +653,7 @@ do throws(MyError) {
+ (source_file
+   (do_statement
+     (throws_clause
++      (throws)
+       (user_type
+         (type_identifier)))
+     (statements
+diff --git a/test/corpus/types.txt b/test/corpus/types.txt
+index 7219a16..8a320f0 100755
+--- a/test/corpus/types.txt
++++ b/test/corpus/types.txt
+@@ -480,6 +480,7 @@ let closure: () throws(MyError) -> Void = {}
+       (function_type
+         (tuple_type)
+         (throws_clause
++          (throws)
+           (user_type
+             (type_identifier)))
+         (user_type
+-- 
+2.56.0
+

@@ -115,6 +115,13 @@ public final class SyntaxHighlighter: CodeHighlighter {
         paintedCanvas(storage.string, in: range).flush(into: storage, colors: colors)
     }
 
+    /// ``paint(_:in:)`` over several ranges, reading the storage's text once: a Quarto document's chunks
+    /// and the prose between them are hundreds of ranges, and each read copies the whole document.
+    func paint(_ storage: NSTextStorage, in ranges: [NSRange]) {
+        let text = storage.string
+        for range in ranges where range.length > 0 { paintedCanvas(text, in: range).flush(into: storage, colors: colors) }
+    }
+
     /// Every rule's paint over `range` of `text`, not yet in any storage.
     private func paintedCanvas(_ text: String, in range: NSRange) -> Canvas {
         var regions = Regions(text: text, range: range)

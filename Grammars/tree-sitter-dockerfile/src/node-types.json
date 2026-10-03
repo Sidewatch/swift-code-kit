@@ -27,7 +27,7 @@
     "named": true,
     "fields": {
       "default": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -45,7 +45,7 @@
         ]
       },
       "name": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
@@ -1054,7 +1054,8 @@
   },
   {
     "type": "comment",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "escape_sequence",
@@ -1074,7 +1075,8 @@
   },
   {
     "type": "line_continuation",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "mount",

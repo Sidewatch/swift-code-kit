@@ -2,9 +2,10 @@
 //  EmbeddedMarkupHighlighter.swift
 //  CodeHighlighting
 //
-//  Single-file-component highlighting (Astro / Vue / Svelte): splits the
-//  document into markup and embedded-language regions, then paints each region
-//  with the best highlighter available for *that* language.
+//  Single-file-component highlighting (Astro / Vue / Svelte) and executable
+//  Markdown (Quarto / R Markdown): splits the document into markup and
+//  embedded-language regions, then paints each region with the best highlighter
+//  available for *that* language.
 //
 //  Created by David Sherlock on 7/30/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -18,6 +19,8 @@ import FoundationExtensions
 /// several languages: Astro frontmatter → TypeScript, `<script>` → TS/JS/JSON and `<style>` →
 /// CSS/SCSS/Sass/Less (per `lang=`/`type=`), the rest → the host's markup rules. One flat rule
 /// table cannot do this: it leaves `<style>` uncoloured and paints CSS's `in` as a JS keyword.
+/// Quarto and R Markdown chunks (```` ```{r} ````, ```` ```{python echo=FALSE} ````) are regions the
+/// same way: each body in its chunk's language, the fence lines as keywords.
 /// Regions with a bundled grammar are parsed in place like injections; the rest use their own
 /// regex table. Paints only `.foregroundColor`, on the main thread.
 public final class EmbeddedMarkupHighlighter: CodeHighlighter {
@@ -50,7 +53,7 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
     /// plain ``SyntaxHighlighter``.
     public static func supports(_ language: Language) -> Bool {
         switch language {
-        case .astro, .vue, .svelte: return true
+        case .astro, .vue, .svelte, .quarto, .rmarkdown: return true
         default: return false
         }
     }
@@ -61,7 +64,10 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         guard Self.supports(language) else { return nil }
         self.language = language
         self.colors = colors
-        self.markup = SyntaxHighlighter(language: language, colors: colors)
+        self.markup =
+            Self.isExecutableMarkdown(language)
+            ? SyntaxHighlighter(defs: RuleTables.quartoMarkup, regexOptions: .anchorsMatchLines, colors: colors)
+            : SyntaxHighlighter(language: language, colors: colors)
     }
 
     // MARK: - Painting
@@ -70,7 +76,9 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
     /// region over its own slice.
     @MainActor
     public func highlight(_ storage: NSTextStorage, in editedRange: NSRange) {
-        let ns = storage.string as NSString
+        // An immutable copy, once: the storage's own string is mutable, so every parse would copy it again
+        // and every character read would be a message to it.
+        let ns = NSString(string: storage.string)
         guard ns.length > 0 else { return }
         let full = NSRange(location: 0, length: ns.length)
 
@@ -87,17 +95,50 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         // doesn't matter and neither can erase the other.
         storage.addAttribute(.foregroundColor, value: colors.foreground, range: clip)
 
+        let chunks = Self.isExecutableMarkdown(language) ? Self.chunks(in: ns) : []
+        let regions =
+            Self.isExecutableMarkdown(language) ? Self.markdownRegions(in: ns, chunks: chunks) : Self.regions(in: ns, language: language)
         var painted: [NSRange] = []
-        for region in Self.regions(in: ns, language: language) {
-            let visible = NSIntersectionRange(region.range, clip)
-            guard visible.length > 0 else { continue }
-            painted.append(region.range)
-            paint(region.language, storage: storage, ns: ns, body: region.range, clip: visible)
+        if Self.isExecutableMarkdown(language) {
+            // Hundreds of chunks: one parse per language over all of its chunks, and one pass of each
+            // table over all of its ranges. Painting them one by one re-read the whole document each time.
+            painted = paintGrouped(regions, storage: storage, ns: ns, clip: clip)
+            markup.paint(storage, in: Self.complement(of: painted, within: clip))
+        } else {
+            for region in regions {
+                let visible = NSIntersectionRange(region.range, clip)
+                guard visible.length > 0 else { continue }
+                painted.append(region.range)
+                paint(region.language, storage: storage, ns: ns, body: region.range, clip: visible)
+            }
+            // The markup is whatever the embedded regions left over.
+            for gap in Self.complement(of: painted, within: clip) {
+                markup.paint(storage, in: gap)
+            }
         }
 
-        // The markup is whatever the embedded regions left over.
-        for gap in Self.complement(of: painted, within: clip) {
-            markup.paint(storage, in: gap)
+        if !chunks.isEmpty { paintChunkEdges(chunks, storage: storage, ns: ns, clip: clip) }
+    }
+
+    /// The parts of a Quarto / R Markdown block that are not code: a chunk's fence lines are keywords
+    /// and its `#| key:` option names attributes; a block shown rather than run (```` ```python ````)
+    /// keeps the Markdown look of fences as text, and a block in no known language is text throughout.
+    @MainActor
+    private func paintChunkEdges(_ chunks: [Chunk], storage: NSTextStorage, ns: NSString, clip: NSRange) {
+        func paint(_ range: NSRange, _ kind: TokenKind) {
+            let visible = NSIntersectionRange(range, clip)
+            if visible.length > 0 { storage.addAttribute(.foregroundColor, value: colors.color(for: kind), range: visible) }
+        }
+        for chunk in chunks {
+            for fence in chunk.fences { paint(fence, chunk.braced ? .keyword : .string) }
+            if chunk.language == nil, let body = chunk.body { paint(body, .string) }
+            for line in chunk.options {
+                let text = ns.substring(with: line) as NSString
+                guard
+                    let key = Self.optionKey?.firstMatch(in: text as String, options: [], range: NSRange(location: 0, length: text.length))
+                else { continue }
+                paint(NSRange(location: line.location + key.range.location, length: key.range.length), .attribute)
+            }
         }
     }
 
@@ -128,6 +169,49 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         fallback(for: lang).paint(storage, in: clip)
     }
 
+    /// Paints the regions that reach into `clip`, all of one language together: a single parse over every
+    /// body of a grammar language (the chunks of a Quarto document share one session, so one parse is
+    /// also the truer reading), a single pass of the table over every body of the rest. Returns the
+    /// regions' full ranges, for the markup to paint around.
+    @MainActor
+    private func paintGrouped(_ regions: [Region], storage: NSTextStorage, ns: NSString, clip: NSRange) -> [NSRange] {
+        var order: [Language] = []
+        var bodies: [Language: [NSRange]] = [:]
+        for region in regions where NSIntersectionRange(region.range, clip).length > 0 {
+            if bodies[region.language] == nil { order.append(region.language) }
+            bodies[region.language, default: []].append(region.range)
+        }
+        for lang in order {
+            let ranges = bodies[lang] ?? []
+            let visible = ranges.map { NSIntersectionRange($0, clip) }
+            if let grammar = TreeSitterHighlighter.grammar(for: lang),
+                let tree = TreeSitterHighlighter.combinedParse(grammar, ns: ns, ranges: ranges)
+            {
+                var base = 0
+                let hits =
+                    TreeSitterHighlighter.collectHits(grammar.highlights, tree: tree, source: ns, offset: 0, clip: clip, nextBase: &base)
+                    + TreeSitterHighlighter.collectInjectionHits(
+                        grammar, tree: tree, source: ns, offset: 0, clip: clip, depth: 0, nextBase: &base)
+                // Hits sorted by start, so each body takes its own slice instead of filtering them all.
+                let sorted = hits.sorted { $0.range.location < $1.range.location }
+                var first = 0
+                for slice in visible {
+                    while first < sorted.count, NSMaxRange(sorted[first].range) <= slice.location { first += 1 }
+                    var own: [TreeSitterHighlighter.Hit] = []
+                    var i = first
+                    while i < sorted.count, sorted[i].range.location < NSMaxRange(slice) {
+                        if NSIntersectionRange(sorted[i].range, slice).length > 0 { own.append(sorted[i]) }
+                        i += 1
+                    }
+                    TreeSitterHighlighter.applyResolved(hits: own, clip: slice, defaultColor: colors.foreground, into: storage)
+                }
+            } else {
+                fallback(for: lang).paint(storage, in: visible)
+            }
+        }
+        return order.flatMap { bodies[$0] ?? [] }
+    }
+
     /// The regex table for an embedded language with no bundled grammar.
     private func fallback(for lang: Language) -> SyntaxHighlighter {
         if let h = fallbacks[lang] { return h }
@@ -151,8 +235,148 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
             scanFrom = fence.end
         }
 
+        if isExecutableMarkdown(language) { return markdownRegions(in: ns, chunks: chunks(in: ns)) }
+
         out += tagRegions(in: ns, from: scanFrom, host: language)
         return out
+    }
+
+    // MARK: - Quarto / R Markdown chunks
+
+    /// Whether `language` is Markdown whose fences carry code to run (Quarto, R Markdown).
+    static func isExecutableMarkdown(_ language: Language) -> Bool { language == .quarto || language == .rmarkdown }
+
+    /// One fenced block: a chunk the document runs (```` ```{r label, echo=FALSE} ````), a block it
+    /// only shows (```` ```python ````), or a block in no known language.
+    struct Chunk {
+        /// The code between the fence lines and after any option lines; nil when empty.
+        let body: NSRange?
+        /// The language the fence names; nil when it names none Sidewatch knows.
+        let language: Language?
+        /// The opening fence line and, when there is one, the closing fence line (line breaks excluded).
+        let fences: [NSRange]
+        /// The `#| key: value` option lines at the top of a chunk (line breaks excluded).
+        let options: [NSRange]
+        /// Whether the info string is braced, which makes the block a chunk.
+        let braced: Bool
+    }
+
+    /// The YAML front matter, then every chunk's code, as regions to paint.
+    static func markdownRegions(in ns: NSString, chunks: [Chunk]) -> [Region] {
+        var out: [Region] = []
+        if let fence = frontmatter(in: ns), fence.body.length > 0 { out.append(Region(range: fence.body, language: .yaml)) }
+        for chunk in chunks {
+            if let language = chunk.language, let body = chunk.body { out.append(Region(range: body, language: language)) }
+        }
+        return out
+    }
+
+    /// An opening fence: up to three spaces, three or more backticks or tildes, then the info string.
+    /// Group 1 is the fence, 2 a braced engine name (`{r …}`, `{=html}`, Pandoc's `{.python …}`), 3 a bare
+    /// language name.
+    private static let fenceOpen = try? NSRegularExpression(
+        pattern: #"^[ \t]{0,3}(`{3,}|~{3,})[ \t]*(?:\{[ \t]*[=.]?([A-Za-z][\w.+-]*)[^}\n]*\}|([A-Za-z][\w.+-]*))?[^\n]*$"#,
+        options: [])
+
+    /// A chunk option line: `#|`, `//|`, `--|` or Mermaid's `%%|`, then the option's name and colon.
+    private static let optionLine = try? NSRegularExpression(pattern: #"^[ \t]*(?:#|//|--|%%)\|"#, options: [])
+    /// The `#| name:` part of an option line, painted as an attribute.
+    fileprivate static let optionKey = try? NSRegularExpression(pattern: #"^[ \t]*(?:#|//|--|%%)\|[ \t]*[\w.-]*:?"#, options: [])
+
+    /// Every fenced block in `ns`, in order. One forward pass over the lines: a block runs from its
+    /// opening fence to the first line of only its fence character, at least as many, so a fence inside
+    /// a longer fence's block is text.
+    static func chunks(in ns: NSString) -> [Chunk] {
+        guard let fenceOpen else { return [] }
+        var out: [Chunk] = []
+        var loc = 0
+        while loc < ns.length {
+            let line = ns.lineRange(for: NSRange(location: loc, length: 0))
+            guard line.length > 0 else { break }
+            loc = NSMaxRange(line)
+            let content = contentRange(of: line, in: ns)
+            let text = ns.substring(with: content)
+            guard text.contains("```") || text.contains("~~~"),
+                let match = fenceOpen.firstMatch(in: text, options: [], range: NSRange(location: 0, length: content.length))
+            else { continue }
+            let tn = text as NSString
+            let fence = tn.substring(with: match.range(at: 1))
+            let braced = match.range(at: 2).location != NSNotFound
+            let nameGroup = braced ? 2 : 3
+            let name = match.range(at: nameGroup).location == NSNotFound ? "" : tn.substring(with: match.range(at: nameGroup))
+            let close = closingFence(after: loc, fence: fence, in: ns)
+            let bodyEnd = close?.line.location ?? ns.length
+            var bodyStart = loc
+            var options: [NSRange] = []
+            if braced, let optionLine {
+                while bodyStart < bodyEnd {
+                    let next = ns.lineRange(for: NSRange(location: bodyStart, length: 0))
+                    let nextText = ns.substring(with: next)
+                    guard
+                        optionLine.firstMatch(in: nextText, options: [], range: NSRange(location: 0, length: (nextText as NSString).length))
+                            != nil
+                    else { break }
+                    options.append(contentRange(of: next, in: ns))
+                    bodyStart = NSMaxRange(next)
+                }
+            }
+            loc = close?.next ?? ns.length
+            var fences = [content]
+            if let close { fences.append(contentRange(of: close.line, in: ns)) }
+            let body = bodyEnd > bodyStart ? NSRange(location: bodyStart, length: bodyEnd - bodyStart) : nil
+            out.append(Chunk(body: body, language: chunkLanguage(name), fences: fences, options: options, braced: braced))
+        }
+        return out
+    }
+
+    /// `line` without its line break.
+    private static func contentRange(of line: NSRange, in ns: NSString) -> NSRange {
+        var end = NSMaxRange(line)
+        while end > line.location, ns.character(at: end - 1) == 0x0A || ns.character(at: end - 1) == 0x0D { end -= 1 }
+        return NSRange(location: line.location, length: end - line.location)
+    }
+
+    /// The line that closes a block opened by `fence` (the same character, at least as many, at most
+    /// three spaces before and nothing but blanks after), searching from `start`; its range and the
+    /// offset after it.
+    private static func closingFence(after start: Int, fence: String, in ns: NSString) -> (line: NSRange, next: Int)? {
+        guard let char = fence.first else { return nil }
+        var loc = start
+        while loc < ns.length {
+            let line = ns.lineRange(for: NSRange(location: loc, length: 0))
+            guard line.length > 0 else { break }
+            let raw = ns.substring(with: line)
+            let indent = raw.prefix { $0 == " " }.count
+            let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if indent <= 3, text.count >= fence.count, text.allSatisfy({ $0 == char }) { return (line, NSMaxRange(line)) }
+            loc = NSMaxRange(line)
+        }
+        return nil
+    }
+
+    /// The language a fence names: knitr's and Quarto's engine names, then any language Sidewatch
+    /// knows by that name. Nil for none, for Markdown itself, and for engines that hold prose
+    /// (`{asis}`, bookdown's `{theorem}`).
+    static func chunkLanguage(_ name: String) -> Language? {
+        switch name.lowercased() {
+        case "": return nil
+        case "r", "rscript": return .r
+        case "python", "py", "python3": return .python
+        case "julia", "jl": return .julia
+        case "bash", "sh", "shell", "zsh": return .bash
+        case "ojs", "js", "javascript", "node": return .javascript
+        case "ts": return .typescript
+        case "rcpp", "c++": return .cpp
+        case "dot", "graphviz": return .dot
+        case "tikz", "tex": return .latex
+        case "yml": return .yaml
+        case "md", "markdown", "qmd", "rmd": return nil
+        default:
+            guard let language = Language(rawValue: name.lowercased()), language != .plainText,
+                !isExecutableMarkdown(language), language != .markdown
+            else { return nil }
+            return language
+        }
     }
 
     /// The leading `---` fence: the range between the fences, and the offset

@@ -1,0 +1,158 @@
+From 56ac4126c4017bfd1b342d39c874636f0055ed51 Mon Sep 17 00:00:00 2001
+From: Sidewatch <noreply@example.com>
+Date: Sat, 3 Oct 2026 15:19:16 +0700
+Subject: [PATCH] Several arguments per ARG; valueless flags and mount options
+
+ARG A=1 B C, COPY --link / --parents, and --mount=...,rw are valid Dockerfile
+syntax that produced ERROR nodes.
+---
+ grammar.js           | 31 ++++++++++++++++++-------------
+ test/corpus/arg.txt  | 20 ++++++++++++++++++++
+ test/corpus/copy.txt | 20 ++++++++++++++++++++
+ test/corpus/run.txt  | 18 ++++++++++++++++++
+ 4 files changed, 76 insertions(+), 13 deletions(-)
+
+diff --git a/grammar.js b/grammar.js
+index 2b1109c..8cb14dc 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -150,16 +150,21 @@ module.exports = grammar({
+     arg_instruction: ($) =>
+       seq(
+         alias(/[aA][rR][gG]/, "ARG"),
+-        field("name", alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
+-        optional(
++        // `ARG TARGETARCH TARGETOS=linux`: one instruction may declare several arguments (BuildKit, Docker 1.13+).
++        repeat1(
+           seq(
+-            token.immediate("="),
+-            field("default",
+-                  choice(
+-                    $.double_quoted_string,
+-                    $.single_quoted_string,
+-                    $.unquoted_string
+-                  ))
++            field("name", alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
++            optional(
++              seq(
++                token.immediate("="),
++                field("default",
++                      choice(
++                        $.double_quoted_string,
++                        $.single_quoted_string,
++                        $.unquoted_string
++                      ))
++              )
++            )
+           )
+         )
+       ),
+@@ -337,8 +342,8 @@ module.exports = grammar({
+       seq(
+         "--",
+         field("name", token.immediate(/[a-z][-a-z]*/)),
+-        token.immediate("="),
+-        field("value", token.immediate(/[^\s]+/))
++        // Boolean flags take no value: `COPY --link`, `COPY --parents`, `ADD --link`.
++        optional(seq(token.immediate("="), field("value", token.immediate(/[^\s]+/))))
+       ),
+ 
+     // Specific parsing of the --mount option e.g.
+@@ -360,10 +365,10 @@ module.exports = grammar({
+       )
+     ),
+ 
++    // `rw`, `ro` and `readonly` stand alone: `--mount=type=bind,source=.,target=/src,rw`.
+     mount_param_param: () => seq(
+       token.immediate(/[^\s=,]+/),
+-      token.immediate("="),
+-      token.immediate(/[^\s=,]+/)
++      optional(seq(token.immediate("="), token.immediate(/[^\s=,]+/)))
+     ),
+ 
+     image_alias: ($) => seq(
+diff --git a/test/corpus/arg.txt b/test/corpus/arg.txt
+index 0afe5a8..139ee67 100644
+--- a/test/corpus/arg.txt
++++ b/test/corpus/arg.txt
+@@ -38,3 +38,23 @@ ARG foo="bar"
+ 		default: (double_quoted_string)))
+ 		
+ 
++==================
++Several arguments
++==================
++
++ARG TARGETARCH TARGETOS=linux
++ARG A=1 B="two" C
++
++---
++
++(source_file
++	(arg_instruction
++		(unquoted_string)
++		(unquoted_string)
++		(unquoted_string))
++	(arg_instruction
++		(unquoted_string)
++		(unquoted_string)
++		(unquoted_string)
++		(double_quoted_string)
++		(unquoted_string)))
+diff --git a/test/corpus/copy.txt b/test/corpus/copy.txt
+index 0eaf4c0..612459a 100644
+--- a/test/corpus/copy.txt
++++ b/test/corpus/copy.txt
+@@ -53,3 +53,23 @@ COPY --chown=a:b --chmod=644 src dst
+     (param)
+     (path)
+     (path)))
++
++==================
++Boolean flags
++==================
++
++COPY --link --from=build /a /b
++COPY --parents ./src/**/*.go /app/
++
++---
++
++(source_file
++	(copy_instruction
++		(param)
++		(param)
++		(path)
++		(path))
++	(copy_instruction
++		(param)
++		(path)
++		(path)))
+diff --git a/test/corpus/run.txt b/test/corpus/run.txt
+index d5b79fa..593c9d8 100644
+--- a/test/corpus/run.txt
++++ b/test/corpus/run.txt
+@@ -112,3 +112,21 @@ EOF
+     (heredoc_block
+       (heredoc_line)
+       (heredoc_end))))
++
++==================
++Mount option without a value
++==================
++
++RUN --mount=type=bind,source=.,target=/src,rw make
++
++---
++
++(source_file
++	(run_instruction
++		(mount_param
++			(mount_param_param)
++			(mount_param_param)
++			(mount_param_param)
++			(mount_param_param))
++		(shell_command
++			(shell_fragment))))
+-- 
+2.56.0
+

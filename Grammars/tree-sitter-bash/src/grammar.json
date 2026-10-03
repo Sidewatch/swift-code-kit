@@ -2625,6 +2625,10 @@
                       {
                         "type": "STRING",
                         "value": ">|"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": "<>"
                       }
                     ]
                   },
@@ -3363,6 +3367,14 @@
                         {
                           "type": "STRING",
                           "value": ">="
+                        },
+                        {
+                          "type": "STRING",
+                          "value": "\\<"
+                        },
+                        {
+                          "type": "STRING",
+                          "value": "\\>"
                         }
                       ]
                     }
@@ -3876,19 +3888,41 @@
       }
     },
     "parenthesized_expression": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "STRING",
-          "value": "("
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_expression"
-        },
-        {
-          "type": "STRING",
-          "value": ")"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "\\("
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": "\\)"
+            }
+          ]
         }
       ]
     },
@@ -6585,6 +6619,87 @@
             {
               "type": "STRING",
               "value": ")"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "TOKEN",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "${"
+                    },
+                    {
+                      "type": "PATTERN",
+                      "value": "[ \\t\\n]"
+                    }
+                  ]
+                }
+              },
+              "named": false,
+              "value": "${"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_terminated_statement"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": -1,
+                "content": {
+                  "type": "STRING",
+                  "value": "}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "${|"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_terminated_statement"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": -1,
+                "content": {
+                  "type": "STRING",
+                  "value": "}"
+                }
+              }
             }
           ]
         },
