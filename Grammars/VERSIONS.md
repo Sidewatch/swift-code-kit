@@ -133,3 +133,11 @@ as a patch (`diff -u old/queries/highlights.scm new/queries/highlights.scm | pat
 never by copying. Then run `swift test`, and in the app `--probe-highlight-coverage <language>` and
 `--selftest-highlight-roles ../TestFiles`: a query that stops compiling against a new grammar paints nothing,
 silently, and only the bundle can show it.
+
+## Packaging
+
+`tree-sitter-grammars/` is not a grammar: it is one `type: .dynamic` library product whose target
+depends on every grammar package above, and `CodeHighlighting` depends on it instead of on each
+grammar. A client therefore links the parse tables from `libTreeSitterGrammars.dylib` rather than
+copying them into every binary (Sidewatch's app and Quick Look extension share one ~40 MB copy).
+Add a new grammar package to its manifest as well as here.

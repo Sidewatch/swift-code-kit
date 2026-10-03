@@ -9,7 +9,7 @@ Each module is its own library product: depend on the package, then only on the 
 | Module | What it is |
 |---|---|
 | [`CodeLanguage`](Docs/Modules/CodeLanguage.md) | Filename → language detection across a 217-language catalog, with display metadata and a highlighting family for fallback. |
-| [`CodeHighlighting`](Docs/Modules/CodeHighlighting.md) | Syntax highlighting for `NSTextStorage`: tree-sitter for the vendored grammars under `Grammars/`, rule tables for everything else. |
+| [`CodeHighlighting`](Docs/Modules/CodeHighlighting.md) | Syntax highlighting for `NSTextStorage`: tree-sitter for the vendored grammars under `Grammars/` (linked as one dynamic library, `libTreeSitterGrammars.dylib`, so an app and its extensions can share a single copy), rule tables for everything else. |
 
 ## Requirements
 
