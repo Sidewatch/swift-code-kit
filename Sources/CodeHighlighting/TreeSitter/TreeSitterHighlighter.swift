@@ -200,28 +200,57 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         return m
     }()
 
-    private static let grammarLock = NSLock()
-    nonisolated(unsafe) private static var grammarCache: [CodeLanguage.Language: Grammar?] = [:]  // guarded by grammarLock
+    private static let grammarCondition = NSCondition()
+    nonisolated(unsafe) private static var grammarCache: [CodeLanguage.Language: Grammar?] = [:]  // guarded by grammarCondition
+    /// Languages being compiled right now, on some thread (guarded by `grammarCondition`).
+    nonisolated(unsafe) private static var grammarsCompiling: Set<CodeLanguage.Language> = []
+    /// Test seam: how many compiles have run in this process (guarded by `grammarCondition`).
+    nonisolated(unsafe) private(set) static var grammarCompiles = 0
 
     /// The compiled grammar for `language`, compiled on first request and cached; nil when there
     /// is no builder or its query does not compile. Must stay per-language: compiling every
     /// query on first touch costs 600–750 ms on the main thread at launch. Compiling happens
-    /// outside the lock, so a race on one language compiles it twice and keeps one, harmlessly.
+    /// outside the lock; a request for a language another thread is already compiling (the launch
+    /// warm-up) waits for that compile instead of starting a second one — the duplicate cost the
+    /// main thread 150–440 ms when a restored tab asked for its grammar mid-warm-up.
     static func grammar(for language: CodeLanguage.Language) -> Grammar? {
-        grammarLock.lock()
-        if let hit = grammarCache[language] { grammarLock.unlock(); return hit }
-        grammarLock.unlock()
-        guard let build = grammarBuilders[language] else { return nil }
+        grammarCondition.lock()
+        while grammarCache[language] == nil, grammarsCompiling.contains(language) { grammarCondition.wait() }
+        if let hit = grammarCache[language] { grammarCondition.unlock(); return hit }
+        guard let build = grammarBuilders[language] else { grammarCondition.unlock(); return nil }
+        grammarsCompiling.insert(language)
+        grammarCondition.unlock()
         let built = build()
-        grammarLock.lock(); grammarCache[language] = built; grammarLock.unlock()
+        grammarCondition.lock()
+        grammarCache[language] = built
+        grammarsCompiling.remove(language)
+        grammarCompiles += 1
+        grammarCondition.broadcast()
+        grammarCondition.unlock()
         return built
     }
 
-    /// Compiles every language's queries. Call from a BACKGROUND thread at launch so
-    /// the first file the user opens finds its grammar ready; a language asked for
-    /// before the warm-up reaches it simply compiles on demand.
-    public static func warmUpGrammars() {
-        for language in grammarBuilders.keys.sorted(by: { $0.rawValue < $1.rawValue }) { _ = grammar(for: language) }
+    /// Whether `language` is being compiled on some thread right now. Test seam.
+    static func isCompilingGrammar(_ language: CodeLanguage.Language) -> Bool {
+        grammarCondition.lock(); defer { grammarCondition.unlock() }
+        return grammarsCompiling.contains(language)
+    }
+
+    /// Drops `language` from the cache so the next request compiles it again. Test seam.
+    static func forgetGrammarForTesting(_ language: CodeLanguage.Language) {
+        grammarCondition.lock(); defer { grammarCondition.unlock() }
+        grammarCache[language] = nil
+    }
+
+    /// Compiles every language's queries, `first` before the rest (the languages of the tabs a
+    /// launch restores, so they are ready when those tabs first paint). Call from a BACKGROUND
+    /// thread at launch; a language asked for before the warm-up reaches it compiles on demand,
+    /// and one asked for while the warm-up is compiling it waits for that compile.
+    public static func warmUpGrammars(prioritizing first: [CodeLanguage.Language] = []) {
+        var seen = Set<CodeLanguage.Language>()
+        for language in first + grammarBuilders.keys.sorted(by: { $0.rawValue < $1.rawValue }) where seen.insert(language).inserted {
+            _ = grammar(for: language)
+        }
     }
 
     /// Per-language compile cost, for `--probe-grammars`: (language, milliseconds, compiled).
