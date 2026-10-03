@@ -20,6 +20,11 @@ import CodeLanguage
 public final class ProjectSymbolIndex {
     private var defs: [String: [DefLocation]] = [:]
     private var fileNames: [String: Set<String>] = [:]  // file path → the names it defines
+    /// Canonical file path → the URL its current definitions carry. A rescan removes the old
+    /// definitions by comparing against this URL, so it never resolves a path per definition:
+    /// `canonicalPath` is a file-system call, and a name the whole project shares (`init`,
+    /// `run`) has thousands of definitions to check.
+    private var fileURLs: [String: URL] = [:]
     /// Every name in `defs`, lowercased and sorted, paired with its original
     /// spelling — the prefix query's binary-search cursor. nil = stale; rebuilt
     /// on demand by ``sortedNameCursor()``. See ``definitions(matchingPrefix:limit:)``
@@ -131,6 +136,7 @@ public final class ProjectSymbolIndex {
     nonisolated private static func scan(roots: [URL]) -> ScanResult {
         var map: [String: [DefLocation]] = [:]
         var files: [String: Set<String>] = [:]
+        var urls: [String: URL] = [:]
         var count = 0
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .isDirectoryKey]
@@ -159,18 +165,23 @@ public final class ProjectSymbolIndex {
                             line: s.line, owner: owners[i], language: lang))
                     names.insert(s.name)
                 }
-                if !names.isEmpty { files[canonicalPath(for: url)] = names }
+                if !names.isEmpty {
+                    let path = canonicalPath(for: url)
+                    files[path] = names
+                    urls[path] = url
+                }
                 count += 1
                 if count > 5000 { break outer }  // safety cap for very large trees
             }
         }
-        return ScanResult(defs: map, fileNames: files)
+        return ScanResult(defs: map, fileNames: files, fileURLs: urls)
     }
 
     /// A completed scan, ready to install. Immutable so it can cross the queue hop as a value.
     private struct ScanResult: Sendable {
         let defs: [String: [DefLocation]]
         let fileNames: [String: Set<String>]
+        let fileURLs: [String: URL]
     }
 
     /// Installs a finished scan, unless a newer `build()`/`invalidate()` superseded it.
@@ -178,6 +189,7 @@ public final class ProjectSymbolIndex {
         guard generation == gen else { return }  // superseded → discard, but still complete
         defs = scanned.defs
         fileNames = scanned.fileNames
+        fileURLs = scanned.fileURLs
         sortedNames = nil  // names replaced wholesale
         isBuilt = true
         isBuilding = false
@@ -216,6 +228,9 @@ public final class ProjectSymbolIndex {
     /// queue and that a burst of notifications collapses into a bounded number
     /// of parses.
     private(set) var rescannedFiles = 0
+    /// Test seam: how many rescans had to fall back to resolving every definition's path
+    /// (a file whose indexed URL was not recorded). Zero in normal operation.
+    private(set) var pathResolvingRemovals = 0
 
     /// Starts a rescan batch over everything in ``pendingRescans`` unless one is
     /// already running — its completion calls back here, so paths that arrived
@@ -250,13 +265,13 @@ public final class ProjectSymbolIndex {
     /// Re-parses one file, as a pure function of its contents. Empty when the file is gone,
     /// unparseable, or too large — which is also exactly what a delete should install.
     nonisolated private static func rescan(url: URL, path: String) -> FileSymbols {
-        guard FileManager.default.fileExists(atPath: path) else { return FileSymbols(defs: [], names: []) }
+        guard FileManager.default.fileExists(atPath: path) else { return FileSymbols(url: url, defs: [], names: []) }
         let lang = CodeLanguage.Language.detect(for: url)
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard SymbolQueries.sources[lang] != nil, size > 0, size < 500_000,
             let text = try? String(contentsOf: url, encoding: .utf8)
         else {
-            return FileSymbols(defs: [], names: [])
+            return FileSymbols(url: url, defs: [], names: [])
         }
         var newDefs: [DefLocation] = []
         var names = Set<String>()
@@ -269,11 +284,13 @@ public final class ProjectSymbolIndex {
                     line: s.line, owner: owners[i], language: lang))
             names.insert(s.name)
         }
-        return FileSymbols(defs: newDefs, names: names)
+        return FileSymbols(url: url, defs: newDefs, names: names)
     }
 
     /// One file's definitions, immutable so it can cross the queue hop as a value.
     private struct FileSymbols: Sendable {
+        /// The URL the rescan read, which every one of `defs` carries.
+        let url: URL
         let defs: [DefLocation]
         let names: Set<String>
     }
@@ -283,13 +300,20 @@ public final class ProjectSymbolIndex {
     private func apply(_ rescanned: FileSymbols, at path: String) {
         guard isBuilt else { return }
         if let old = fileNames[path] {
+            let oldURL = fileURLs[path]
+            if oldURL == nil { pathResolvingRemovals += 1 }
             for n in old {
-                defs[n]?.removeAll { Self.canonicalPath(for: $0.url) == path }
+                if let oldURL {
+                    defs[n]?.removeAll { $0.url == oldURL }
+                } else {
+                    defs[n]?.removeAll { Self.canonicalPath(for: $0.url) == path }
+                }
                 if defs[n]?.isEmpty == true { defs[n] = nil }
             }
         }
         for d in rescanned.defs { defs[d.name, default: []].append(d) }
         fileNames[path] = rescanned.names.isEmpty ? nil : rescanned.names
+        fileURLs[path] = rescanned.names.isEmpty ? nil : rescanned.url
         sortedNames = nil  // this file's names entered/left `defs`
     }
 
@@ -387,6 +411,7 @@ public final class ProjectSymbolIndex {
         generation += 1
         defs = [:]
         fileNames = [:]
+        fileURLs = [:]
         sortedNames = nil
         isBuilt = false
         isBuilding = false
