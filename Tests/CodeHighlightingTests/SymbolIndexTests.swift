@@ -163,6 +163,20 @@ final class SymbolIndexTests: XCTestCase {
         XCTAssertEqual(idx.definitions(of: "nonexistent").count, 0)
     }
 
+    func testAllNamesListsEveryDefinedNameCaseInsensitively() throws {
+        try XCTSkipUnless(TreeSitterHighlighter.supports(.python))
+        let dir = makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try "def beta():\n    pass\ndef Alpha():\n    pass\n".write(
+            to: dir.appendingPathComponent("a.py"), atomically: true, encoding: .utf8)
+        let idx = ProjectSymbolIndex()
+        XCTAssertEqual(idx.allNames(), [], "nothing before the build")
+        let built = expectation(description: "build completes")
+        idx.build(root: dir) { built.fulfill() }
+        wait(for: [built], timeout: 10)
+        XCTAssertEqual(idx.allNames(), ["Alpha", "beta"])
+    }
+
     func testBuildHonoursHostExclusion() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.javascript))
         let dir = makeTempDir()

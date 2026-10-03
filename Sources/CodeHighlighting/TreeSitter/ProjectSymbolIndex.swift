@@ -378,6 +378,12 @@ public final class ProjectSymbolIndex {
         return out
     }
 
+    /// Every defined name in the project, sorted case-insensitively: the candidates a symbol
+    /// picker fuzzy-ranks (``definitions(of:)`` then gives each one's locations). Empty before
+    /// the build completes.
+    /// - Note: Main queue only, like the prefix query it shares its cache with.
+    public func allNames() -> [String] { sortedNameCursor().map(\.name) }
+
     /// The lazily-rebuilt sorted name mirror behind ``definitions(matchingPrefix:limit:)``.
     /// Sorted by the lowercased name (the prefix match is case-insensitive),
     /// tie-broken by the original spelling so two names differing only in case

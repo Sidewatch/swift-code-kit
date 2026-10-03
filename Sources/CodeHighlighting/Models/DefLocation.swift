@@ -32,4 +32,15 @@ public struct DefLocation: Sendable {
     /// (see ``ProjectSymbolIndex/definitions(of:visibleFrom:)``): a symbol table
     /// keyed by bare name alone let a CSS file's `float` resolve to a PHP method.
     public let language: Language
+
+    /// Creates a definition location (the index builds these; a host may for a stand-in index).
+    public init(url: URL, name: String, kind: SymbolKind, range: NSRange, line: Int, owner: String?, language: Language) {
+        self.url = url
+        self.name = name
+        self.kind = kind
+        self.range = range
+        self.line = line
+        self.owner = owner
+        self.language = language
+    }
 }
