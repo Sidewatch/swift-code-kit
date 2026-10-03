@@ -19,7 +19,7 @@ Source code, understood: which language a file is, and syntax highlighting for i
 ### Module map
 - `Builtins/` — bundled resources: one `<language>.txt` per language, `identifier⇥signature` per line
 - `Completion/` — the engine: completion: CompletionProvider, LanguageBuiltins, LanguageBuiltins+CardKind
-- `Core/` — the engine: CommentKeywords, CustomLanguageDefinition, CustomLanguageStore, EmbeddedMarkupHighlighter, HighlightTheme, HTTPRequestHighlighter, SyntaxHighlighter
+- `Core/` — the engine: CommentKeywords, CustomLanguageDefinition, CustomLanguageStore, EmbeddedMarkupHighlighter, HighlightTheme, SyntaxHighlighter
 - `Enums/` — enums with no behaviour beyond their cases and labels: SymbolKind, TokenKind
 - `Errors/` — every Error type, one per file: CustomLanguageDefinitionError
 - Shared Foundation helpers (`trimmed`, …) come from swift-foundation-extensions, not a local `Extensions/`.

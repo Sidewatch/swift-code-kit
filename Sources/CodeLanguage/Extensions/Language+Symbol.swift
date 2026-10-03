@@ -49,6 +49,8 @@ public extension Language {
             return "slider.horizontal.3"
         case .dotenv:
             return "key"
+        case .http:
+            return "network"
         // Build files and packaging.
         case .makefile, .cmake, .gradle, .just, .starlark, .meson, .ninja:
             return "hammer"

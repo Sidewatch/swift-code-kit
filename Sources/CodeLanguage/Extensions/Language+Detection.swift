@@ -232,6 +232,7 @@ public extension Language {
         "htaccess": .apacheconf,
         "htm": .html,
         "html": .html,
+        "http": .http,
         "hx": .haxe,
         "hxml": .haxe,
         "hxx": .cpp,

@@ -1,9 +1,9 @@
 //
-//  HTTPRequestHighlighterTests.swift
+//  HTTPRulesTests.swift
 //  CodeHighlightingTests
 //
-//  Tests for `HTTPRequestHighlighter`: method, URL, headers, body and comments each get their
-//  token kind, read back through a marker palette.
+//  Tests for the `.http` rule table: method, address, version, placeholders, headers, body and
+//  comments each get their token kind, read back through a marker palette.
 //
 //  Created by David Sherlock on 9/5/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -12,11 +12,12 @@
 import XCTest
 import AppKit
 @testable import CodeHighlighting
+import CodeLanguage
 
-/// Tests for `HTTPRequestHighlighter`: method, URL, headers, body and comments each get their
-/// token kind, read back through a marker palette.
+/// Tests for the `.http` rule table: method, address, version, placeholders, headers, body and
+/// comments each get their token kind, read back through a marker palette.
 @MainActor
-final class HTTPRequestHighlighterTests: XCTestCase {
+final class HTTPRulesTests: XCTestCase {
 
     /// One unique colour per token kind so a painted run reverse-maps to its kind.
     private struct Markers: TokenColorProviding {
@@ -37,13 +38,19 @@ final class HTTPRequestHighlighterTests: XCTestCase {
         ### Get one user
         GET https://api.example.com/users/1
         Accept: application/json
+        If-Match: "v3:2026-10-03T09:00:00Z"
 
-        {"id": 1}
+        {"id": 1, "active": true}
+
+        ### Versioned, lowercase, with a placeholder
+        @host = api.example.com
+        get https://{{host}}/status HTTP/1.1
+        // a comment
         """
 
     private func kinds() -> (at: (String) -> TokenKind?, storage: NSTextStorage) {
         let storage = NSTextStorage(string: document)
-        HTTPRequestHighlighter(colors: Markers()).highlight(storage, in: NSRange(location: 0, length: storage.length))
+        SyntaxHighlighter(language: .http, colors: Markers()).highlight(storage, in: NSRange(location: 0, length: storage.length))
         let ns = storage.string as NSString
         return (
             { needle in
@@ -56,19 +63,34 @@ final class HTTPRequestHighlighterTests: XCTestCase {
         )
     }
 
+    func testDotHTTPIsItsOwnLanguage() {
+        XCTAssertEqual(Language.detect(filename: "requests.http"), .http)
+    }
+
     func testEachPartOfARequestGetsItsRole() {
         let (kind, _) = kinds()
         XCTAssertEqual(kind("### Get"), .comment)
         XCTAssertEqual(kind("GET"), .keyword)
-        XCTAssertEqual(kind("https://"), .string)
+        XCTAssertEqual(kind("https://api"), .string)
         XCTAssertEqual(kind("Accept"), .property)
         XCTAssertEqual(kind("application/json"), .string)
+        XCTAssertEqual(kind("\"v3:2026"), .string, "a header value holding a colon is one value")
     }
 
     func testTheBodyIsPaintedAsJSON() {
         let (kind, _) = kinds()
-        XCTAssertEqual(kind("1}"), .number, "the JSON highlighter reached the body")
-        XCTAssertNotNil(kind("\"id\""), "the key is painted, not left at the foreground")
+        XCTAssertEqual(kind("\"id\""), .string)
+        XCTAssertEqual(kind("1, "), .number)
+        XCTAssertEqual(kind("true"), .number)
+    }
+
+    func testVersionPlaceholdersAndLowercaseMethods() {
+        let (kind, _) = kinds()
+        XCTAssertEqual(kind("get "), .keyword)
+        XCTAssertEqual(kind("HTTP/1.1"), .keyword)
+        XCTAssertEqual(kind("{{host}}"), .type)
+        XCTAssertEqual(kind("@host"), .type)
+        XCTAssertEqual(kind("// a comment"), .comment)
     }
 
     func testNewlinesAreNeverPainted() {

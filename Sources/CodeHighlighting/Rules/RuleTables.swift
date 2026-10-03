@@ -61,6 +61,7 @@ enum RuleTables {
         case .haskell: return haskell
         case .gitcommit: return gitcommit
         case .ini: return ini
+        case .http: return http
         case .dockerfile: return dockerfile
         case .yaml: return yaml
         case .xml: return xml

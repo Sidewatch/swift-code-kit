@@ -182,6 +182,8 @@ public enum Language: String, CaseIterable, Sendable {
     case hosts
     /// HTML.
     case html
+    /// HTTP request files (`.http`, the JetBrains / VS Code REST Client format).
+    case http
     /// Idris.
     case idris
     /// INI.
