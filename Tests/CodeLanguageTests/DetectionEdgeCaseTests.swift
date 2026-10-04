@@ -361,4 +361,13 @@ final class DetectionEdgeCaseTests: XCTestCase {
             XCTAssertEqual(Language.detect(filename: name), .xml, name)
         }
     }
+
+    /// Config dotfiles with no extension open in the format their tool documents.
+    func testConfigDotfilesWithoutAnExtension() {
+        let cases: [(String, Language)] = [
+            (".swift-format", .json), (".watchmanconfig", .json), (".firebaserc", .json), (".eslintrc", .jsonc),
+            (".yamllint", .yaml), (".terraformrc", .hcl), (".luacheckrc", .lua), (".gcloudignore", .gitignore),
+        ]
+        for (name, expected) in cases { XCTAssertEqual(Language.detect(filename: name), expected, name) }
+    }
 }
