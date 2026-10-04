@@ -63,6 +63,11 @@ final class DocumentOutlineTests: XCTestCase {
         XCTAssertEqual(DocumentOutline.source(for: .plist), .propertyList)
         XCTAssertEqual(DocumentOutline.source(for: .raku), .lines)
         XCTAssertEqual(DocumentOutline.source(for: .dockerfile), .lines, "stages by FROM, though a grammar exists")
+        XCTAssertEqual(DocumentOutline.source(for: .html), .markup, "a page's structure, though a grammar exists")
+        XCTAssertEqual(DocumentOutline.source(for: .vue), .markup)
+        XCTAssertEqual(DocumentOutline.source(for: .razor), .markup)
+        XCTAssertEqual(DocumentOutline.source(for: .nix), .bindings)
+        XCTAssertEqual(DocumentOutline.source(for: .restructuredtext), .sections)
         XCTAssertEqual(DocumentOutline.source(for: .csv), .none)
         XCTAssertTrue(DocumentOutline.pathComesFromOutline(.raku))
         XCTAssertFalse(DocumentOutline.pathComesFromOutline(.swift), "code with a query keeps the tree walk")
@@ -170,12 +175,72 @@ final class DocumentOutlineTests: XCTestCase {
 
     /// Languages whose showcase has nothing an outline should list: data without names, prose
     /// without headings, diagrams, query languages, and templates that embed other languages.
+    // MARK: - Pages, templates, Nix and reST
+
+    /// Every node of a showcase's outline as "depth:name", the whole tree.
+    private func flatOutline(_ name: String) throws -> [String] {
+        let (language, text) = try showcase(name)
+        var out: [String] = []
+        func walk(_ nodes: [OutlineNode], _ depth: Int) {
+            for n in nodes {
+                out.append("\(depth):\(n.symbol.name)")
+                walk(n.children, depth + 1)
+            }
+        }
+        walk(OutlineTree.build(from: DocumentOutline.symbols(parsing: text, language: language)), 0)
+        return out
+    }
+
+    func testPagesOutlineTheirStructureAndTheirCode() throws {
+        let html = try outline("html")
+        assertRun(["#top", "  nav (Primary)", "#main", "  Review agents, not steering wheels"], in: html)
+        assertRun(["style", "  ── Embedded CSS ──"], in: html)
+        XCTAssertFalse(html.contains("  @context"), "a JSON-LD block is data, not code: \(html.prefix(12))")
+        let flat = try flatOutline("html")
+        XCTAssertTrue(flat.contains("2:Heading 2") && flat.contains("6:Heading 6"), "h2…h6 nest by level under the h1")
+    }
+
+    func testComponentsOutlineTheirScriptTemplateAndStyle() throws {
+        assertRun(["script setup", "  Order", "  Item", "  money", "  onSelect", "template"], in: try outline("vue"))
+        let vue = try flatOutline("vue")
+        XCTAssertEqual(vue.filter { $0.hasSuffix(":MyList") }.count, 1, "a component once, where it is first used")
+        XCTAssertTrue(vue.contains("2:Teleport"), "components under the template's heading: \(vue.prefix(20))")
+        let svelte = try outline("svelte")
+        assertRun(["script", "  money", "script"], in: svelte)
+        XCTAssertTrue(try flatOutline("svelte").contains("2:from"), "a class's methods under it in the script")
+        assertRun(["frontmatter", "  Props", "  Level", "  Zone", "  getStaticPaths", "Layout"], in: try outline("astro"))
+    }
+
+    func testTemplatesOutlineTheirCodeAndContainersStayAtTheTop() throws {
+        let razor = try outline("razor")
+        assertRun(["@functions", "  Label", "  Tax"], in: razor)
+        XCTAssertTrue(razor.contains("@code") && razor.contains("section Scripts"), "containers at the top level: \(razor)")
+        XCTAssertTrue(try flatOutline("razor").contains("1:Increment"), "@code's members, parsed as C# in a class")
+        XCTAssertTrue(try outline("erb").starts(with: ["helper_label", "t(\".title\", name: current_user.name)"]))
+        XCTAssertTrue(try outline("ejs").contains("badge"))
+        let jsp = try flatOutline("jsp")
+        XCTAssertTrue(jsp.contains("0:jspInit") && jsp.contains("0:jspDestroy"), "declarations at the top, not under a heading: \(jsp)")
+        XCTAssertFalse(jsp.contains { $0.hasSuffix(":init") }, "\"class init\" in a string is no class")
+    }
+
+    func testNixBindingsNestTwoLevels() throws {
+        let nix = try outline("nix")
+        assertRun(["inputs", "  nixpkgs.url", "  flake-utils.url"], in: nix)
+        assertRun(["outputs", "  pkgs"], in: nix)
+        XCTAssertFalse(try flatOutline("nix").contains { $0.hasPrefix("2:") }, "two levels, no deeper")
+    }
+
+    func testRestructuredTextSectionsNestByFirstAppearance() throws {
+        assertRun(["Inventory service", "  A syntax showcase"], in: try outline("restructuredtext"))
+        XCTAssertTrue(try flatOutline("restructuredtext").contains { $0.hasSuffix(":Section level six") })
+    }
+
     static let allowedEmpty: Set<String> = [
-        "astro", "crontab", "csv", "cue", "cypher", "dhall", "dot", "edgeql", "ejs", "erb", "freemarker", "gettext",
-        "gitattributes", "gitcommit", "gitignore", "gomod", "haml", "handlebars", "hosts", "html", "jsonlines",
-        "jsonnet", "jsp", "kdl", "lex", "log", "manifest", "marko", "mermaid", "meson", "mustache", "nix",
-        "piprequirements", "plaintext", "plantuml", "prql", "pug", "razor", "restructuredtext", "ron", "slim",
-        "smalltalk", "smarty", "sparql", "svelte", "tsv", "turtle", "velocity", "vue", "sqlite",
+        "crontab", "csv", "cue", "cypher", "dhall", "dot", "edgeql", "freemarker", "gettext",
+        "gitattributes", "gitcommit", "gitignore", "gomod", "haml", "handlebars", "hosts", "jsonlines",
+        "jsonnet", "kdl", "lex", "log", "manifest", "marko", "mermaid", "meson", "mustache",
+        "piprequirements", "plaintext", "plantuml", "prql", "pug", "ron", "slim",
+        "smalltalk", "smarty", "sparql", "tsv", "turtle", "velocity", "sqlite",
     ]
 
     /// Every language folder in the corpus produces an outline unless it is allowed to be empty —
