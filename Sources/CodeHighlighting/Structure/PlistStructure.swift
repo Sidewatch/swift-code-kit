@@ -46,6 +46,12 @@ public enum PlistStructure {
         return located(text)?.site(path: path)
     }
 
+    /// An XML plist's keys to three levels as outline symbols; empty for a binary plist.
+    public static func outlineSymbols(in text: String) -> [Symbol] {
+        guard binaryData(text) == nil, let located = located(text) else { return [] }
+        return located.outlineSymbols(in: text as NSString)
+    }
+
     /// A binary plist that was opened as text (Latin-1 round-trips every byte) — its bytes back.
     static func binaryData(_ text: String) -> Data? {
         guard text.hasPrefix("bplist") else { return nil }

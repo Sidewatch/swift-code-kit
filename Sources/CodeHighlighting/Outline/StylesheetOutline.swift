@@ -26,7 +26,7 @@ public enum StylesheetOutline {
     /// The languages this outline serves. Sass's indented syntax has no braces to
     /// walk and is deliberately not claimed.
     public static func supports(_ language: Language) -> Bool {
-        language == .css || language == .scss || language == .less
+        language == .css || language == .scss || language == .less || language == .postcss
     }
 
     /// Above this many selectors the outline lists sections and at-rules only: a

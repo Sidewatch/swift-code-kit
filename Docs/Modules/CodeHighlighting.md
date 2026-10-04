@@ -9,6 +9,7 @@ Syntax highlighting for macOS `NSTextStorage`, with two backends behind one `Cod
 - 🎨 **Regex fallback** — `SyntaxHighlighter` colors an `NSTextStorage` in place with per-language rule tables plus family-level rules (c-like, ruby-like, lisp-like, ml-like, shell, markup, config, sql, tex, data) for everything else; strings and comments are resolved in one left-to-right scan so neither can repaint the other
 - 📄 **Custom languages** — `CustomLanguageDefinition` decodes a hand-written JSON file describing a niche language (comment markers, string delimiters, keyword lists, raw-regex patterns) and `SyntaxHighlighter(custom:colors:)` compiles it into the same rule tables the built-in languages use — see [Custom languages](#custom-languages)
 - 🔎 **Symbol extraction** — `TreeSitterHighlighter.symbols(in:language:)` returns every definition (`Symbol`: name, `SymbolKind`, range, line) via the hand-written `SymbolQueries`, for outlines and Go-to-Symbol
+- **An outline for every language** — `DocumentOutline` picks the source per language: Markdown-family headings, stylesheet sections, the tree-sitter definitions, a data file's keys to three levels (JSON, YAML, TOML, XML, property lists), or `RegexOutline`'s declaration patterns for the 130-odd languages without a grammar (Raku, Elixir, Perl, R, Julia, Haskell, Zig, LaTeX sections, INI sections, diff files and hunks…), nested by indentation, braces or level
 - 🗂️ **Project-wide index** — `ProjectSymbolIndex` builds a name → `DefLocation` map over a whole tree on a background queue (skips the settable `ProjectSymbolIndex.skipDirs` — `.git`/`node_modules`/… by default; 500 KB and 5000-file caps), with incremental `updateFile(_:)` and superseding rebuilds, for cross-file Go-to-Definition — plus `definitions(matchingPrefix:limit:)`, a bounded case-insensitive prefix query (binary search over a lazily-rebuilt sorted name mirror) cheap enough to call per keystroke from a completion popup
 - ⌨️ **Completion** — `CompletionProvider` ranks candidates across four prefix-matched tiers (current-file symbols, project symbols, language built-ins, buffer words); `LanguageBuiltins.completions(for:)` adds a language's standard functions/methods/globals (PHP `array_*`, JS `map`/`filter`, Python `enumerate`…) from small names-only text resources, lazily loaded per language — so common stdlib completes without a language server
 - 💬 **Hover docs + breadcrumbs** — `hoverInfo(for:in:language:)` returns a highlighted signature plus the doc comment above it (markers derived from the language's own comment tokens); `breadcrumbs(at:text:language:)` returns the enclosing definition path
@@ -97,6 +98,17 @@ session?.noteEdit(range: replacedRange, replacementLength: insertedLength, newTe
 
 // On reload / external change / language switch: drop the tree.
 session?.invalidate()
+```
+
+### Outlines
+
+```swift
+// The outline of an open document: tree-backed sources read the session's cached tree.
+let symbols = DocumentOutline.symbols(in: text, language: .raku, session: session)
+let roots = OutlineTree.build(from: symbols)  // nested by scope
+
+// A file that is not open (parses the tree-backed sources itself; not for the main thread on big files).
+let keys = DocumentOutline.symbols(parsing: json, language: .json)
 ```
 
 ### Symbols, hover docs, breadcrumbs

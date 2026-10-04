@@ -229,6 +229,15 @@ public final class HighlightSession: @unchecked Sendable {
         return TreeSitterHighlighter.symbols(tree: tree, ns: text as NSString, language: language)
     }
 
+    /// A data file's key tree (JSON, YAML, TOML, XML) from the **cached** tree — a bounded walk,
+    /// no parse. Empty until a tree is installed for `text`, and for languages that are not data.
+    public func keyTreeSymbols(text: String, maxDepth: Int = 3, limit: Int = 3000) -> [Symbol] {
+        guard let language, TreeSitterHighlighter.keyTreeLanguages.contains(language),
+            let tree = currentTree(matching: text), let root = tree.rootNode
+        else { return [] }
+        return TreeSitterHighlighter.keyTreeSymbols(root: root, ns: text as NSString, language: language, maxDepth: maxDepth, limit: limit)
+    }
+
     /// Records a text edit and re-parses incrementally. Call it for every storage mutation, after
     /// the change, with `range` in the old text's UTF-16 units, `replacementLength` the inserted
     /// length and `newText` the full new document. Tree-sitter byte offsets are UTF-16 index × 2
