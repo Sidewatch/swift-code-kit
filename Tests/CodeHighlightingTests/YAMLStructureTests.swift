@@ -90,4 +90,15 @@ final class YAMLStructureTests: XCTestCase {
         XCTAssertEqual(get(v, "base"), .mapping([P(key: "x", value: .integer(1))]))
         XCTAssertEqual(get(v, "other"), .string("*b"))
     }
+
+    func testTheStreamHoldsEveryDocumentAndEditsReachPastTheFirst() {
+        let text = "a: 1\n---\n- x: 2\n"
+        XCTAssertEqual(
+            YAMLStructure.stream(of: text),
+            .sequence([.mapping([.init(key: "a", value: .integer(1))]), .sequence([.mapping([.init(key: "x", value: .integer(2))])])]))
+        let site = YAMLStructure.site(in: text, path: [.index(1), .index(0), .key("x")])
+        XCTAssertEqual(site.map { (text as NSString).substring(with: $0.value) }, "2")
+        XCTAssertEqual(YAMLStructure.stream(of: "a: 1\n"), .mapping([.init(key: "a", value: .integer(1))]), "one document is itself")
+        XCTAssertEqual(YAMLStructure.site(in: "a: 1\n", path: [.key("a")]).map { ("a: 1\n" as NSString).substring(with: $0.value) }, "1")
+    }
 }

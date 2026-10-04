@@ -31,6 +31,17 @@ public enum RegexOutline {
     /// How a table's declarations nest.
     public enum Scoping: Sendable { case flat, indentation, braces, levels }
 
+    /// Which physical lines continue the line above, so a match on one is part of a value, not a
+    /// declaration.
+    enum Continuation: Sendable {
+        /// After a line ending in an odd run of backslashes; a `#` or `!` comment never continues
+        /// (`.properties`).
+        case backslash
+        /// A line indented deeper than the key above it, until the next section (INI's multi-line
+        /// values, as configparser reads them); `keyLevel` is the keys' rule level.
+        case deeperIndent(keyLevel: Int)
+    }
+
     /// One declaration pattern: exactly ONE capturing group, the name.
     struct Rule: Sendable {
         let pattern: String
@@ -48,6 +59,11 @@ public enum RegexOutline {
         var blockComments = false
         /// Whether quotes, backticks and brackets are stripped from names (`"aws_instance" "web"`).
         var cleanNames = false
+        /// The lines whose matches are part of a value above them.
+        var continuation: Continuation? = nil
+        /// A name as the format reads it (`.properties` escapes resolved), so the outline names a
+        /// key as the structure tree does.
+        var readName: (@Sendable (String) -> String)? = nil
     }
 
     /// Whether `language` has a regex outline.
@@ -79,6 +95,12 @@ public enum RegexOutline {
         var lineStarts = [0]
         lineStarts.reserveCapacity(length / 30)
         for i in 0..<length where buffer[i] == 0x0A { lineStarts.append(i + 1) }
+        // Lines that continue a value above them declare nothing and end no indentation scope.
+        var continued: Set<Int> = []
+        if case .backslash = table.continuation { continued = backslashContinuedLines(lineStarts: lineStarts, buffer: buffer) }
+        if let continuation = table.continuation {
+            found = droppingContinued(found, continuation, continued: continued, buffer: buffer)
+        }
         /// The 0-based line holding offset `o`.
         func lineIndex(of o: Int) -> Int {
             var lo = 0, hi = lineStarts.count - 1
@@ -95,6 +117,7 @@ public enum RegexOutline {
         for item in found {
             var name = ns.substring(with: item.name).trimmingCharacters(in: .whitespaces)
             if table.cleanNames { name = cleaned(name) }
+            if let readName = table.readName { name = readName(name) }
             guard !name.isEmpty else { continue }
             // Clauses of one definition written one after another (Erlang, Prolog) list once.
             if let last = out.last, last.name == name, last.kind == item.rule.kind, levels.last == item.rule.level { continue }
@@ -102,7 +125,7 @@ public enum RegexOutline {
             let scope: NSRange?
             switch table.scoping {
             case .flat, .levels: scope = nil  // levels are scoped below, once every symbol is known
-            case .indentation: scope = indentationScope(line: line, lineStarts: lineStarts, buffer: buffer)
+            case .indentation: scope = indentationScope(line: line, lineStarts: lineStarts, buffer: buffer, continued: continued)
             case .braces: scope = braceScope(from: NSMaxRange(item.name), lineStart: item.lineStart, buffer: buffer, table: table)
             }
             out.append(Symbol(name: name, kind: item.rule.kind, range: item.name, line: line + 1, scopeRange: scope))
@@ -112,13 +135,58 @@ public enum RegexOutline {
         return out
     }
 
+    // MARK: - Continuation lines
+
+    /// `found` without the matches on lines that continue a value above them.
+    private static func droppingContinued(
+        _ found: [(lineStart: Int, name: NSRange, rule: Rule)], _ continuation: Continuation, continued: Set<Int>, buffer: [unichar]
+    ) -> [(lineStart: Int, name: NSRange, rule: Rule)] {
+        func indent(at start: Int) -> Int {
+            var i = start
+            while i < buffer.count, buffer[i] == 0x20 || buffer[i] == 0x09 { i += 1 }
+            return i - start
+        }
+        switch continuation {
+        case .backslash:
+            return found.filter { !continued.contains($0.lineStart) }
+        case .deeperIndent(let keyLevel):
+            var keyIndent: Int?
+            return found.filter { item in
+                let width = indent(at: item.lineStart)
+                if let keyIndent, width > keyIndent { return false }
+                keyIndent = item.rule.level >= keyLevel ? width : nil
+                return true
+            }
+        }
+    }
+
+    /// The starts of the lines that continue the line above it: that line ends in an odd run of
+    /// backslashes and is not itself a comment (a comment opens only a line no value continues).
+    private static func backslashContinuedLines(lineStarts: [Int], buffer: [unichar]) -> Set<Int> {
+        var out: Set<Int> = []
+        var continues = false
+        for (index, start) in lineStarts.enumerated() {
+            if continues { out.insert(start) }
+            var end = index + 1 < lineStarts.count ? lineStarts[index + 1] : buffer.count
+            while end > start, buffer[end - 1] == 0x0A || buffer[end - 1] == 0x0D { end -= 1 }
+            var first = start
+            while first < end, buffer[first] == 0x20 || buffer[first] == 0x09 || buffer[first] == 0x0C { first += 1 }
+            let comment = !continues && first < end && (buffer[first] == 0x23 || buffer[first] == 0x21)  // # !
+            var slashes = 0
+            while end - slashes > first, buffer[end - slashes - 1] == 0x5C { slashes += 1 }
+            continues = !comment && slashes % 2 == 1
+        }
+        return out
+    }
+
     // MARK: - Scopes
 
     /// A declaration's lines: from its own line to the line before the next non-blank line indented
-    /// no deeper than it.
-    private static func indentationScope(line: Int, lineStarts: [Int], buffer: [unichar]) -> NSRange? {
+    /// no deeper than it (a line in `continued` carries on a value, so it counts as blank).
+    private static func indentationScope(line: Int, lineStarts: [Int], buffer: [unichar], continued: Set<Int>) -> NSRange? {
         let length = buffer.count
-        func indent(_ l: Int) -> Int? {  // nil for a blank line
+        func indent(_ l: Int) -> Int? {  // nil for a blank or continuation line
+            guard !continued.contains(lineStarts[l]) else { return nil }
             var i = lineStarts[l], width = 0
             let end = l + 1 < lineStarts.count ? lineStarts[l + 1] : length
             while i < end {

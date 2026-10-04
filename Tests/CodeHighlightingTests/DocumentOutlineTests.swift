@@ -142,6 +142,36 @@ final class DocumentOutlineTests: XCTestCase {
 
     // MARK: - Data files
 
+    func testPropertiesKeysReadTheirEscapesAndContinuationsDeclareNothing() {
+        let text = "a\\=b\\:c=1\njvm=-Xmx2g \\\n  -XX:Max=256m \\\n  next:1\n# note \\\nafter=2\nspaced value\nends=x\\\\\nlast=3\n"
+        XCTAssertEqual(
+            RegexOutline.symbols(in: text, language: .properties).map(\.name), ["a=b:c", "jvm", "after", "spaced", "ends", "last"])
+    }
+
+    func testJSONAndYAMLKeysAreNamedAsTheStructureTreeNamesThem() {
+        let json = #"{"a\\b\u0041": 1, "plain": 2}"#
+        XCTAssertEqual(TreeSitterHighlighter.keyTreeSymbols(in: json, language: .json).map(\.name), [#"a\bA"#, "plain"])
+        let yaml = "? [a,   b]\n: 1\n? |\n  block key\n: 2\n\"q\\tk\": 3\n"
+        let names = TreeSitterHighlighter.keyTreeSymbols(in: yaml, language: .yaml).map(\.name)
+        guard case .mapping(let pairs) = YAMLStructure.value(of: yaml) else { return XCTFail("no mapping") }
+        XCTAssertEqual(names, ["[a, b]", "block key", "q\tk"])
+        XCTAssertEqual(pairs.map(\.key), names)
+    }
+
+    func testAJSON5StringContinuedOntoAnUnindentedLineEndsNoScope() {
+        let text = "{\n  strings: {\n    long: 'one \\\ntwo',\n    after: 1,\n  },\n}\n"
+        let symbols = RegexOutline.symbols(in: text, language: .json5)
+        XCTAssertEqual(symbols.map(\.name), ["strings", "long", "after"])
+        let after = (text as NSString).range(of: "after").location
+        XCTAssertTrue(symbols.first?.scopeRange.map { NSLocationInRange(after, $0) } ?? false, "after stays under strings")
+    }
+
+    func testINILinesIndentedUnderAKeyContinueItsValue() {
+        let text = "[flake8]\nper-file-ignores =\n    __init__.py: F401\n    tests/*: S101\nmax = 1\n[git]\n\tname = a\n\temail = b\n"
+        XCTAssertEqual(
+            RegexOutline.symbols(in: text, language: .ini).map(\.name), ["flake8", "per-file-ignores", "max", "git", "name", "email"])
+    }
+
     func testDataFilesOutlineTheirKeysToThreeLevels() throws {
         let json = "{\"a\": {\"b\": {\"c\": {\"d\": 1}}}, \"e\": [ {\"f\": 1} ]}"
         let symbols = TreeSitterHighlighter.keyTreeSymbols(in: json, language: .json)

@@ -10,6 +10,7 @@
 
 import Foundation
 import CodeLanguage
+import DataConverter
 
 // Every pattern starts at a line (`^`, the tables compile with `.anchorsMatchLines`) and has ONE
 // capturing group, the name; everything else is `(?:…)`. `(?i:…)` makes a pattern case-blind.
@@ -445,18 +446,24 @@ extension RegexOutline {
             rules: [
                 r(#"^[ \t]*\[([^\]\n]+)\]"#, .module, 1),
                 r(#"^[ \t]*([^\s=:;#\[][^=:\n]*?)[ \t]*[=:]"#, .property, 2),
-            ], scoping: .levels)
+            ], scoping: .levels, continuation: .deeperIndent(keyLevel: 2))
         t[.ini] = ini
         t[.editorconfig] = ini
         t[.gitconfig] = ini
         t[.systemd] = ini
-        t[.properties] = Table(rules: [r(#"^[ \t]*([^\s=:#!][^=:\n]*?)[ \t]*[=:]"#, .property)], scoping: .flat)
+        // A key runs to its first unescaped `=`, `:` or blank (`key\=with\:separators` is one key) and
+        // is named with its escapes read; a line continuing a value above it declares nothing.
+        t[.properties] = Table(
+            rules: [r(#"^[ \t\f]*((?:\\.|[^\s=:#!\\])(?:\\.|[^\s=:\\])*)(?:[ \t\f]*[=:]|[ \t\f]+\S)"#, .property)],
+            scoping: .flat, continuation: .backslash, readName: PropertiesStructure.unescaped)
         t[.dotenv] = Table(rules: [r(#"^[ \t]*(?:export[ \t]+)?([A-Za-z_][\w.]*)[ \t]*="#, .constant)], scoping: .flat)
         t[.xcconfig] = Table(rules: [r(#"^[ \t]*([A-Za-z_]\w*(?:\[[^\]\n]*\])*)[ \t]*="#, .property)], scoping: .flat)
         t[.strings] = Table(rules: [r(#"^[ \t]*"((?:[^"\\\n]|\\.)*)"[ \t]*="#, .property)], scoping: .flat)
 
-        // JSON5 and Hjson have no grammar: their keys, nested by indentation.
-        let looseJSON = Table(rules: [r(#"^[ \t]*["']?([\w$-]+)["']?[ \t]*:"#, .property)], scoping: .indentation)
+        // JSON5 and Hjson have no grammar: their keys, nested by indentation (a string continued
+        // with a backslash onto an unindented line ends no scope).
+        let looseJSON = Table(
+            rules: [r(#"^[ \t]*["']?([\w$-]+)["']?[ \t]*:"#, .property)], scoping: .indentation, continuation: .backslash)
         t[.json5] = looseJSON
         t[.hjson] = looseJSON
 

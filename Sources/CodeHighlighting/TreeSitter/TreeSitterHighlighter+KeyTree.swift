@@ -91,9 +91,16 @@ extension TreeSitterHighlighter {
             return nil
         }
         guard let nameNode, nameNode.range.length > 0, NSMaxRange(nameNode.range) <= ns.length else { return nil }
-        var name = ns.substring(with: nameNode.range).trimmingCharacters(in: .whitespacesAndNewlines)
-        if name.count >= 2, let first = name.first, first == name.last, first == "\"" || first == "'" {
-            name = String(name.dropFirst().dropLast())
+        // A YAML key is named as its structure tree names it (`? [a, b]`, block scalars, escapes).
+        var name =
+            language == .yaml
+            ? YAMLStructure.keyName(nameNode, ns: ns) : ns.substring(with: nameNode.range).trimmingCharacters(in: .whitespacesAndNewlines)
+        if language != .yaml, name.count >= 2, let first = name.first, first == name.last, first == "\"" || first == "'" {
+            // A JSON key is named with its escapes read, as the structure tree shows it.
+            let decoded =
+                first == "\"" && name.contains("\\")
+                ? (try? JSONSerialization.jsonObject(with: Data(name.utf8), options: .fragmentsAllowed)) as? String : nil
+            name = decoded ?? String(name.dropFirst().dropLast())
         }
         if name.count > 80 { name = String(name.prefix(80)) + "…" }
         guard !name.isEmpty else { return nil }

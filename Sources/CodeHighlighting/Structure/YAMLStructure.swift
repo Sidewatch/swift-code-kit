@@ -33,11 +33,21 @@ public enum YAMLStructure {
     public static func documents(in text: String) -> [Value] {
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return [] }
         let ns = text as NSString
-        return namedChildren(root).filter { $0.nodeType == "document" }.compactMap { doc in
-            guard let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") }) else {
-                return nil
-            }
-            return convert(body, ns: ns)
+        return documentBodies(root).map { convert($0, ns: ns) }
+    }
+
+    /// The whole stream as one value: a single document as itself, several as a sequence of them
+    /// (what a structure tree shows, so no document after the first goes missing). A path into it
+    /// is what ``site(in:path:)`` reads.
+    public static func stream(of text: String) -> Value? {
+        let docs = documents(in: text)
+        return docs.count > 1 ? .sequence(docs) : docs.first
+    }
+
+    /// The content node of each document that has one, in order.
+    static func documentBodies(_ root: Node) -> [Node] {
+        namedChildren(root).filter { $0.nodeType == "document" }.compactMap { doc in
+            namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") })
         }
     }
 
@@ -64,7 +74,7 @@ public enum YAMLStructure {
             return convert(inner, ns: ns)
         case "block_mapping", "flow_mapping":
             let pairs = namedChildren(node).filter { ["block_mapping_pair", "flow_pair"].contains($0.nodeType ?? "") }.map { pair -> Pair in
-                let key = pair.child(byFieldName: "key").map { keyText(convert($0, ns: ns)) } ?? ""
+                let key = pair.child(byFieldName: "key").map { keyName($0, ns: ns) } ?? ""
                 let value = pair.child(byFieldName: "value").map { convert($0, ns: ns) } ?? .null
                 return Pair(key: key, value: value)
             }
@@ -98,6 +108,21 @@ public enum YAMLStructure {
         case "block_scalar": return .string(blockScalar(text(node, ns)))
         case "alias": return .string(text(node, ns))
         default: return .string(text(node, ns))
+        }
+    }
+
+    /// The name of the mapping key `node`: a scalar as the string the file wrote (`1:` is the key
+    /// "1", a block scalar without its final line break); a collection (`? [a, b]`) as its source
+    /// on one line. The tree, its edits and the outline all name keys with it.
+    public static func keyName(_ node: Node, ns: NSString) -> String {
+        let value = convert(node, ns: ns)
+        switch value {
+        case .mapping, .sequence:
+            return text(node, ns).split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" || $0 == "\r" }).joined(separator: " ")
+        case .string(let s) where s.hasSuffix("\n"):
+            return s.trimmingCharacters(in: .newlines)
+        default:
+            return keyText(value)
         }
     }
 

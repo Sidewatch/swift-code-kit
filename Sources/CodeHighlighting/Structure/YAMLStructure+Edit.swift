@@ -22,14 +22,15 @@ extension YAMLStructure {
     /// The ranges of a member: its value, and its key when it sits in a mapping.
     public typealias EditSite = StructuredEdit.EditSite
 
-    /// The member at `path` in the first document of `text`, or nil.
+    /// The member at `path` in ``stream(of:)``'s value: in a file of several documents the first
+    /// step picks the document by index. Nil when the path leads nowhere.
     public static func site(in text: String, path: [PathComponent]) -> EditSite? {
         guard !path.isEmpty, let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return nil }
         let ns = text as NSString
-        guard let doc = namedChildren(root).first(where: { $0.nodeType == "document" }),
-            let body = namedChildren(doc).first(where: { ["block_node", "flow_node"].contains($0.nodeType ?? "") })
-        else { return nil }
-        return find(body, path: path[...], ns: ns)
+        let bodies = documentBodies(root)
+        guard bodies.count > 1 else { return bodies.first.flatMap { find($0, path: path[...], ns: ns) } }
+        guard case .index(let d) = path[0], bodies.indices.contains(d), path.count > 1 else { return nil }
+        return find(bodies[d], path: path.dropFirst(), ns: ns)
     }
 
     // MARK: - Walking
@@ -49,7 +50,7 @@ extension YAMLStructure {
         case "block_mapping", "flow_mapping":
             guard case .key(let wanted) = step else { return nil }
             for pair in namedChildren(n) where ["block_mapping_pair", "flow_pair"].contains(pair.nodeType ?? "") {
-                guard let keyNode = pair.child(byFieldName: "key"), keyText(convert(keyNode, ns: ns)) == wanted else { continue }
+                guard let keyNode = pair.child(byFieldName: "key"), keyName(keyNode, ns: ns) == wanted else { continue }
                 let keyRange = unwrap(keyNode).range
                 guard let valueNode = pair.child(byFieldName: "value") else {
                     return path.count == 1 ? EditSite(key: keyRange, value: NSRange(location: NSMaxRange(pair.range), length: 0)) : nil
