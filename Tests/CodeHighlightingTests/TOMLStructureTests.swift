@@ -63,7 +63,7 @@ final class TOMLStructureTests: XCTestCase {
         color = "gray"
 
         [owner]
-        name = "David"
+        name = "Ada"
         dob.year = 1990
         dob.month = 1
         """

@@ -282,7 +282,7 @@
 ; BARE (namespace_name) child of the declaration plus the "\" before the brace,
 ; not a qualified_name prefix field, so none of the four patterns above reached
 ; it: the prefix drew type-colored and the separators drew as plain text while
-; the identical path in an unbraced `use` receded (David, 17 Sep 2026).
+; the identical path in an unbraced `use` receded.
 (namespace_use_declaration
   (namespace_name) @namespace.prefix
   "\\" @namespace.prefix
