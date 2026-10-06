@@ -325,3 +325,9 @@
 (heredoc_body (_) @code)
 (shell_command_expression (_) @code)
 (escape_sequence) @string
+
+; A namespace declaration's whole path recedes like a qualified name's prefix
+; (`namespace Vendor\Plugin\Feature;`): every segment names a namespace, not a
+; class, and an all-caps segment (`EDD`) is not a constant. Appended last so it
+; outranks the @module and @constant captures of the same segments.
+(namespace_definition name: (namespace_name) @namespace.prefix)

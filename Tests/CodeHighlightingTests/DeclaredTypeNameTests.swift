@@ -104,4 +104,16 @@ final class DeclaredTypeNameTests: XCTestCase {
         XCTAssertEqual(try colour(of: "Point", in: java, .java), .systemYellow)
         XCTAssertEqual(try colour(of: "Audited", in: java, .java), .systemYellow)
     }
+
+    /// A namespace declaration's whole path recedes, as a qualified name's prefix does (`new Admin\\Fields`);
+    /// an all-caps segment is not painted as a constant.
+    func testPHPNamespaceDeclarationRecedes() throws {
+        let php = "<?php\nnamespace Vendor\\EDD\\Discounts;\nnew Admin\\Fields();\n"
+        let muted = try colour(of: "Admin", in: php, .php)
+        XCTAssertNotEqual(muted, .systemYellow, "the prefix of a qualified name recedes")
+        for segment in ["Vendor", "EDD", "Discounts"] {
+            XCTAssertEqual(try colour(of: segment, in: php, .php), muted, segment)
+        }
+        XCTAssertEqual(try colour(of: "Fields", in: php, .php), .systemYellow, "the class itself keeps the type colour")
+    }
 }
