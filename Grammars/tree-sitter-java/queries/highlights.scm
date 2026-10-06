@@ -29,6 +29,12 @@
   name: (identifier) @type)
 (enum_declaration
   name: (identifier) @type)
+; Records and annotation types are declarations like the three above; upstream
+; had no pattern for their names, so they drew as plain names.
+(record_declaration
+  name: (identifier) @type)
+(annotation_type_declaration
+  name: (identifier) @type)
 
 ((field_access
   object: (identifier) @type)

@@ -165,11 +165,54 @@
     (relative_name (name) @type)
   ])
 
+; Class-like names where they are declared or named outside a type position —
+; `class Foo extends Bar implements Baz`, interfaces, traits, enums, a trait's
+; `use` in a class body, `instanceof Foo`. Upstream has no pattern for any of
+; them, so they drew in the plain-name colour while the same name as a
+; parameter type drew type-coloured; every other grammar here paints a
+; declared class as a type.
+(class_declaration name: (name) @type)
+(interface_declaration name: (name) @type)
+(trait_declaration name: (name) @type)
+(enum_declaration name: (name) @type)
+
+(base_clause [
+  (name) @type
+  (qualified_name (name) @type)
+  (relative_name (name) @type)
+])
+
+(class_interface_clause [
+  (name) @type
+  (qualified_name (name) @type)
+  (relative_name (name) @type)
+])
+
+(use_declaration [
+  (name) @type
+  (qualified_name (name) @type)
+  (relative_name (name) @type)
+])
+
+(binary_expression
+  operator: "instanceof"
+  right: [
+    (name) @type
+    (qualified_name (name) @type)
+    (relative_name (name) @type)
+  ])
+
 ; Functions
 
 (array_creation_expression "array" @function.builtin)
 (list_literal "list" @function.builtin)
 (exit_statement "exit" @function.builtin "(")
+
+; `exit` and `die` with no parentheses — `defined( 'ABSPATH' ) || exit;` — parse
+; as a bare name inside an expression, and `die` is never the keyword. Paint
+; them as `exit( 1 )` above already is. PHP names are case-insensitive.
+((name) @function.builtin
+ (#match? @function.builtin "^(?i:exit|die)$"))
 
 (method_declaration
   name: (name) @function.method)

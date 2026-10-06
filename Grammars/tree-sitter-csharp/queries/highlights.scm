@@ -25,6 +25,9 @@
 (destructor_declaration name: (identifier) @constructor)
 
 (_ type: (identifier) @type)
+; A method's return type is its `returns` field, not `type`, so the line above
+; missed it: `Order Find(int id)` drew `Order` as a plain name.
+(_ returns: (identifier) @type)
 
 (base_list (identifier) @type)
 
