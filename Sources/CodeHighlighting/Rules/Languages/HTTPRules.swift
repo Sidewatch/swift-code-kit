@@ -23,12 +23,18 @@ extension RuleTables {
         ("^@[\\w.-]+", .type),
         ("(?i)\\bhttps?://[^\\s{]+", .string),
         ("^[A-Za-z][\\w-]*(?=[ \\t]*:)", .property),
-        // A header's value: everything after `Name:` on a header-shaped line.
-        ("(?<=^[A-Za-z][\\w-]{0,80}:[ \\t]{0,8})\\S[^\\n]*$", .string),
+        // A header's value: everything after `Name:` on a header-shaped line. One forward scan finds the
+        // values (a scope region), where a look back to the line's start would run at every character.
+        (headerValue + "\\S[^\\n]*$", .string),
         // A JSON body's strings (keys included: strings resolve before every other rule), literals and
         // numbers.
         doubleQuoted,
         constants(["true", "false", "null"]),
         decimal,
     ]
+
+    /// The value of each `Name: value` line (a name of 1-81 word characters or dashes at the line's start,
+    /// up to 8 blanks after the colon).
+    private static let headerValue = RuleScope.marker(
+        steppingOver: [], regions: "(?m)^[A-Za-z][\\w-]{0,80}:[ \\t]{0,8}" + RuleScope.region("\\S[^\\n]*"), within: 4000)
 }

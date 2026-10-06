@@ -4628,7 +4628,7 @@
       "property"
     ],
     [
-      "(?<=^[A-Za-z][\\w-]{0,80}:[ \\t]{0,8})\\S[^\\n]*$",
+      "(?#in:KD86KD9tKV5bQS1aYS16XVtcdy1dezAsODB9OlsgXHRdezAsOH0oPzxyZWdpb24+XFNbXlxuXSopKSg\/Oig\/ISlbXHNcU10pezAsNDAwMH0oPzopPwE0MDY0)\\S[^\\n]*$",
       "string"
     ],
     [
