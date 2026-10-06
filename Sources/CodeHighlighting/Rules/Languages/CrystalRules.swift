@@ -19,8 +19,8 @@ import Foundation
 extension RuleTables {
     static let crystal: [(String, TokenKind)] =
         interpolatedStringPieces(
-            open: "\"", close: "\"", literal: "[^\"\\\\{\\n]|\\\\[\\s\\S]|\\{(?<![^\\\\]#\\{)(?!\\{)", hole: crystalHole,
-            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}",
+            open: "\"", close: "\"", literal: "[^\"\\\\{#\\n]|#(?!\\{)|\\\\[\\s\\S]|\\{(?!\\{)", hole: crystalHole,
+            holeOpen: "#\\{|\\{\\{", holeClose: "\\}",
             // A `}` with another `}` ahead in the same run of text closes a macro's `{{ … }}` inside the hole.
             afterHole: "(?<=\\})(?!\\})(?![^\"\\\\\\n}#]*\\})", multiline: true,
             skip: [
@@ -28,14 +28,14 @@ extension RuleTables {
                 "<<-(['\"]?)([A-Za-z_]\\w*)\\1[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\2\\b",
             ])
         + interpolatedStringPieces(
-            open: "%Q?\\(", close: "\\)", literal: "[^()\\\\{\\n]|\\\\[\\s\\S]|\\{(?<![^\\\\]#\\{)(?!\\{)|\\([^()\\n]*\\)",
+            open: "%Q?\\(", close: "\\)", literal: "[^()\\\\{#\\n]|#(?!\\{)|\\\\[\\s\\S]|\\{(?!\\{)|\\([^()\\n]*\\)",
             hole: crystalHole,
-            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^)\\\\\\n}#]*\\})", multiline: true,
+            holeOpen: "#\\{|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^)\\\\\\n}#]*\\})", multiline: true,
             skip: ["#(?!\\{)[^\\n]*", "'(?:\\\\[^\\n]{1,10}|[^'\\\\\\n])'", "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\""])
         + interpolatedStringPieces(
-            open: "/(?<![\\w)\\]}.]/)(?![\\s/=])", close: "/[imx]*", literal: "[^/\\\\{\\n]|\\\\.|\\{(?<![^\\\\]#\\{)(?!\\{)",
+            open: "/(?<![\\w)\\]}.]/)(?![\\s/=])", close: "/[imx]*", literal: "[^/\\\\{#\\n]|#(?!\\{)|\\\\.|\\{(?!\\{)",
             hole: crystalHole,
-            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^/\\\\\\n}#]*\\})",
+            holeOpen: "#\\{|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^/\\\\\\n}#]*\\})",
             skip: ["#(?!\\{)[^\\n]*", "'(?:\\\\[^\\n]{1,10}|[^'\\\\\\n])'", "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\""])
         + [
             ("'(?:\\\\(?:u\\{[0-9a-fA-F]+\\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[0-7]{1,3}|[^\\n])|[^'\\\\\\n])'", .string),
@@ -72,6 +72,6 @@ extension RuleTables {
     /// a `#` in code opens a comment, which would otherwise swallow the hole and the rest of the line.
     static let crystalHole: String = {
         let body = "(?:[^{}\"\\n]|\"(?:[^\"\\\\\\n]|\\\\.){0,30}\"|\\{(?:[^{}\\n]|\\{[^{}\\n]{0,30}\\}){0,30}\\}){0,60}"
-        return "(?:(?<=(?:^|[^\\\\])#)\\{\(body)\\}|\\{\\{\(body)\\}\\})"
+        return "(?:#\\{\(body)\\}|\\{\\{\(body)\\}\\})"
     }()
 }

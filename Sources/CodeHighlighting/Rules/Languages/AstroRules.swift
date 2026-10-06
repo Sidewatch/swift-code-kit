@@ -26,6 +26,6 @@ extension RuleTables {
         ("</?[a-z][\\w-]*", .keyword),
         ("/>|>", .keyword),
         decimal,
-        ("\\b[a-zA-Z_:][\\w:-]*=", .function),
+        ("\\b[a-zA-Z_:][\\w:-]*=", .property),
     ]
 }

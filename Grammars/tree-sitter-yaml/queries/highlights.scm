@@ -31,7 +31,7 @@
   (yaml_directive)
   (tag_directive)
   (reserved_directive)
-] @attribute
+] @keyword ; Sidewatch: a directive is a keyword (VS Code: keyword.other.directive), not an annotation
 
 (block_mapping_pair
   key: (flow_node

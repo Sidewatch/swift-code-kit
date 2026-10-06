@@ -41,7 +41,7 @@ extension RuleTables {
             (" (?<=^@(?:addTagHelper|removeTagHelper|tagHelperPrefix) )\\S.*$", .string),
         ] + interpolatedStrings + [
             ("</?[A-Za-z][\\w:.-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             // An implicit expression (`@Model.User.Name`); its `@` is repainted a keyword just below.
             ("@(?<![\\w@]@)[A-Za-z_][\\w.]*", .variable),
             // The transitions: a directive or control word with its `@`, `@{` / `@(` / `@:`, and the `@` of
@@ -60,10 +60,10 @@ extension RuleTables {
             ),
             ("\\bnew\\b(?=[ \\t]*[({\\[A-Za-z])", .keyword),
             // A code block's other braces — the `{` after `@code`, `@functions` or `@section Name`, a `}` that
-            // ends a line that starts with `@` — and a `)` after an `@(` on its line.
+            // ends a line that starts with `@` — and the `)` that closes an `@(` (not one inside it).
             (inside(opens: ["@(?:code|functions|section[ \\t]+\\w+)[ \\t]*\\{"], closes: [""], within: 0) + "\\{", .keyword),
             (inside(opens: ["(?m)^@"], closes: ["\\n"], within: 400) + "\\}(?=[ \\t]*$)", .keyword),
-            (inside(opens: ["@\\("], closes: ["\\n"], within: 400) + "\\)", .keyword),
+            (razorExplicitClose + "\\)", .keyword),
             // A call, a generic one too (`GetValues<OrderStatus>()`).
             ("\\b[A-Za-z_]\\w*(?=\\s*\\(|<[^<>()\\n]*>\\()", .function),
             scopedTrie(
@@ -111,6 +111,14 @@ extension RuleTables {
             afterHole: "(?<=\\{[^{}\\n]{0,120}\\})(?<!\\$\\{[^{}\\n]{0,120}\\})")
         return interpolatedStringPieces(
             [csharp, templateLiteralForm()], holeClose: "\\}", skip: razorStrings + ["//[^\\n]*", "/\\*[\\s\\S]*?\\*/"])
+    }()
+
+    /// The `)` that closes an explicit expression `@( … )`, its brackets and strings balanced two levels deep.
+    private static let razorExplicitClose: String = {
+        let string = "\"(?:[^\"\\\\\\n]|\\\\.)*\""
+        let inner = "\\((?:[^()\\n\"]|" + string + "|\\([^()\\n]*\\))*\\)"
+        return RuleScope.marker(
+            steppingOver: [], regions: "@\\((?:[^()\\n\"]|" + string + "|" + inner + ")*" + RuleScope.region("\\)"), within: 400)
     }()
 
     /// The strings the scan for whole interpolated literals steps over: C#'s raw, verbatim and plain ones.

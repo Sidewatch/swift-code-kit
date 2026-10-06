@@ -287,7 +287,7 @@ final class TreeSitterHighlighterTests: XCTestCase {
             data: Data(
                 """
                 (jsx_opening_element (identifier) @tag)
-                (jsx_attribute (property_identifier) @attribute)
+                (jsx_attribute (property_identifier) @tag.attribute)
                 (jsx_self_closing_element (identifier) @type)
                 """.utf8))
         let storage = NSTextStorage(string: text)
@@ -297,7 +297,7 @@ final class TreeSitterHighlighterTests: XCTestCase {
                 clip: NSRange(location: 0, length: storage.length), into: storage)
         }
         XCTAssertEqual(colorAt(storage, ns.range(of: "div").location), .blue, "JSX tag (@tag → keyword)")
-        XCTAssertEqual(colorAt(storage, ns.range(of: "className").location), .yellow, "JSX attribute (@attribute → property)")
+        XCTAssertEqual(colorAt(storage, ns.range(of: "className").location), .yellow, "JSX attribute (@tag.attribute → property)")
         XCTAssertEqual(colorAt(storage, ns.range(of: "Badge").location), .purple, "self-closing component (@type)")
     }
 

@@ -23,6 +23,7 @@ final class OraclePassA2Tests: XCTestCase {
         static let roles: [(TokenKind, String)] = [
             (.comment, "comment"), (.string, "string"), (.keyword, "keyword"), (.type, "type"), (.number, "number"),
             (.function, "function"), (.variable, "variable"), (.identifier, "identifier"), (.property, "property"),
+            (.attribute, "attribute"),
         ]
         let foreground = NSColor(srgbRed: 0.9, green: 0.9, blue: 0.9, alpha: 1)
         func color(for kind: TokenKind) -> NSColor {
@@ -271,7 +272,7 @@ final class OraclePassA2Tests: XCTestCase {
         XCTAssertEqual(p.role("init", 2), "keyword")
         XCTAssertEqual(p.role("fallthrough"), "keyword")
         XCTAssertEqual(p.role("Type"), "keyword")
-        XCTAssertEqual(p.role("@objc"), "type")
+        XCTAssertEqual(p.role("@objc"), "attribute", "an attribute wears the attribute colour (the type colour in the app)")
         XCTAssertEqual(p.role(".9"), "number")
         XCTAssertEqual(p.role(".0"), "number")
     }

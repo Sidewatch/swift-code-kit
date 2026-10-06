@@ -369,8 +369,8 @@
 (precedence_group_attribute . (simple_identifier) @keyword)
 ((precedence_group_attribute (simple_identifier) @keyword .) (#any-of? @keyword "left" "right" "none"))
 
-; Attributes wear the type colour (`@objc`, `@MainActor`, `@available`), wherever they stand.
-(attribute "@" @type (user_type (type_identifier) @type))
+; Attributes wear the attribute colour (`@objc`, `@MainActor`, `@available`), wherever they stand.
+(attribute "@" @attribute (user_type (type_identifier) @attribute))
 
 ; `self.init(…)`, `super.init(…)`: `init` is the keyword there too.
 ((navigation_suffix suffix: (simple_identifier) @keyword) (#eq? @keyword "init"))

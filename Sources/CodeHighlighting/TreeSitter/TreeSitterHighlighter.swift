@@ -54,6 +54,12 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         let language: SwiftTreeSitter.Language; let highlights: Query; let injections: Query?
         /// HTML: also scan its text for Underscore / `wp.template` tags (see `templateTagHits`).
         var templateTags = false
+        /// A host whose injected HTML is scanned for template tags too (PHP pages, where WordPress
+        /// templates live). Off for every other host: Markdown's HTML blocks are not templates.
+        var htmlTemplateTags = false
+        /// Injected languages this host parses one match at a time, each match its own document (a
+        /// Dockerfile's shell commands are separate scripts, not one program).
+        var separateInjections: Set<String> = []
     }
 
     /// The bundled grammars. Add a package + a line here to support a language.
@@ -65,7 +71,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // `injectHTMLText` adds an HTML injection for inline `text` (PHP templates).
         func g(
             _ ptr: OpaquePointer?, _ product: String, inherits: [String] = [], injectHTMLText: Bool = false, extra: String = "",
-            templateTags: Bool = false, names: [String] = []
+            templateTags: Bool = false, names: [String] = [], separateInjections: Set<String> = []
         ) -> Grammar? {
             guard let ptr else { return nil }
             let language = SwiftTreeSitter.Language(ptr)
@@ -94,7 +100,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             var injSrc = queryText(product, "injections.scm") ?? ""
             if injectHTMLText { injSrc += "\n((text) @injection.content (#set! injection.language \"html\"))\n" }
             return Grammar(
-                language: language, highlights: highlights, injections: injSrc.isEmpty ? nil : build(injSrc), templateTags: templateTags)
+                language: language, highlights: highlights, injections: injSrc.isEmpty ? nil : build(injSrc), templateTags: templateTags,
+                htmlTemplateTags: injectHTMLText, separateInjections: separateInjections)
         }
         var m: [CodeLanguage.Language: () -> Grammar?] = [:]
         m[.json] = {
@@ -150,7 +157,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         m[.lua] = { g(tree_sitter_lua(), "TreeSitterLua", names: ["identifier"]) }
         m[.kotlin] = { g(tree_sitter_kotlin(), "TreeSitterKotlin", names: ["simple_identifier"]) }
         m[.dart] = { g(tree_sitter_dart(), "TreeSitterDart", names: ["identifier"]) }
-        m[.dockerfile] = { g(tree_sitter_dockerfile(), "TreeSitterDockerfile") }
+        // Each shell-form command and each heredoc is its own script (see the grammar's injections.scm).
+        m[.dockerfile] = { g(tree_sitter_dockerfile(), "TreeSitterDockerfile", separateInjections: ["bash", "python"]) }
         m[.swift] = { g(tree_sitter_swift(), "TreeSitterSwift", names: ["simple_identifier"]) }
         m[.scala] = { g(tree_sitter_scala(), "TreeSitterScala", names: ["identifier"]) }
         m[.xml] = { g(tree_sitter_xml(), "TreeSitterXML") }
@@ -260,6 +268,13 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     static func forgetGrammarForTesting(_ language: CodeLanguage.Language) {
         grammarCondition.lock(); defer { grammarCondition.unlock() }
         grammarCache[language] = nil
+    }
+
+    /// Puts `grammar` in the cache for `language`, as if it had compiled. Test seam: a test process has no
+    /// query bundles, so a test of injections builds the grammars they reach from the source tree.
+    static func installGrammarForTesting(_ grammar: Grammar, for language: CodeLanguage.Language) {
+        grammarCondition.lock(); defer { grammarCondition.unlock() }
+        grammarCache[language] = grammar
     }
 
     /// Compiles every language's queries, `first` before the rest (the languages of the tabs a
@@ -989,7 +1004,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     @MainActor
     private static func injectionSites(
         _ injQuery: Query, tree: MutableTree, ns: NSString,
-        clip: NSRange? = nil
+        clip: NSRange? = nil, separately: Set<String> = []
     ) -> [(name: String, ranges: [NSRange])] {
         var grouped: [String: [NSRange]] = [:]
         var order: [String] = []
@@ -1008,8 +1023,14 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             else { continue }
             let r = content.range
             guard r.length > 0, NSMaxRange(r) <= ns.length else { continue }
-            if separatelyParsed.contains(named.name) {
-                separate.append((named.name, [r]))
+            if separatelyParsed.contains(named.name) || separately.contains(named.name) {
+                // The content captures of one match (a heredoc's lines) are one document, the text between
+                // them (their newlines) included: included ranges would otherwise join the lines into one.
+                let parts = match.captures(named: "injection.content").map(\.range)
+                    .filter { $0.length > 0 && NSMaxRange($0) <= ns.length }
+                let start = parts.map(\.location).min() ?? r.location
+                let end = parts.map { NSMaxRange($0) }.max() ?? NSMaxRange(r)
+                separate.append((named.name, [NSRange(location: start, length: end - start)]))
                 continue
             }
             if grouped[named.name] == nil { order.append(named.name) }
@@ -1075,7 +1096,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         }
         guard let injQuery = g.injections else { return hits }
         let sourceClip = NSRange(location: max(0, clip.location - offset), length: clip.length)
-        for site in injectionSites(injQuery, tree: tree, ns: ns, clip: sourceClip) {
+        for site in injectionSites(injQuery, tree: tree, ns: ns, clip: sourceClip, separately: g.separateInjections) {
             guard let sub = grammarForInjection(site.name) else { continue }
             guard
                 site.ranges.contains(where: {
@@ -1086,8 +1107,19 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             // tree-sitter-html reads `<#` as a tag opening and produces no elements at all
             // for the rest of the section. Same UTF-16 length, so every position still holds.
             let tags: (code: [NSRange], expressions: [NSRange], all: [NSRange]) =
-                sub.templateTags
+                sub.templateTags && g.htmlTemplateTags
                 ? templateTagRanges(in: ns, within: site.ranges) : (code: [], expressions: [], all: [])
+            // A site of one range (a Markdown inline, a Dockerfile command) parses as its own text: the same tree,
+            // without placing the range in the whole document, which costs a scan from its start per site.
+            if tags.all.isEmpty, site.ranges.count == 1, let only = site.ranges.first {
+                let chunk = ns.substring(with: only) as NSString
+                guard let subTree = combinedParse(sub, ns: chunk, ranges: [NSRange(location: 0, length: chunk.length)]) else { continue }
+                hits += collectHits(
+                    sub.highlights, tree: subTree, source: chunk, offset: offset + only.location, clip: clip, nextBase: &nextBase)
+                hits += collectInjectionHits(
+                    sub, tree: subTree, source: chunk, offset: offset + only.location, clip: clip, depth: depth + 1, nextBase: &nextBase)
+                continue
+            }
             let markup: NSString = tags.all.isEmpty ? ns : maskingTemplateTags(ns, tags.all)
             guard let subTree = combinedParse(sub, ns: markup, ranges: site.ranges) else { continue }
             hits += collectHits(
@@ -1210,6 +1242,9 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// sigiled variables (`$VAR`, `--custom-prop`) are re-captured as `@property` instead.
     public static func role(for capture: String) -> String? {
         if capture == "identifier.plain" { return "identifier" }  // the lead catch-all `names` adds (see `g`)
+        // A plain name a later pattern claims back from a broader one (an end marker's term name), ranked like any
+        // other pattern; `identifier.plain` always ranks lowest.
+        if capture == "identifier.name" { return "identifier" }
         if capture == "variable" || capture == "identifier" { return nil }  // bare catch-alls
         // Checked before the first-component split: bare "namespace" stays a type-colored
         // module name, while the PREFIX of a qualified name recedes (PhpStorm-style).
@@ -1224,6 +1259,11 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // `${a.size}` to plain; an interpolation is marked `@code` instead (``codeCapture``),
         // which keeps the string's colour off it and leaves its tokens their own.
         if capture == "plain" { return "plain" }
+        // A markup attribute NAME (`class=`, `href=`, a JSX prop, a CSS attribute selector) is a name of the
+        // markup, painted like a property; upstream queries spell it `@attribute`, which this table keeps for
+        // annotations, so the markup queries capture it `@tag.attribute`. Checked before the first-component
+        // split, which would read `tag` as a keyword.
+        if capture == "tag.attribute" { return "property" }
         switch capture.split(separator: ".").first.map(String.init) ?? capture {
         case "keyword", "conditional", "repeat", "include", "exception",
             "storageclass", "label", "tag":
@@ -1235,8 +1275,10 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         case "type", "constructor", "namespace", "module", "class": return "type"
         case "function", "method": return "function"
         case "variable", "parameter": return "variable"
-        case "property", "field", "member", "attribute", "annotation", "decorator":
-            return "property"
+        case "property", "field", "member": return "property"
+        // Annotations, attributes and decorators (`@Override`, `#[derive]`, `[[nodiscard]]`, `@MainActor`,
+        // `@dataclass`) wear the attribute colour in every language, as the regex tier's `.attribute` does.
+        case "attribute", "annotation", "decorator": return "attribute"
         default: return nil
         }
     }
@@ -1253,6 +1295,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         case "variable": return HighlightTheme.colors.color(for: .variable)
         case "identifier": return HighlightTheme.colors.color(for: .identifier)
         case "property": return HighlightTheme.colors.color(for: .property)
+        case "attribute": return HighlightTheme.colors.color(for: .attribute)
         // Receded, not recolored: the theme's own foreground at reduced alpha keeps
         // the dimming correct on every palette, light or dark, with no new token role.
         case "muted": return HighlightTheme.colors.foreground.withAlphaComponent(0.55)
@@ -1342,7 +1385,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             }
         }
         guard depth < 3, let injQuery = g.injections else { return }
-        for site in injectionSites(injQuery, tree: tree, ns: ns) {
+        for site in injectionSites(injQuery, tree: tree, ns: ns, separately: g.separateInjections) {
             guard let sub = grammarForInjection(site.name) else { continue }
             collectWinners(
                 sub, source: source, ns: ns, offset: offset,

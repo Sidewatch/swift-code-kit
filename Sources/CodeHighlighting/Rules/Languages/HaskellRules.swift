@@ -30,7 +30,12 @@ extension RuleTables {
             "forall", "infix", "infixl", "infixr", "default", "foreign", "family", "pattern", "mdo", "proc",
         ]),
         ("\\b[A-Z][\\w']*", .type),
-        ("\\b\\d[\\d_]*(\\.\\d+)?([eE][+-]?\\d+)?#{0,2}\\b|\\b0[xXbBoO][0-9a-fA-F_]+#{0,2}\\b", .number),
+        // Decimal, binary, octal and hex literals, a hex float (`0x1.8p3`, HexFloatLiterals) whole.
+        (
+            "\\b\\d[\\d_]*(\\.\\d+)?([eE][+-]?\\d+)?#{0,2}\\b|\\b0[xX][0-9a-fA-F_]+(?:\\.[0-9a-fA-F_]+)?[pP][+-]?\\d+\\b"
+                + "|\\b0[xXbBoO][0-9a-fA-F_]+#{0,2}\\b",
+            .number
+        ),
     ]
 
     /// The names a type signature declares: `name ::` or `a, b ::` opening a line, at any indentation (a

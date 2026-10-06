@@ -28,7 +28,7 @@ extension RuleTables {
             ("\\|\\s*[a-z_]\\w*", .function),
             ("\\b[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)+\\b", .property),
             ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("\\b\\d[\\d_]*(\\.\\d*)?([eE][+-]?\\d+)?\\b", .number),
         ]
 }

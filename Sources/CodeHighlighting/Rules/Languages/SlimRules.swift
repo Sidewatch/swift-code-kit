@@ -42,7 +42,7 @@ extension RuleTables {
             (rubyLine + "\\b(?:begin|rescue|ensure|raise|until|retry|next|break|loop|then|and|or|not)\\b", .keyword),
             ("^\\s*[a-z][\\w:-]*(?=[\\s.#(\\[=:<>]|$)", .keyword),
             ("[.#][A-Za-z_][\\w-]*", .type),
-            ("\\b[\\w:-]+(?==)", .attribute),
+            ("\\b[\\w:-]+(?==)", .property),
             ("^\\s*[-=]=?[<>]?", .variable),
             ("\\b\\d[\\d_]*(\\.\\d+)?\\b", .number),
         ]

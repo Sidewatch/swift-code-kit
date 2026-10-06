@@ -24,10 +24,10 @@ extension RuleTables {
         // An HTML-like label (`label = <<B>bold</B>>`): its tags.
         ("</?[A-Za-z][\\w]*|/?>", .keyword),
         ("->|--", .type),
-        ("\\b[A-Za-z_][\\w]*(?=\\s*=)", .attribute),
+        ("\\b[A-Za-z_][\\w]*(?=\\s*=)", .property),
         (
             "\\b(rankdir|label|shape|style|color|fillcolor|fontname|fontsize|penwidth|arrowhead|dir|weight|constraint|splines|nodesep|ranksep|bgcolor|layout|compound|width|height)\\b",
-            .attribute
+            .property
         ),
         ("#[0-9A-Fa-f]{6}\\b|(?<![\\w.])-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?!\\w)", .number),
         ("\\b[A-Za-z_]\\w*(?=\\s*(\\[|->|--|;|$))", .variable),

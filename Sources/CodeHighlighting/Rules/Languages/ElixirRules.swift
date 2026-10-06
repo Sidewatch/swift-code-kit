@@ -17,7 +17,6 @@ import Foundation
 extension RuleTables {
     static let elixir: [(String, TokenKind)] =
         [
-            hashComment,
             ("~[A-Z]+\"\"\"[\\s\\S]*?\"\"\"[a-zA-Z]*", .string),
             ("~[A-Z]+'''[\\s\\S]*?'''[a-zA-Z]*", .string),
             (elixirSigil, .string),
@@ -61,8 +60,8 @@ extension RuleTables {
     /// escape, a `#` or a `{`; `others` are the other forms, which its scans step over.
     private static func elixirQuoted(_ quote: String, close: String? = nil, text: String, others: [String]) -> [(String, TokenKind)] {
         interpolatedStringPieces(
-            open: "(?:~[a-z])?" + quote, close: close ?? quote, literal: text + "|\\\\[\\s\\S]|#|\\{(?<![^\\\\]#\\{)", hole: elixirHole,
-            holeOpen: "\\{(?<=#\\{)", holeClose: "\\}", multiline: true,
+            open: "(?:~[a-z])?" + quote, close: close ?? quote, literal: text + "|\\\\[\\s\\S]|#(?!\\{)|\\{", hole: elixirHole,
+            holeOpen: "#\\{", holeClose: "\\}", multiline: true,
             skip: [
                 "#(?!\\{)[^\\n]*", "\\?(?<![\\w?!]\\?)(?:\\\\[\\s\\S]|[^\\s\\\\])", "~[A-Z]+\"\"\"[\\s\\S]*?\"\"\"",
                 "~[A-Z]+'''[\\s\\S]*?'''",
@@ -70,13 +69,12 @@ extension RuleTables {
             ] + others.map { "(?:~[a-z])?" + $0 })
     }
 
-    /// A `#{ … }` hole after its `#`, which stays with the text: a `#` in code opens a comment, which would
-    /// swallow the hole and the rest of the line. Braces and strings may be inside it, a string holding a hole
-    /// of its own (`#{"a #{b}"}`).
+    /// A `#{ … }` hole, its `#` included: Elixir's comment is a `#` that no `{` follows, so the `#` is code.
+    /// Braces and strings may be inside it, a string holding a hole of its own (`#{"a #{b}"}`).
     private static let elixirHole: String = {
         let flat = "\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{))*\""
         let inner = "#\\{(?:[^{}\"]|\(flat)|\\{[^{}]*\\})*\\}"
         let string = "\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|\(inner))*\""
-        return "(?<=#)\\{(?:[^{}\"']|\(string)|'(?:[^'\\\\]|\\\\.)*'|\\{(?:[^{}\"]|\(string)|\\{[^{}]*\\})*\\})*\\}"
+        return "#\\{(?:[^{}\"']|\(string)|'(?:[^'\\\\]|\\\\.)*'|\\{(?:[^{}\"]|\(string)|\\{[^{}]*\\})*\\})*\\}"
     }()
 }

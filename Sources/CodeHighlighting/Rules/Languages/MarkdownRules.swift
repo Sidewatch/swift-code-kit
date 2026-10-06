@@ -23,6 +23,10 @@ extension RuleTables {
             ("^\\s*[\\-\\*+]\\s", .keyword),
             ("^\\s*\\d+\\.\\s", .keyword),
             ("!?\\[([^\\]]+)\\]\\(([^)]+)\\)", .type),
+            // A reference link or image, full or collapsed (`[text][ref]`, `[text][]`), and a footnote reference's
+            // label (`[^note]`), as the tree-sitter tier paints them.
+            ("!?\\[(?!\\^)[^\\]\\n]+\\]\\[[^\\]\\n]*\\]", .type),
+            ("\\^[^\\]\\s]+(?<=\\[\\^[^\\]\\s]{0,80})(?=\\])", .type),
             ("(?<!\\*)\\*(?![\\s*])[^*\\n]+?(?<![\\s*])\\*(?!\\*)", .type),
             ("(?<!\\w)_(?![\\s_])[^_\\n]+?(?<![\\s_])_(?!\\w)", .type),
             ("\\*\\*(?:[^*\\n]|\\*(?!\\*))+?\\*\\*", .function),

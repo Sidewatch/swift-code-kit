@@ -39,11 +39,13 @@
 (feature_name) @property
 (layer_name) @property
 (container_name) @property
-(page_selector) @attribute
+; Sidewatch: selectors that name a markup attribute or state are `@tag.attribute` (the property colour, as
+; VS Code scopes them entity.other.attribute-name); `@attribute` is for annotations.
+(page_selector) @tag.attribute
 
-(pseudo_element_selector (tag_name) @attribute)
-(pseudo_class_selector (class_name) @attribute)
-(attribute_name) @attribute
+(pseudo_element_selector (tag_name) @tag.attribute)
+(pseudo_class_selector (class_name) @tag.attribute)
+(attribute_name) @tag.attribute
 
 (function_name) @function
 

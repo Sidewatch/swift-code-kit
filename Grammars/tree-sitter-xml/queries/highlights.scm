@@ -85,7 +85,7 @@
   "#REQUIRED"
   "#IMPLIED"
   "#FIXED"
-] @attribute
+] @keyword ; Sidewatch: DTD attribute defaults are keywords, not annotations
 
 ;; Entities
 

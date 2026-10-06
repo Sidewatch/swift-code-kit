@@ -27,6 +27,7 @@ extension RuleTables {
             .type
         ),
         (smlExceptionPayload + "\\b[a-z_][\\w']*", .type),
+        (smlTypeExpression + "\\b[a-z_][\\w']*(?![\\w']|\\s*:(?!:))", .type),
         keywords([
             "abstype", "and", "andalso", "as", "case", "datatype", "do", "else", "end", "eqtype", "exception", "fn",
             "fun", "functor", "handle", "if", "in", "include", "infix", "infixr", "let", "local", "nonfix", "of", "op",
@@ -38,6 +39,22 @@ extension RuleTables {
         ("\\b[A-Z][A-Za-z0-9_']*", .type),
         ("(?<![\\w'])~?(?:0w?x[0-9a-fA-F]+|0w\\d+|\\d+(?:\\.\\d+)?(?:[eE]~?\\d+)?)\\b", .number),
     ]
+
+    /// A type expression: what a `val name :` specification or annotation gives (`val add : sku * int * t -> t`),
+    /// and the right side of a `type` / `eqtype` abbreviation (`type id = int`), each up to the next declaration
+    /// word, an `=`, an unbalanced `)` or the line's end. Its lowercase names are type constructors, except a
+    /// record field's label (`{ name : string }`); its keywords are repainted after it.
+    static let smlTypeExpression: String = {
+        let body =
+            "(?:[^=()\\n]|\\([^()\\n]*\\))*?"
+            + "(?=\\b(?:val|type|eqtype|datatype|fun|end|and|exception|structure|sig|struct|in|local)\\b|[=)]|\\n|$)"
+        return RuleScope.marker(
+            steppingOver: [], regions: "\\bval\\s+(?:op\\s+)?[a-z_][\\w']*\\s*:(?!:)" + RuleScope.region(body), within: 300)
+            + RuleScope.marker(
+                steppingOver: [],
+                regions: "\\b(?:type|eqtype)\\s+(?:'+\\w+\\s+|\\([^)]*\\)\\s*)?[a-z_][\\w']*\\s*=(?!>)" + RuleScope.region(body),
+                within: 300)
+    }()
 
     /// The argument type of an exception declaration: `exception E of …` to the end of its line.
     static let smlExceptionPayload = RuleScope.marker(opens: ["\\bexception\\s+[A-Z][\\w']*\\s+of\\b"], closes: ["\\n"], within: 200)

@@ -19,6 +19,6 @@ extension RuleTables {
         singleQuotedPlain,
         ("</?[a-zA-Z][\\w-]*", .keyword),
         ("/>|>", .keyword),
-        ("\\b[a-zA-Z-]+=", .function),
+        ("\\b[a-zA-Z-]+=", .property),
     ]
 }

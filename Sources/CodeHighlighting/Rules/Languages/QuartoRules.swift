@@ -41,6 +41,8 @@ extension RuleTables {
         ("\\\\[!-/:-@\\[-`{-~]", .string),
         ("\"[^\"\\n]*\"(?=\\))(?<=\\]\\([^)\\s]{1,300}[ \\t]{1,10}\"[^\"\\n]{0,200}\")", .string),
         ("\"[^\"\\n]*\"(?=[ \\t]*$)(?<=^\\[[^\\]\\n]{1,100}\\]:[^\\n]{1,300})", .string),
+        // A bracketed Pandoc citation (`[@smith2020; @jones2021, p. 12]`, `[-@jones2021]`), a link to the reference.
+        ("\\[-?@[^\\]\\n]*\\]", .type),
         // A quoted attribute value in an HTML tag (`<div class="note">`).
         ("\"[^\"\\n]*\"(?=[^<>\\n]{0,200}>)(?<=<[A-Za-z][\\w-]{0,30}\\s[^<>\\n]{0,200}=\"[^\"\\n]{0,200}\")", .string),
     ]

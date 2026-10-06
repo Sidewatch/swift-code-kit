@@ -28,7 +28,7 @@ extension RuleTables {
             // In a tag or a script a string may span lines.
             (insideCFMLCode + "\"(?:[^\"]|\"\")*\"", .string),
             ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             // A `#expression#` in the page; the calls inside it are painted below.
             ("#[A-Za-z_][\\w.]*(?:\\([^#\\n]*\\))?#", .variable),
             ("\\b([a-zA-Z_]\\w*)\\s*\\(", .function),

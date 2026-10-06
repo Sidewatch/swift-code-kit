@@ -25,7 +25,7 @@ extension RuleTables {
             (insideTemplateTag + "'(?:[^'\\\\\\n]|\\\\.)*'", .string),
         ] + templateAttributeStrings + [
             ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("\\{\\{\\{?~?[#/^>&]?|~?\\}\\}\\}?", .keyword),
             ("(?<=\\{\\{~?[#/^])[\\w-]+", .keyword),
             templateTagKeywords(["else", "as", "this"]),

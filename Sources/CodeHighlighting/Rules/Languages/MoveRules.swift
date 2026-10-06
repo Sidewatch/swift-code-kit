@@ -14,7 +14,7 @@ import Foundation
 /// strings — there are no `'…'` strings, a `'name` is a loop or block label; `@0x1` addresses; integer
 /// suffixes (`10u64`); the keywords of Move 2 and its specification language; capitalised names (structs,
 /// enums, type parameters) and the modules a `module` / `friend` names as types; the function a `fun` or a
-/// `spec` block names. `exists<T>(a)` and the other storage operators are calls, not words.
+/// `spec` block names. `exists<T>(a)`, `global<T>(a)` and the other storage operators are calls, not words.
 extension RuleTables {
     static let move: [(String, TokenKind)] = [
         ("\\b[bx]?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
@@ -30,9 +30,14 @@ extension RuleTables {
             "package", "phantom", "pragma", "public", "requires", "return", "schema", "script", "spec", "struct",
             "succeeds_if", "to", "update", "use", "where", "while", "with",
         ]),
+        // `global<T>(addr)` is the spec language's storage builtin, a call like `borrow_global<T>(addr)`; `global`
+        // declaring a spec variable stays the keyword.
+        ("\\bglobal(?=\\s*<[^<>()]*>\\s*\\()", .function),
         declaration(after: ["fun"], .function),
         keywords(["fun"]),
-        types(["u8", "u16", "u32", "u64", "u128", "u256", "bool", "address", "signer", "vector", "Self"]),
+        types(["u8", "u16", "u32", "u64", "u128", "u256", "bool", "address", "vector", "Self"]),
+        // The `signer` type, not the `std::signer` module of the same name.
+        ("\\bsigner\\b(?!\\s*::)", .type),
         constants(["true", "false"]),
         ("'[A-Za-z_]\\w*", .attribute),
         ("@0x[0-9a-fA-F]+|@[A-Za-z_]\\w*", .number),

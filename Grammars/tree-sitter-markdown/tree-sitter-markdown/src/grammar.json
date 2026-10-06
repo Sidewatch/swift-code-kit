@@ -2980,7 +2980,19 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "STRING",
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "TOKEN",
+                      "content": {
+                        "type": "PREC",
+                        "value": 1,
+                        "content": {
+                          "type": "STRING",
+                          "value": ">"
+                        }
+                      }
+                    },
+                    "named": false,
                     "value": ">"
                   },
                   {

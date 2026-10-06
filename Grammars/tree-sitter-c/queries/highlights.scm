@@ -111,3 +111,8 @@
   alternative: (_)? @code
   "#endif" @code) @comment
  (#eq? @_zero "0"))
+
+; A standard attribute's name (`[[nodiscard]]`, `[[gnu::always_inline]]`) wears the attribute colour; its
+; arguments keep their own.
+(attribute prefix: (identifier) @attribute)
+(attribute name: (identifier) @attribute)

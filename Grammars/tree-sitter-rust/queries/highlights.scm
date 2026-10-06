@@ -153,11 +153,7 @@
 
 (escape_sequence) @escape
 
-(attribute_item) @attribute
-(inner_attribute_item) @attribute
-
-; A string inside an attribute (`#[doc = "x"]`, `#[cfg(feature = "serde")]`) stays a string: the
-; whole-attribute patterns above paint the item, and these, being later, win on the literals.
+; A string inside an attribute (`#[doc = "x"]`, `#[cfg(feature = "serde")]`) stays a string.
 (attribute_item (attribute [(string_literal) (raw_string_literal)] @string))
 (token_tree [(string_literal) (raw_string_literal) (char_literal)] @string)
 
@@ -172,3 +168,10 @@
 (use_list (self) @keyword)
 (scoped_use_list (self) @keyword)
 (scoped_identifier (self) @keyword)
+
+; An attribute's `#[ ]` and path (`#[derive(…)]`, `#![allow(…)]`, `#[serde::rename]`) wear the attribute colour,
+; as annotations do in every language; its arguments keep their own. Last, so the path patterns above do not
+; repaint the name.
+(attribute_item ["#" "[" "]"] @attribute)
+(inner_attribute_item ["#" "!" "[" "]"] @attribute)
+(attribute . [(identifier) (scoped_identifier)] @attribute)

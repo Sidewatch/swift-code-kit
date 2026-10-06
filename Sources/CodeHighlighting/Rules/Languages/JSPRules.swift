@@ -28,7 +28,7 @@ extension RuleTables {
             ("(?<==)'(?:[^'\\n<]|<(?!%))*'", .string),
             ("(?<==)[\"'](?=[^\"'\\n]*<%)|[\"'](?<=%>[\"'])", .string),
             ("</?[A-Za-z][\\w:.-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("<%[!=@]?|%>|[$#]\\{", .keyword),
             ("(?<=<%@)\\s*[a-z]+", .keyword),
             (insideJSPCode + "\\b([a-zA-Z_]\\w*)(?=\\s*\\()", .function),

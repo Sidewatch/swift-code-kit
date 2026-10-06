@@ -40,7 +40,7 @@ extension RuleTables {
             ("^\\s*[a-z][\\w:-]*(?=[\\s.#(=:]|$)", .keyword),
             ("[.#][A-Za-z_][\\w-]*", .type),
             ("\\+[\\w-]+", .function),
-            ("\\b[\\w:-]+(?==)", .attribute),
+            ("\\b[\\w:-]+(?==)", .property),
             ("^\\s*[-=!]=?", .variable),
             decimal,
             // Ruby's own words on a Haml code line (`- begin`, `- rescue`).

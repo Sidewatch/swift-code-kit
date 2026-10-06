@@ -21,7 +21,7 @@ extension RuleTables {
         (insideMarkupTag + "'[^']*'", .string),
         ("</?[A-Za-z][\\w:-]*", .keyword),
         ("/>|>", .keyword),
-        ("\\b[A-Za-z-]+=", .function),
+        ("\\b[A-Za-z-]+=", .property),
     ]
 
     /// Inside a `<name …>` or `<?name …?>` tag, from its `<` to the next `>`.

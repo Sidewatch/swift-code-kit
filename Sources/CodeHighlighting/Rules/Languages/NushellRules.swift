@@ -19,8 +19,8 @@ import Foundation
 /// binary literals (`0x[FF 00]`), `$variables` and `@attributes`.
 extension RuleTables {
     static let nushell: [(String, TokenKind)] = [
-        (nushellCommandStart + #"(?![0-9])[.\w][-!.\w]*"#, .type),
-        (nushellCommandStart + "(?:(?:ansi|char) \\w+|" + prefixTree(Set(nushellBuiltins)) + ")(?![-\\w])", .keyword),
+        (nushellCommandStart + #"(?![0-9])[.\w][-!.\w]*+"# + nushellNotKey, .type),
+        (nushellCommandStart + "(?:(?:ansi|char) \\w+|" + prefixTree(Set(nushellBuiltins)) + ")(?![-\\w])" + nushellNotKey, .keyword),
         (#"\b(?<![-./:\\])(?:break|continue|else(?: if)?|for|if|loop|mut|return|try|while|catch|finally)(?![-./:\w\\])"#, .keyword),
         (#" (?:[-*+/]=?|//|\*\*|!=|[<=>]=?|[!=]~|\+\+=?|=>)(?= |$)"#, .keyword),
         (#"\||\.\.(?:\.(?=[^\]}\s])|<)?"#, .keyword),
@@ -33,6 +33,11 @@ extension RuleTables {
         (#"\b(?:export[ \t]+)?alias[ \t]+[-!\w]+(?=[ \t]*=)"#, .function),
         (#"\b(?:export[ \t]+)?(?:def(?:[ \t]+--\w+)*|extern|alias)\b"#, .keyword),
         (#"^[ \t]*(?:export[ \t]+)?use\b.*$"#, .keyword),
+        // In a record literal (`{name: reload, qty: 12}`) a key is a name, the colon after it the operator, and a
+        // bare value a bare-word string; the signature rule above would paint the value a type.
+        (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*\??:[ \t])(?<=[{,][ \t]{0,8})[A-Za-z_][-\w]*\??"#, .property),
+        (nushellInRecord + #":(?<=[\w?]:)(?=[ \t])"#, .keyword),
+        (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*[ \t]*[,}])(?<=:[ \t]{1,8})(?!(?:true|false|null)(?![-\w]))[A-Za-z_][-\w]*"#, .string),
         (#"\b(?<!\^)(?:true|false|null)\b"#, .number),
         (
             #"(?<![-\w])[-+]?(?:(?i:nan|infinity|inf)|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][-+]?\d[\d_]*)?"#
@@ -64,6 +69,16 @@ extension RuleTables {
 
     /// Where a command starts: a line's first word, or the first after `|`, `;`, `(`, `{`, `,` or `=`.
     private static let nushellCommandStart = #"(?:^|[|;({,=])[ \t]*\^?"#
+
+    /// After a word where a command would start: not a record key, a word followed by `:` and a blank (`{name: x}`).
+    private static let nushellNotKey = #"(?!\??:[ \t])"#
+
+    /// One-line record literals, `{` and a key to the matching `}` (one level of nesting), stepping over strings
+    /// and comments so a brace inside one does not count.
+    private static let nushellInRecord = RuleScope.marker(
+        steppingOver: [#""(?:[^"\\\n]|\\.)*""#, "'[^'\\n]*'", "#.*"],
+        regions: #"\{(?=[ \t]*(?:[-\w]+|"[^"\n]*")\??:[ \t])(?:[^{}\n"]|"(?:[^"\\\n]|\\.)*"|\{(?:[^{}\n"]|"(?:[^"\\\n]|\\.)*")*\})*\}"#,
+        within: 2000)
 
     /// The word operators, as one group.
     private static let nushellWordOperators =

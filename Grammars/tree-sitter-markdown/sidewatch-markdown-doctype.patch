@@ -1,0 +1,32 @@
+Sidewatch patch on tree-sitter-markdown v0.5.3 (block grammar), applied to src/grammar.json and regenerated
+with tree-sitter CLI 0.25.10 (`tree-sitter generate src/grammar.json`).
+
+An HTML block of type 4 (`<!DOCTYPE html>`, CommonMark: `<!` and a letter, ending at the first line that holds
+`>`) never ended when the `>` followed other text on its line: `>` is also a punctuation token of `_line`, whose
+right precedence kept extending the line, so the block ran to the end of the document. The closing `>` is now its
+own token with lexical precedence 1, so the lexer reads it as the end. In upstream grammar.js (common/html_blocks)
+the change is `seq('>', $._close_block)` -> `seq(alias(token(prec(1, '>')), '>'), $._close_block)`.
+
+--- a/src/grammar.json	2026-10-06 22:25:18
++++ b/src/grammar.json	2026-10-06 22:25:18
+@@ -2980,7 +2980,19 @@
+                 "type": "SEQ",
+                 "members": [
+                   {
+-                    "type": "STRING",
++                    "type": "ALIAS",
++                    "content": {
++                      "type": "TOKEN",
++                      "content": {
++                        "type": "PREC",
++                        "value": 1,
++                        "content": {
++                          "type": "STRING",
++                          "value": ">"
++                        }
++                      }
++                    },
++                    "named": false,
+                     "value": ">"
+                   },
+                   {

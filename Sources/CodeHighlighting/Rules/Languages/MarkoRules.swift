@@ -31,13 +31,15 @@ extension RuleTables {
             ("\"(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
             ("'(?:[^'\\\\\\n]|\\\\.)*'", .string),
             ("</?[A-Za-z@][\\w:.#-]*|/>|>", .keyword),
-            ("\\b[A-Za-z][\\w-]*(?==)", .attribute),
             call,
             keywords([
                 "as", "async", "await", "break", "case", "catch", "class", "const", "continue", "declare", "default", "delete", "do",
                 "else", "export", "extends", "finally", "for", "from", "function", "if", "import", "in", "instanceof", "interface", "let",
                 "new", "of", "return", "static", "style", "switch", "this", "throw", "try", "type", "typeof", "var", "void", "while",
             ]),
+            // An attribute name, after the keywords so `class=` on a tag is an attribute, not the keyword. It
+            // follows whitespace (painting that whitespace too), so a tag written `<if=…>` keeps its keyword.
+            ("(?m)(?:^[ \\t]*|[ \\t]+)[A-Za-z][\\w-]*(?==)", .property),
             ("^[ \\t]*\\$(?=\\s)|\\$!?\\{", .keyword),
             ("=>", .keyword),
             // A type name a declaration introduces (`interface Input`) or a generic one (`Array<…>`).

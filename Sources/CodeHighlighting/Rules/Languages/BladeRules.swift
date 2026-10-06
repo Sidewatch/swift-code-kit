@@ -26,7 +26,7 @@ extension RuleTables {
             ("(?<==)(?<![:@][\\w.:-]{1,60}=)\"[^\"{<\\n]*\"", .string),
             ("(?<==)(?<![:@][\\w.:-]{1,60}=)'[^'{<\\n]*'", .string),
             ("</?[A-Za-z][\\w:.-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("(?<![\\w@])@[A-Za-z]\\w*", .keyword),
             ("\\{\\{|\\}\\}|\\{!!|!!\\}", .keyword),
             ("\\$[A-Za-z_]\\w*", .variable),

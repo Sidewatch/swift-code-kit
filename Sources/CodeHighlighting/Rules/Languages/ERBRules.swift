@@ -28,7 +28,7 @@ extension RuleTables {
             ("(?<==)\"[^\"{<\\n]*\"", .string),
             ("(?<==)'[^'{<\\n]*'", .string),
             ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("<%(?!%)[-=]{0,2}|-?%>", .keyword),
             (insideScriptletTag + "\\b([a-z_]\\w*[?!]?)(?=\\()", .function),
             tagWords(

@@ -422,3 +422,8 @@
 		(interpolated_expression)
 		(interpolation_expression_end)
 	] @code)
+
+; `fun` is a hard keyword. Where the grammar misreads a construct it does not know (context parameters,
+; `context(A) fun f()`, read as an infix expression), a name spelled `fun` is still the keyword.
+((simple_identifier) @keyword.function
+  (#eq? @keyword.function "fun"))

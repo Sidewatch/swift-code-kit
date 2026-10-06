@@ -10,10 +10,6 @@
 
 ; Function calls
 
-(decorator) @function
-(decorator
-  (identifier) @function)
-
 (call
   function: (attribute attribute: (identifier) @function.method))
 (call
@@ -151,3 +147,10 @@
 
 ; An f-string's `{…}` replacement field is code inside the string.
 (interpolation) @code
+
+; A decorator's `@` and name wear the attribute colour, as annotations do in every language; its arguments keep
+; their own. Last, so the call and method patterns above do not repaint the name.
+(decorator "@" @attribute)
+(decorator (identifier) @attribute)
+(decorator (attribute) @attribute)
+(decorator (call function: [(identifier) (attribute)] @attribute))

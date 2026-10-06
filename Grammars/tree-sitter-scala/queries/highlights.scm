@@ -169,7 +169,8 @@
   "with"
 ] @keyword
 
-; `end` is scanner-lexed, so the marker node is the only thing to match.
+; `end` is scanner-lexed and hidden, so the marker node paints it; a named marker's name (`end Recent`) is its own
+; visible child (`_end_ident`), painted after it.
 (end_marker) @keyword
 
 ; `extension` is a soft keyword. Highlight it only where it starts an
@@ -308,3 +309,12 @@
 
 ; An interpolation is code inside the string: `$name`, `${expr}`.
 (interpolation) @code
+
+; A named end marker's name is the definition it closes: a type's name (`end Recent`) wears the type colour, a
+; term's (`end m`, `end endMarkers`) the plain-name colour; a keyword name (`end if`, `end extension`, `end given`)
+; stays a keyword with the marker.
+((end_marker "_end_ident" @type)
+  (#match? @type "^[A-Z]"))
+((end_marker "_end_ident" @identifier.name)
+  (#match? @identifier.name "^[a-z_]")
+  (#not-any-of? @identifier.name "if" "while" "for" "match" "try" "new" "this" "given" "extension" "val"))

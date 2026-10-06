@@ -175,3 +175,8 @@
 
 ; `case null, default ->`: the grammar reads `default` there as a name.
 ((switch_label (identifier) @keyword) (#eq? @keyword "default"))
+
+; An annotation's `@` and name wear the attribute colour; repeated last so the capitalised-name and
+; scoped-name patterns above do not repaint them.
+(annotation "@" @attribute name: (_) @attribute)
+(marker_annotation "@" @attribute name: (_) @attribute)

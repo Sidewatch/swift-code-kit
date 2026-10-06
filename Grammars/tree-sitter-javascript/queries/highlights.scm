@@ -212,3 +212,10 @@
 
 ; A template literal's `${…}` is code inside the string.
 (template_substitution) @code
+
+; A decorator's `@` and name wear the attribute colour, as annotations do in every language; its arguments keep
+; their own. Last, so the call and member patterns above do not repaint the name.
+(decorator "@" @attribute)
+(decorator (identifier) @attribute)
+(decorator (member_expression) @attribute)
+(decorator (call_expression function: [(identifier) (member_expression)] @attribute))

@@ -171,7 +171,7 @@ final class OraclePassR1Tests: XCTestCase {
         let text = "a = \"x #{y} z\"\nb = \"\"\"\nh #{w} i\n\"\"\"\nc = ~r\"re#{v}\"i\n"
         XCTAssertNotEqual(role("y", in: text, .elixir), "string")
         XCTAssertEqual(role(" z\"", in: text, .elixir), "string")
-        XCTAssertEqual(role("#", in: text, .elixir), "string", "the `#` stays with the text")
+        XCTAssertNotEqual(role("#", in: text, .elixir), "string", "the `#` of `#{` opens the hole, code like it")
         XCTAssertNotEqual(role("w", in: text, .elixir), "string")
         XCTAssertEqual(role(" i", in: text, .elixir), "string")
         XCTAssertNotEqual(role("v", in: text, .elixir), "string")

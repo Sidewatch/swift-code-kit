@@ -2,7 +2,7 @@
 //  OwnCommentAndMarkupScopeTests.swift
 //  CodeHighlightingTests
 //
-//  Comment markers that are not comments in context, and quotes that are text between markup tags.
+//  Comment markers that are not comments in context; quotes and attribute names in markup.
 //
 //  Created by David Sherlock on 10/6/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -22,6 +22,7 @@ final class OwnCommentAndMarkupScopeTests: XCTestCase {
             switch kind {
             case .comment: return .systemGray
             case .string: return .systemGreen
+            case .property: return .systemOrange
             default: return .systemBlue
             }
         }
@@ -56,5 +57,21 @@ final class OwnCommentAndMarkupScopeTests: XCTestCase {
         let text = "x = 1 + #{y}\n# note\n"
         XCTAssertNotEqual(colour(of: "#{y}", in: text, .crystal), .systemGray)
         XCTAssertEqual(colour(of: "# note", in: text, .crystal), .systemGray)
+    }
+
+    /// A markup attribute name (`class=`) wears the property role in every template language, as the HTML
+    /// grammar paints it; the attribute role is for annotations (`@Override`, `#[derive]`).
+    func testMarkupAttributeNamesWearThePropertyRole() {
+        let tag = "<div class=\"row\">x</div>\n"
+        let languages: [Language] = [
+            .html, .xslt, .astro, .handlebars, .erb, .liquid, .razor, .twig, .blade, .jinja, .jsp, .smarty, .cfml,
+            .velocity, .marko,
+        ]
+        for language in languages {
+            XCTAssertEqual(colour(of: "class", in: tag, language), .systemOrange, "\(language)")
+        }
+        XCTAssertEqual(colour(of: "class", in: "%p(class=\"row\") x\n", .haml), .systemOrange)
+        XCTAssertEqual(colour(of: "class=", in: "div class=\"row\" x\n", .slim), .systemOrange)
+        XCTAssertEqual(colour(of: "color", in: "digraph g { a [color=red]; }\n", .dot), .systemOrange)
     }
 }

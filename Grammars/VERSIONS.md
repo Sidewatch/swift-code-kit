@@ -23,7 +23,7 @@ head, which is ahead of the last tag (some repositories rarely tag).
 | json | tree-sitter/tree-sitter-json | upstream main 254c42a6, generated here with CLI 0.24.4 | v0.24.8 | current; main fixes `1E+9` (signed exponents) — a real JSON parse error, unreleased since 17 Aug 2026 |
 | kotlin | fwcd/tree-sitter-kotlin | upstream main 1852ea17 (1 Aug 2026) | 0.3.8 | current; updated 2 Oct 2026 from 68f564d4 |
 | lua | tree-sitter-grammars/tree-sitter-lua | v0.5.0 | v0.5.0 | current (= main) |
-| markdown (block + inline) | tree-sitter-grammars/tree-sitter-markdown | v0.5.3 | v0.5.3 | current (= main) |
+| markdown (block + inline) | tree-sitter-grammars/tree-sitter-markdown | v0.5.3 + local patch `sidewatch-markdown-doctype.patch` (block grammar), generated with CLI 0.25.10 | v0.5.3 | patched: an HTML block of type 4 ends (see below) |
 | php | tree-sitter/tree-sitter-php | v0.25.0 | v0.25.0 | current (= main) |
 | python | tree-sitter/tree-sitter-python | upstream main | v0.25.0 | ahead of the release |
 | ruby | tree-sitter/tree-sitter-ruby | v0.23.1 | v0.23.1 | current (= main) |
@@ -81,6 +81,16 @@ one in a typed throws clause; the clause now holds a `(throws)` node, which the 
 pattern paints. Upstream's four typed-throws tests gain that node in their expected trees. `defer { … }` is a query
 change only: upstream parses it as a call with a trailing closure (its own corpus pins that shape), so
 `highlights.scm` paints the name `defer` as a keyword. `ShellDockerSwiftGrammarTests` fails on both without them.
+
+**markdown — `tree-sitter-markdown/sidewatch-markdown-doctype.patch`** (6 Oct 2026). On top of v0.5.3, the block
+grammar only: an HTML block of type 4 (`<!DOCTYPE html>`; CommonMark ends it at the first line holding `>`) never
+ended when its `>` followed other text on the line, because `>` is also a punctuation token of `_line`, whose right
+precedence kept extending the line; the block ran to the end of the document and every line after it was painted as
+HTML (in the corpus README, lines 468-526). The closing `>` is now its own token with lexical precedence 1. Only
+`src/grammar.json` is vendored, so the patch is to it, regenerated with `tree-sitter generate src/grammar.json`; in
+upstream `grammar.js` it is `seq(alias(token(prec(1, '>')), '>'), $._close_block)` in the type-4 rule. Every other
+`.md` file in TestFiles and the libraries parses identically before and after. `src/tree_sitter/array.h` drift from
+the newer CLI is left out. `OraclePassR3Tests.testMarkdownDoctypeBlockEnds` fails without it.
 
 **bash — `tree-sitter-bash/sidewatch-bash-5.3.patch`** (3 Oct 2026). On top of v0.25.1: bash 5.3's function
 substitutions `${ cmd; }` and `${| cmd; }` (as `command_substitution`; the blank after `${` is part of the token, and

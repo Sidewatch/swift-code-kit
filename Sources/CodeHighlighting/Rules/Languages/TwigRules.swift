@@ -18,7 +18,7 @@ extension RuleTables {
     static let twig: [(String, TokenKind)] =
         [("\\{#[\\s\\S]*?#\\}", .comment), htmlComment] + templateTagStrings + templateAttributeStrings + [
             ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
-            ("\\b[A-Za-z-]+=", .attribute),
+            ("\\b[A-Za-z-]+=", .property),
             ("\\{%[-~]?|[-~]?%\\}|\\{\\{[-~]?|[-~]?\\}\\}", .keyword),
             ("\\|\\s*[a-z_]\\w*", .function),
             ("\\b[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)+\\b", .property),
