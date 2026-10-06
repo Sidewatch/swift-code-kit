@@ -100,6 +100,19 @@ struct RuleScope {
         return lo < regions.count && regions[lo].location <= location
     }
 
+    /// The first place at or after `location` that lies inside one of `regions` (ascending,
+    /// non-overlapping): `location` itself when a region holds it, else the next region's start; nil
+    /// when no region reaches past it.
+    static func firstStart(atOrAfter location: Int, in regions: [NSRange]) -> Int? {
+        var lo = 0
+        var hi = regions.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if NSMaxRange(regions[mid]) <= location { lo = mid + 1 } else { hi = mid }
+        }
+        return lo < regions.count ? max(location, regions[lo].location) : nil
+    }
+
     private static let prefix = "(?#in:"
 
     /// The group name that marks the region part of a region pattern.

@@ -18,57 +18,65 @@ import Foundation
 /// whose `( … )` may hold quotes, `./paths`, numbers with their units (`10kb`, `500ms`, `1.5MiB`), dates,
 /// binary literals (`0x[FF 00]`), `$variables` and `@attributes`.
 extension RuleTables {
-    static let nushell: [(String, TokenKind)] = [
-        (nushellCommandStart + #"(?![0-9])[.\w][-!.\w]*+"# + nushellNotKey, .type),
-        (nushellCommandStart + "(?:(?:ansi|char) \\w+|" + prefixTree(Set(nushellBuiltins)) + ")(?![-\\w])" + nushellNotKey, .keyword),
-        (#"\b(?<![-./:\\])(?:break|continue|else(?: if)?|for|if|loop|mut|return|try|while|catch|finally)(?![-./:\w\\])"#, .keyword),
-        (#" (?:[-*+/]=?|//|\*\*|!=|[<=>]=?|[!=]~|\+\+=?|=>)(?= |$)"#, .keyword),
-        (#"\||\.\.(?:\.(?=[^\]}\s])|<)?"#, .keyword),
-        ("[ (]" + nushellWordOperators + "(?=[ )]|$)", .keyword),
-        (#"[\s(\[]-{1,2}(?=[A-Za-z?])"#, .keyword),
-        (#":(?<=[\w?"']:)(?=[ \t])"#, .keyword),
-        (#"(?:\??:|->)[ \t]*\w+(?:-\w+)*"#, .type),
-        (#"\b(?:list|record|table|oneof)<[^>\n]*>|\]:[ \t]*\[[^\]\n]*\]"#, .type),
-        (#"\b(?:export[ \t]+)?(?:def|extern)(?:[ \t]+--\w+)*[ \t]+(?:[-\w]+|"[- \w]+"|'[- \w]+'|`[- \w]+`)"#, .function),
-        (#"\b(?:export[ \t]+)?alias[ \t]+[-!\w]+(?=[ \t]*=)"#, .function),
-        (#"\b(?:export[ \t]+)?(?:def(?:[ \t]+--\w+)*|extern|alias)\b"#, .keyword),
-        (#"^[ \t]*(?:export[ \t]+)?use\b.*$"#, .keyword),
-        // In a record literal (`{name: reload, qty: 12}`) a key is a name, the colon after it the operator, and a
-        // bare value a bare-word string; the signature rule above would paint the value a type.
-        (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*\??:[ \t])(?<=[{,][ \t]{0,8})[A-Za-z_][-\w]*\??"#, .property),
-        (nushellInRecord + #":(?<=[\w?]:)(?=[ \t])"#, .keyword),
-        (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*[ \t]*[,}])(?<=:[ \t]{1,8})(?!(?:true|false|null)(?![-\w]))[A-Za-z_][-\w]*"#, .string),
-        (#"\b(?<!\^)(?:true|false|null)\b"#, .number),
-        (
-            #"(?<![-\w])[-+]?(?:(?i:nan|infinity|inf)|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][-+]?\d[\d_]*)?"#
-                + nushellUnits + #"?)(?:(?![.\w])|(?=\.\.))"#, .number
-        ),
-        (#"(?<![-\w])0(?:x[0-9a-fA-F_]+|o[0-7_]+|b[01_]+)(?![.\w])|\b0[xob]\[[^\]\n]*\]"#, .number),
-        (#"\b\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:?\d{2}|Z)?)?\b"#, .number),
-        ("\\$[A-Za-z_]\\w*", .type),
-        ("^[ \\t]*@[\\w-]+", .attribute),
-        ("#(?<![^\\s;|(\\[{]#).*$", .comment),
-        ("r(#+)'[\\s\\S]*?'\\1", .string),
-        nushellInterpolated(quote: "\""),
-        nushellInterpolated(quote: "'"),
-        // A `def` or `extern` name in quotes is the command's name, not a string: neither of its quotes opens one.
-        (#""(?<!(?:\bdef|\bextern|\bdef --env|\bdef --wrapped) ")(?![ \t]*\[)(?:[^"\\]|\\[\s\S])*""#, .string),
-        singleQuotedPlain,
-        backQuoted,
-        // A path opens on its `../`, `./` or `~/` and then checks that nothing word-like precedes it.
-        ("(?:\\.\\./(?<![\\w$.]\\.\\./)|\\./(?<![\\w$.]\\./)|~/(?<![\\w$.]~/))[^\\s|;)\\]}]*", .string),
-        // `use` names a module by path (`std/util`, `./module.nu`); a plain name is a namespace.
-        (#"[ \t](?<=\buse[ \t])[.~/]?[-\w]*[./~][^\s\[]*"#, .string),
-        // `--glob=**/*.rs`: a flag's `=value` is a bare-word string.
-        (#"=(?<=--[\w-]{1,40}=)[^\s\]"'(),;\[{|}]+"#, .string),
-        // A word in a command's arguments is a bare-word string, and so is a glob where a command would be.
-        (nushellBareWord, .string),
-        (nushellListWord, .string),
-        (#"[*?](?<=(?:^|[|;({,=])[ \t]{0,8}[*?])[^\]"'(),;\[{|}\s]*"#, .string),
-    ]
+    static let nushell: [(String, TokenKind)] =
+        nushellCommandStarts.map { ($0 + #"(?![0-9])[.\w][-!.\w]*+"# + nushellNotKey, TokenKind.type) }
+        + nushellCommandStarts.map {
+            ($0 + "(?:(?:ansi|char) \\w+|" + prefixTree(Set(nushellBuiltins)) + ")(?![-\\w])" + nushellNotKey, TokenKind.keyword)
+        } + [
+            (#"\b(?<![-./:\\])(?:break|continue|else(?: if)?|for|if|loop|mut|return|try|while|catch|finally)(?![-./:\w\\])"#, .keyword),
+            (#" (?:[-*+/]=?|//|\*\*|!=|[<=>]=?|[!=]~|\+\+=?|=>)(?= |$)"#, .keyword),
+            (#"\||\.\.(?:\.(?=[^\]}\s])|<)?"#, .keyword),
+            ("[ (]" + nushellWordOperators + "(?=[ )]|$)", .keyword),
+            (#"[\s(\[]-{1,2}(?=[A-Za-z?])"#, .keyword),
+            (#":(?<=[\w?"']:)(?=[ \t])"#, .keyword),
+            (#"(?:\??:|->)[ \t]*\w+(?:-\w+)*"#, .type),
+            (#"\b(?:list|record|table|oneof)<[^>\n]*>|\]:[ \t]*\[[^\]\n]*\]"#, .type),
+            (#"\b(?:export[ \t]+)?(?:def|extern)(?:[ \t]+--\w+)*[ \t]+(?:[-\w]+|"[- \w]+"|'[- \w]+'|`[- \w]+`)"#, .function),
+            (#"\b(?:export[ \t]+)?alias[ \t]+[-!\w]+(?=[ \t]*=)"#, .function),
+            (#"\b(?:export[ \t]+)?(?:def(?:[ \t]+--\w+)*|extern|alias)\b"#, .keyword),
+            (#"^[ \t]*(?:export[ \t]+)?use\b.*$"#, .keyword),
+            // In a record literal (`{name: reload, qty: 12}`) a key is a name, the colon after it the operator, and a
+            // bare value a bare-word string; the signature rule above would paint the value a type.
+            (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*\??:[ \t])(?<=[{,][ \t]{0,8})[A-Za-z_][-\w]*\??"#, .property),
+            (nushellInRecord + #":(?<=[\w?]:)(?=[ \t])"#, .keyword),
+            (nushellInRecord + #"\b(?=[A-Za-z_][-\w]*[ \t]*[,}])(?<=:[ \t]{1,8})(?!(?:true|false|null)(?![-\w]))[A-Za-z_][-\w]*"#, .string),
+            (#"\b(?<!\^)(?:true|false|null)\b"#, .number),
+            (
+                #"(?<![-\w])[-+]?(?:(?i:nan|infinity|inf)|\d[\d_]*(?:\.\d[\d_]*)?(?:[eE][-+]?\d[\d_]*)?"#
+                    + nushellUnits + #"?)(?:(?![.\w])|(?=\.\.))"#, .number
+            ),
+            (#"(?<![-\w])0(?:x[0-9a-fA-F_]+|o[0-7_]+|b[01_]+)(?![.\w])|\b0[xob]\[[^\]\n]*\]"#, .number),
+            (#"\b\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:?\d{2}|Z)?)?\b"#, .number),
+            ("\\$[A-Za-z_]\\w*", .type),
+            ("^[ \\t]*@[\\w-]+", .attribute),
+            ("#(?<![^\\s;|(\\[{]#).*$", .comment),
+            ("r(#+)'[\\s\\S]*?'\\1", .string),
+            nushellInterpolated(quote: "\""),
+            nushellInterpolated(quote: "'"),
+            // A `def` or `extern` name in quotes is the command's name, not a string: neither of its quotes opens one.
+            (#""(?<!(?:\bdef|\bextern|\bdef --env|\bdef --wrapped) ")(?![ \t]*\[)(?:[^"\\]|\\[\s\S])*""#, .string),
+            singleQuotedPlain,
+            backQuoted,
+            // A path opens on its `../`, `./` or `~/` and then checks that nothing word-like precedes it.
+            ("(?:\\.\\./(?<![\\w$.]\\.\\./)|\\./(?<![\\w$.]\\./)|~/(?<![\\w$.]~/))[^\\s|;)\\]}]*", .string),
+            // `use` names a module by path (`std/util`, `./module.nu`); a plain name is a namespace.
+            (#"[ \t](?<=\buse[ \t])[.~/]?[-\w]*[./~][^\s\[]*"#, .string),
+            // `--glob=**/*.rs`: a flag's `=value` is a bare-word string.
+            (#"=(?<=--[\w-]{1,40}=)[^\s\]"'(),;\[{|}]+"#, .string),
+            // A word in a command's arguments is a bare-word string, and so is a glob where a command would be.
+            (nushellBareWord, .string),
+            (nushellListWord, .string),
+            (#"[*?](?<=(?:^|[|;({,=])[ \t]{0,8}[*?])[^\]"'(),;\[{|}\s]*"#, .string),
+        ]
 
     /// Where a command starts: a line's first word, or the first after `|`, `;`, `(`, `{`, `,` or `=`.
     private static let nushellCommandStart = #"(?:^|[|;({,=])[ \t]*\^?"#
+
+    /// ``nushellCommandStart`` as its two kinds of start, a rule each: a pattern that opens on `^` or on one of a
+    /// few characters is only tried there, while their alternation is tried at every character. A match of one
+    /// never holds the start of the other (neither crosses a line or holds `|;({,=`), so the pair paints what the
+    /// one pattern did.
+    private static let nushellCommandStarts = [#"^[ \t]*\^?"#, #"[|;({,=][ \t]*\^?"#]
 
     /// After a word where a command would start: not a record key, a word followed by `:` and a blank (`{name: x}`).
     private static let nushellNotKey = #"(?!\??:[ \t])"#

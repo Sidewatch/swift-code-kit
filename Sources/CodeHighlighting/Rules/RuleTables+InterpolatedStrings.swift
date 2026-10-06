@@ -18,9 +18,9 @@ import Foundation
 /// line's end; a CONTINUATION from a line break in the literal's text to the next hole, the close or the
 /// next line break. A string inside a hole is matched by the head rule like any other, so holes nest.
 ///
-/// That pass searches again from the end of the last match it accepted and treats that point as the start
-/// of the text, so a look back from a tail cannot reach the literal's opening delimiter. A tail is instead
-/// scoped (``RuleScope``) to the whole literals one forward scan finds, holes included, and looks back only
+/// A look back alone cannot tell whether a `}` closes a hole inside a literal or a brace in code: the
+/// literal's opening delimiter may lie any distance back, and a bounded look back cannot reach it. A tail is
+/// instead scoped (``RuleScope``) to the whole literals one forward scan finds, holes included, and looks back only
 /// at the hole's last characters; a continuation is scoped to the text after a hole, which a second scan
 /// finds piece by piece (so a line break inside a hole that spans lines opens none). Both scans step over
 /// `skip` (comments, the other string forms) to keep in step with the quotes. A scan starts some way before

@@ -96,7 +96,16 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         // slice — markup and embedded spans are disjoint, so order between them
         // doesn't matter and neither can erase the other.
         storage.addAttribute(.foregroundColor, value: colors.foreground, range: clip)
+        // The parts paint out of document order: into a buffer, copied over once in order.
+        let buffer = PaintBuffer(text: ns, target: storage, clip: clip, foreground: colors.foreground)
+        paintParts(into: buffer, ns: ns, clip: clip)
+        buffer.flush()
+    }
 
+    /// Every part of the document within `clip` — embedded regions, the markup between them, its expressions,
+    /// chunk edges and frontmatter fences — painted into `storage`.
+    @MainActor
+    private func paintParts(into storage: NSTextStorage, ns: NSString, clip: NSRange) {
         let chunks = Self.isExecutableMarkdown(language) ? Self.chunks(in: ns) : []
         let regions =
             Self.isExecutableMarkdown(language) ? Self.markdownRegions(in: ns, chunks: chunks) : Self.regions(in: ns, language: language)

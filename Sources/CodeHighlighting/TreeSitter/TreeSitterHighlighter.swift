@@ -1184,9 +1184,12 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         if !tags.code.isEmpty, intersectsClip(tags.code), let tree = combinedParse(js, ns: ns, ranges: tags.code) {
             hits += collectHits(js.highlights, tree: tree, source: ns, offset: offset, clip: clip, nextBase: &nextBase)
         }
+        // Each expression parses as its own text, as a one-range injection site does: placing it in the whole
+        // document copied all of the document once per expression.
         for e in tags.expressions where intersectsClip([e]) {
-            guard let tree = combinedParse(js, ns: ns, ranges: [e]) else { continue }
-            hits += collectHits(js.highlights, tree: tree, source: ns, offset: offset, clip: clip, nextBase: &nextBase)
+            let expression = ns.substring(with: e) as NSString
+            guard let tree = combinedParse(js, ns: expression, ranges: [NSRange(location: 0, length: expression.length)]) else { continue }
+            hits += collectHits(js.highlights, tree: tree, source: expression, offset: offset + e.location, clip: clip, nextBase: &nextBase)
         }
         return hits
     }

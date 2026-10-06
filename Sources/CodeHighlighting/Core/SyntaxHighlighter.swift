@@ -89,7 +89,7 @@ public final class SyntaxHighlighter: CodeHighlighter {
         // the storage is built (and rebuilt on font-size change), so leave it alone.
         storage.addAttribute(.foregroundColor, value: colors.foreground, range: range)
 
-        let text = storage.string
+        let text = Self.fixedText(of: storage, painting: range.length)
         var canvas = paintedCanvas(text, in: range)
 
         // Same leftover-marker tint as the tree-sitter tier: a marker whose run
@@ -112,14 +112,23 @@ public final class SyntaxHighlighter: CodeHighlighter {
     /// `range.location`), only the *matches* are confined to `range`.
     func paint(_ storage: NSTextStorage, in range: NSRange) {
         guard range.length > 0 else { return }
-        paintedCanvas(storage.string, in: range).flush(into: storage, colors: colors)
+        paintedCanvas(Self.fixedText(of: storage, painting: range.length), in: range).flush(into: storage, colors: colors)
     }
 
     /// ``paint(_:in:)`` over several ranges, reading the storage's text once: a Quarto document's chunks
     /// and the prose between them are hundreds of ranges, and each read copies the whole document.
     func paint(_ storage: NSTextStorage, in ranges: [NSRange]) {
-        let text = storage.string
+        let text = Self.fixedText(of: storage, painting: ranges.reduce(0) { $0 + $1.length })
         for range in ranges where range.length > 0 { paintedCanvas(text, in: range).flush(into: storage, colors: colors) }
+    }
+
+    /// The text the rules scan to paint `length` characters: for a large paint an immutable copy of the
+    /// storage's, as a scan of the storage's own mutable string runs about twice as slow; for the few lines
+    /// an edit repaints, the storage's own, so a keystroke never copies the whole document. A
+    /// ``PaintBuffer``'s text is immutable already.
+    private static func fixedText(of storage: NSTextStorage, painting length: Int) -> String {
+        if let buffer = storage as? PaintBuffer { return buffer.string }
+        return length < 16_384 ? storage.string : NSString(string: storage.string) as String
     }
 
     /// Every rule's paint over `range` of `text`, not yet in any storage.
@@ -244,11 +253,26 @@ public final class SyntaxHighlighter: CodeHighlighter {
                 if let cached = next[i], cached.location == NSNotFound { continue }
                 if next[i] == nil || next[i]!.location < pos {
                     // A scoped rule's match that starts outside its regions is skipped: search on from
-                    // the character after it.
+                    // the character after it. A search that would start outside every region starts at
+                    // the next region instead: the gap holds no match the rule may keep, and scanning it
+                    // with a pattern that opens with a look back costs a pass over the text per rule. The
+                    // jump finds what the scan through the gap would have: a word boundary at the region
+                    // reads the character before it (transparent bounds), and `^` and `\A` match there only
+                    // where the text has them (no anchoring bounds).
                     var from = pos
                     var found: NSRange?
+                    var options: NSRegularExpression.MatchingOptions = []
                     while from < end {
-                        found = rules[i].regex.firstMatch(in: text, options: [], range: NSRange(location: from, length: end - from))?.range
+                        if let regions = allowed[i] {
+                            guard let start = RuleScope.firstStart(atOrAfter: from, in: regions), start < end else { break }
+                            if start > from {
+                                from = start
+                                options = [.withTransparentBounds, .withoutAnchoringBounds]
+                            }
+                        }
+                        let search = NSRange(location: from, length: end - from)
+                        found = rules[i].regex.firstMatch(in: text, options: options, range: search)?.range
+                        options = []
                         guard let f = found, let regions = allowed[i], !RuleScope.contains(f.location, in: regions) else { break }
                         from = f.location + 1
                         found = nil
