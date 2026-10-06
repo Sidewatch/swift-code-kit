@@ -11,13 +11,15 @@
 import Foundation
 
 /// LaTeX: `%` comments (the language table's `exactLineComment`), where an escaped `\%` is a percent sign;
-/// `\commands` and `\@internal` names; `{…}` groups; `$…$` math, which an escaped `\$` does not open or close
-/// (`$$` pairs up as an empty span, leaving display math code); numbers and dimensions (`2.5`, `1cm`, `3pt`).
+/// `\commands` (with a starred form's `*`), `\@internal` names, control symbols (`\,`) and the `\\` line
+/// break; `{…}` groups; the math delimiters `$`, `$$`, `\(`, `\)`, `\[` and `\]` as strings, with the math
+/// between them painted as code (its commands and numbers), as VS Code paints it; numbers and dimensions
+/// (`2.5`, `1cm`, `3pt`). A backslash escaped by another (`\\c`) starts no command.
 extension RuleTables {
     static let latex: [(String, TokenKind)] = [
-        ("\\\\[A-Za-z@]+", .keyword),
+        ("(?<!(?<!\\\\)\\\\)\\\\(?:[A-Za-z@]+\\*?|[^A-Za-z@\\s()\\[\\]$])", .keyword),
         ("\\{[^{}]*\\}", .type),
-        ("(?<![\\w\\\\])\\d+(?:\\.\\d+)?(?:pt|em|ex|cm|mm|in|bp|pc|sp|mu|dd|cc)?(?![A-Za-z])", .number),
-        ("(?<!\\\\)\\$(?:[^$\\\\]|\\\\[\\s\\S])*\\$", .string),
+        ("(?<![A-Za-z\\d.])(?<!(?<!\\\\)\\\\)\\d+(?:\\.\\d+)?(?:pt|em|ex|cm|mm|in|bp|pc|sp|mu|dd|cc)?", .number),
+        ("(?<!(?<!\\\\)\\\\)(?:\\$\\$?|\\\\[()\\[\\]])", .string),
     ]
 }

@@ -24,6 +24,11 @@ extension RuleTables {
         ("\\b[a-z][\\w]*:(?!=)", .function),
         ("\\b[A-Z][\\w]*\\b", .type),
         ("\\|[\\s\\w]+\\|", .variable),
-        ("\\b\\d+r[0-9A-Z]+\\b|\\b\\d+(\\.\\d+)?(?:[edq]-?\\d+|s\\d*)?\\b", .number),
+        // A literal's minus sign is part of it (`-7`, `-16rFF`); a radix number may carry a fraction and an
+        // exponent (`16r1F.8`, `2r1e4`).
+        (
+            "(?:(?<=[\\s(#\\[{:=^.])-)?\\b(?:\\d+r[0-9A-Z]+(?:\\.[0-9A-Z]+)?(?:e-?\\d+)?|\\d[\\d_]*(\\.\\d+)?(?:[edq]-?\\d+|s\\d*)?)\\b",
+            .number
+        ),
     ]
 }

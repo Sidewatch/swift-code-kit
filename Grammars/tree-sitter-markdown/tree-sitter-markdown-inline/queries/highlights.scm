@@ -54,3 +54,6 @@
 
 ; NOTE: extension not enabled by default
 ; (wiki_link ["[" "|" "]"] @punctuation.delimiter)
+
+; Sidewatch: a hard line break (a backslash ending the line) is punctuation, not an escaped character.
+(hard_line_break) @plain

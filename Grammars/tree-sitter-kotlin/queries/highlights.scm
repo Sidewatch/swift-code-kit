@@ -104,7 +104,8 @@
 (setter
 	("set") @function.builtin)
 
-(primary_constructor) @constructor
+; Sidewatch: upstream captured the whole `(primary_constructor) @constructor`, painting every
+; parameter of `class Node(val l: Tree, …)` in the type colour; the parameters keep their own captures.
 (secondary_constructor
 	("constructor") @constructor)
 
@@ -273,7 +274,8 @@
 
 ("fun") @keyword.function
 
-(jump_expression) @keyword.return
+; Sidewatch: the jump keyword only, not the whole `throw IllegalStateException("x")` it starts.
+(jump_expression ["throw" "return" "continue" "break" "return@" "continue@" "break@"] @keyword.return)
 
 [
 	"if"
@@ -380,7 +382,22 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "is" "in" "as" "as?" ] @keyword.operator
-[ "by" "companion" "operator" "infix" "internal" "external" "tailrec" "inline" "crossinline" "noinline" "reified" "vararg" "lateinit" "const" "open" "abstract" "override" "data" "sealed" "annotation" "enum" "suspend" "actual" "expect" "inner" "value" "private" "protected" "public" "final" "typealias" "init" "get" "set" "constructor" ] @keyword
+; Soft keywords are keywords only where they act as one: every one of them is also a `simple_identifier`
+; (`fun get()`, `fun inner()`, a parameter named `value`), and an anonymous-token list would paint the name too.
+; Modifiers are already whole `*_modifier` nodes above.
+(explicit_delegation "by" @keyword)
+(property_delegate "by" @keyword)
+(companion_object "companion" @keyword)
+(object_literal "data" @keyword)
+(type_alias "typealias" @keyword)
+(anonymous_initializer "init" @keyword)
+(getter "get" @keyword)
+(setter "set" @keyword)
+(secondary_constructor "constructor" @keyword)
+(type_constraints "where" @keyword)
+(type_modifiers "suspend" @keyword)
+(anonymous_function "suspend" @keyword)
+(delegation_specifier "suspend" @keyword)
 
 ; An import alias is a `type_identifier` to this grammar whatever it renames, so
 ; `import kotlin.math.max as maximum` painted `maximum` type-colored while the call
@@ -389,3 +406,19 @@
 ; (17 Sep 2026.)
 (import_alias (type_identifier) @plain)
 ((import_alias (type_identifier) @type) (#match? @type "^[A-Z]"))
+
+; A declared function's name is its one direct `simple_identifier`, wherever modifiers, type parameters or a
+; receiver (`fun Point.ext()`) put it; upstream's anchored `. (simple_identifier)` missed all of those.
+; Repeated last so it outranks the soft-keyword tokens (`fun get()`, `fun inner()`).
+(function_declaration (simple_identifier) @function)
+
+; An interpolation is code inside the string: `$name`, `${expr}` and their delimiters.
+(interpolated_identifier) @identifier.plain
+(string_literal
+	[
+		(interpolation_identifier_start)
+		(interpolated_identifier)
+		(interpolation_expression_start)
+		(interpolated_expression)
+		(interpolation_expression_end)
+	] @code)

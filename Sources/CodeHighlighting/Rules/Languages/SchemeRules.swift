@@ -29,6 +29,7 @@ extension RuleTables {
     static let scheme: [(String, TokenKind)] = lispDialect(
         specialForms: schemeSpecialForms,
         constants: ["#t", "#f", "#true", "#false"],
-        literals: [lispCharacter, schemeDatumComment, ("\\|(?:[^|\\\\]|\\\\.)*\\|", .string)]
+        literals: [lispCharacter, schemeDatumComment, ("\\|(?:[^|\\\\]|\\\\.)*\\|", .string)],
+        definitions: [lispDefinedName(after: ["define"], parenthesised: true)]
     )
 }

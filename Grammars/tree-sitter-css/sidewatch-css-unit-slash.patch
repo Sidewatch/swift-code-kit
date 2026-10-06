@@ -1,0 +1,59 @@
+From 994a7e2223b2733e487474582b883c05ce1e1edd Mon Sep 17 00:00:00 2001
+From: Sidewatch <noreply@example.com>
+Date: Tue, 6 Oct 2026 16:38:13 +0700
+Subject: [PATCH] A unit outranks a plain value at the same character
+
+font: 16px/1.5 read as the integer 16 followed by the plain value px/1.5; the
+unit now wins, so the value is a binary expression of a length and a number.
+---
+ grammar.js             |  4 +++-
+ test/corpus/modern.txt | 21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/grammar.js b/grammar.js
+index 33362ea..09ec47a 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -546,7 +546,9 @@ export default grammar({
+       optional($.unit),
+     ),
+ 
+-    unit: _ => token.immediate(/[a-zA-Z%]+/),
++    // A unit outranks a plain value starting at the same character: `16px/1.5` is a length over a number,
++    // not `16` followed by the word `px/1.5`.
++    unit: _ => token.immediate(prec(1, /[a-zA-Z%]+/)),
+ 
+     grid_value: $ => seq(
+       '[',
+diff --git a/test/corpus/modern.txt b/test/corpus/modern.txt
+index 620f8d3..3a270d2 100644
+--- a/test/corpus/modern.txt
++++ b/test/corpus/modern.txt
+@@ -712,3 +712,24 @@ a { color: red;; margin: 0; }
+       (declaration
+         (property_name)
+         (integer_value)))))
++
++================================================================================
++A unit before a slash
++================================================================================
++
++a { font: 16px/1.5 serif; }
++
++--------------------------------------------------------------------------------
++
++(stylesheet
++  (rule_set
++    (selectors
++      (tag_name))
++    (block
++      (declaration
++        (property_name)
++        (binary_expression
++          (integer_value
++            (unit))
++          (float_value))
++        (plain_value)))))
+-- 
+2.56.0
+

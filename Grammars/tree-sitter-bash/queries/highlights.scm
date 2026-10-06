@@ -64,3 +64,36 @@
 (number) @number
 ; `return`, `break`, `continue` and `exit` are builtins the grammar parses as command names; they are flow keywords.
 ((command_name (word) @keyword) (#match? @keyword "^(return|break|continue|exit)$"))
+; The operators of a parameter expansion (`${x:-…}`, `${#x}`, `${!x}`, `${x%%.*}`, `${x//a/b}`, `${x@Q}`) and an
+; all-elements subscript (`${a[@]}`, `${a[*]}`) are code inside a double-quoted string, as VS Code scopes them.
+(expansion
+  operator: _ @plain)
+(subscript
+  index: (word) @plain
+  (#match? @plain "^[@*]$"))
+; Backtick command substitution: the backticks are string punctuation, as VS Code paints them.
+[ "`" "``" ] @string
+; A word that opens with a backslash escape (`\$`, `\'`, `\"`, `\\`, `\#…`) is quoted text.
+((word) @string
+  (#match? @string "^\\\\"))
+; A decimal word (`3.14159`) is a number.
+((word) @number
+  (#match? @number "^[0-9]+\\.[0-9]+$"))
+; A quoted part of a dash-led argument (`-"$pid"`) stays a string under the option paint above.
+(command
+  argument: (concatenation
+    (string) @string))
+(command
+  argument: (concatenation
+    (string
+      [(simple_expansion) (expansion)] @plain)))
+(command
+  argument: (concatenation
+    (string
+      [(simple_expansion (variable_name) @property) (expansion (variable_name) @property)])))
+; The glob pattern of a removal or substitution (`${x%/*}`, `${x##*/}`), a positional-list subject (`${@:2}`) and
+; arithmetic operators inside a string (`"$((n * 2))"`) are code too.
+(expansion
+  [(regex) (special_variable_name)] @plain)
+(binary_expression
+  operator: _ @plain)

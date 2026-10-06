@@ -10,16 +10,18 @@
 
 import Foundation
 
-/// Liquid (Shopify and Jekyll): the `{% comment %}` and `{% doc %}` blocks, `{% # … %}` inline
-/// comments and `#` lines inside a `{% liquid %}` tag, the `{% %}` / `{{ }}` delimiters, the tag
-/// words, `| filter:` names, strings (which have no escapes), numbers and the literal constants, with
-/// the HTML around them.
+/// Liquid (Shopify and Jekyll): the `{% comment %}` blocks, the text of `{% doc %}` blocks and of
+/// `{% # … %}` inline comments, and `#` lines inside a `{% liquid %}` tag, the `{% %}` / `{{ }}`
+/// delimiters, the tag words, `| filter:` names, strings (which have no escapes), numbers and the
+/// literal constants, with the HTML around them.
 extension RuleTables {
     static let liquid: [(String, TokenKind)] =
         [
             ("\\{%-?\\s*comment\\s*-?%\\}[\\s\\S]*?\\{%-?\\s*endcomment\\s*-?%\\}", .comment),
-            ("\\{%-?\\s*doc\\s*-?%\\}[\\s\\S]*?\\{%-?\\s*enddoc\\s*-?%\\}", .comment),
-            ("\\{%-?\\s*#[\\s\\S]*?-?%\\}", .comment),
+            // A `{% doc %}` block's text and a `{% # … %}` tag's text are comments; the tags around them
+            // stay tags.
+            ("\\n(?<=\\{%-?[ \\t]{0,4}doc[ \\t]{0,4}-?%\\}\\n)[\\s\\S]*?(?=[ \\t]*\\{%-?\\s*enddoc\\b)", .comment),
+            ("#(?<=\\{%-?[ \\t]{0,8}#)[\\s\\S]*?(?=-?%\\})", .comment),
             (insideTemplateTag + "^[ \\t]*#[^\\n]*", .comment),
             htmlComment,
             // Liquid strings have no escapes: a backslash is a character, the next quote ends it.
@@ -39,6 +41,7 @@ extension RuleTables {
                 "stylesheet", "endstylesheet", "schema", "endschema", "style", "endstyle", "content_for", "block", "endblock",
             ]),
             templateTagConstants(["true", "false", "nil", "null", "blank", "empty"]),
-            (insideTemplateTag + "-?\\b\\d+(?:\\.\\d+)?\\b", .number),
+            // A number's digits up to any letter after them (`1.5e3` is 1.5 and the name `e3`).
+            (insideTemplateTag + "-?\\b\\d+(?:\\.\\d+)?", .number),
         ]
 }

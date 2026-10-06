@@ -34,5 +34,8 @@ extension RuleTables {
         ("\\b\\d+#[0-9a-zA-Z_]+\\b|\\b\\d[\\d_]*(\\.\\d[\\d_]*)?([eE][+-]?\\d+)?\\b", .number),
         // A character literal is one token, escape and all: `$a`, `$\n`, `$\x41`, `$\x{263A}`, `$\^A`, `$\101`.
         ("\\$(?:\\\\(?:x\\{[0-9A-Fa-f]+\\}|x[0-9A-Fa-f]{2}|[0-7]{1,3}|\\^.|.)|.)", .number),
+        // The character literals of a quote or a percent sign are resolved with the strings and comments, so
+        // `$"`, `$'` and `$%` open no string, quoted atom or comment.
+        ("\\$[\"'%]", .string),
     ]
 }

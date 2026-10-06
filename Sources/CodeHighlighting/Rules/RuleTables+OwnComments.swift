@@ -81,6 +81,13 @@ extension RuleTables {
         .caddyfile: ("(?:^|(?<=\\s))#.*$", .comment),
         // A Makefile `\#` is a literal hash (`SPECIAL = \# not a comment`).
         .makefile: ("(?<!\\\\)#.*$", .comment),
+        // A CoffeeScript `#{` opens a string's interpolation: a comment is a `#` that no `{` follows.
+        .coffeescript: ("#(?!\\{).*$", .comment),
+        // Crystal's `#{` likewise opens an interpolation, not a comment.
+        .crystal: ("#(?!\\{).*$", .comment),
+        // An AsciiDoc comment is a line that starts with `//` (`////` fences a comment block): a URL's
+        // `//` in the text is not one.
+        .asciidoc: ("^//(?!//).*$", .comment),
     ]
 
     /// A second comment form some languages have beside the one the language table records.

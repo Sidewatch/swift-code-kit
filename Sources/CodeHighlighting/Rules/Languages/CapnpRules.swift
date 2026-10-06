@@ -12,11 +12,12 @@ import Foundation
 
 /// Cap'n Proto: `#` comments (the language table adds them); `"…"` text and `0x"…"` data literals — there
 /// are no `'…'` strings; `@0x…` file and type IDs and `@N` ordinals; `$annotations`; the schema keywords and
-/// built-in types.
+/// built-in types; and every capitalised name as a type, the schema's convention (`:Point`, `List(Text)`,
+/// `struct Wrapper(T)`): a schema has no calls, so a name before `(` is a generic type.
 extension RuleTables {
     static let capnp: [(String, TokenKind)] = [
         ("(?:\\b0x)?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
-        callee,
+        ("\\b[A-Z]\\w*", .type),
         keywords([
             "annotation", "const", "enum", "extends", "group", "import", "interface", "struct", "union", "using",
             "embed", "stream",

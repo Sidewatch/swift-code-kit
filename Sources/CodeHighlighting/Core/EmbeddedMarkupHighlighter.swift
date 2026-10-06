@@ -14,6 +14,8 @@
 import AppKit
 import CodeLanguage
 import FoundationExtensions
+import struct SwiftTreeSitter.Node
+import class SwiftTreeSitter.Parser
 
 /// Highlighter for single-file components (`.astro`, `.vue`, `.svelte`), whose bodies stack
 /// several languages: Astro frontmatter → TypeScript, `<script>` → TS/JS/JSON and `<style>` →
@@ -115,9 +117,175 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
             for gap in Self.complement(of: painted, within: clip) {
                 markup.paint(storage, in: gap)
             }
+            paintExpressions(regions: regions, storage: storage, ns: ns, clip: clip)
         }
 
         if !chunks.isEmpty { paintChunkEdges(chunks, storage: storage, ns: ns, clip: clip) }
+        if language == .astro || Self.isExecutableMarkdown(language) { paintFrontmatterFences(storage: storage, ns: ns, clip: clip) }
+    }
+
+    /// The code in the markup — Svelte's and Astro's `{ … }`, Svelte's block tags, Vue's `{{ … }}` and
+    /// directive values — painted by the TypeScript grammar (TSX for Astro, whose expressions hold JSX), each
+    /// expression a statement of its own in one combined parse; the braces around one are punctuation.
+    @MainActor
+    private func paintExpressions(regions: [Region], storage: NSTextStorage, ns: NSString, clip: NSRange) {
+        let gaps = Self.complement(of: regions.map(\.range), within: NSRange(location: 0, length: ns.length))
+        let expressions: [TemplateExpression]
+        switch language {
+        case .svelte: expressions = TemplateExpressionScanner.svelte(in: ns, gaps: gaps)
+        case .astro: expressions = TemplateExpressionScanner.astro(in: ns, gaps: gaps)
+        case .vue: expressions = TemplateExpressionScanner.vue(in: ns, gaps: gaps)
+        default: return
+        }
+        guard let grammar = TreeSitterHighlighter.grammar(for: language == .astro ? .tsx : .typescript) else { return }
+        // Every visible expression in one parse: each is its own statement in a combined source, so one tree and one
+        // query pass serve them all, and its hits map back by the offset it was written at.
+        var pieces: [(expression: TemplateExpression, slice: NSRange, span: NSRange)] = []
+        var code = ""
+        var length = 0
+        for expression in expressions {
+            for brace in expression.braces {
+                let shown = NSIntersectionRange(brace, clip)
+                if shown.length > 0 { storage.addAttribute(.foregroundColor, value: colors.foreground, range: shown) }
+            }
+            let slice = NSIntersectionRange(expression.body, clip)
+            guard slice.length > 0 else { continue }
+            let piece = expression.prefix + ns.substring(with: expression.body) + expression.suffix + "\n;\n"
+            let pieceLength = (piece as NSString).length
+            pieces.append((expression, slice, NSRange(location: length, length: pieceLength)))
+            code += piece
+            length += pieceLength
+        }
+        guard !pieces.isEmpty else { return }
+        let parser = Parser()
+        try? parser.setLanguage(grammar.language)
+        guard let tree = parser.parse(code), let root = tree.rootNode else { return }
+        let errors = Self.errorRanges(in: root)
+        let spans = pieces.map(\.span)
+        var own = [[TreeSitterHighlighter.Hit]](repeating: [], count: pieces.count)
+        var base = 0
+        let source = code as NSString
+        for hit in TreeSitterHighlighter.collectHits(
+            grammar.highlights, tree: tree, source: source, offset: 0, clip: NSRange(location: 0, length: source.length), nextBase: &base)
+        {
+            let low = Self.pieceIndex(holding: hit.range.location, in: spans)
+            let shift =
+                pieces[low].expression.body.location - pieces[low].span.location - (pieces[low].expression.prefix as NSString).length
+            own[low].append((NSRange(location: hit.range.location + shift, length: hit.range.length), hit.pattern, hit.color))
+        }
+        // An error that crosses from one piece into another may have misread both: those pieces parse again alone.
+        // An error inside one piece is that piece's own, and parsing it alone would find the same.
+        var spoiled = Set<Int>()
+        for error in errors {
+            let first = Self.pieceIndex(holding: error.location, in: spans)
+            let last = Self.pieceIndex(holding: max(error.location, NSMaxRange(error) - 1), in: spans)
+            if last > first { spoiled.formUnion(first...last) }
+        }
+        var runs: [(range: NSRange, color: NSColor)] = []
+        for (index, piece) in pieces.enumerated() {
+            let hits = spoiled.contains(index) ? isolatedHits(piece.expression, grammar: grammar, parser: parser, ns: ns) : own[index]
+            runs += resolve(hits, over: piece.slice)
+        }
+        rewrite(clip, overlaying: runs, into: storage)
+    }
+
+    /// The colour runs of `slice` as `hits` resolve it: the highest pattern wins, and a hit leaves the code holes it
+    /// strictly contains (a template literal's `${…}`) to the hits inside them.
+    private func resolve(_ hits: [TreeSitterHighlighter.Hit], over slice: NSRange) -> [(range: NSRange, color: NSColor)] {
+        var palette: [NSColor] = [colors.foreground]
+        var desired = [Int](repeating: 0, count: slice.length)
+        let holes = hits.filter { $0.color === TreeSitterHighlighter.codeHole }.map(\.range)
+        for hit in hits.sorted(by: { $0.pattern < $1.pattern }) where hit.color !== TreeSitterHighlighter.codeHole {
+            let r = NSIntersectionRange(hit.range, slice)
+            guard r.length > 0 else { continue }
+            let inside = holes.filter { NSEqualRanges(NSIntersectionRange($0, hit.range), $0) && !NSEqualRanges($0, hit.range) }
+            var colour = palette.firstIndex { $0 === hit.color } ?? palette.count
+            if colour == palette.count { palette.append(hit.color) }
+            for i in r.location..<NSMaxRange(r) where !inside.contains(where: { NSLocationInRange(i, $0) }) {
+                desired[i - slice.location] = colour
+            }
+        }
+        var runs: [(range: NSRange, color: NSColor)] = []
+        var start = 0
+        while start < desired.count {
+            var end = start + 1
+            while end < desired.count, desired[end] == desired[start] { end += 1 }
+            runs.append((NSRange(location: slice.location + start, length: end - start), palette[desired[start]]))
+            start = end
+        }
+        return runs
+    }
+
+    /// Writes `runs` (ascending, disjoint) over `clip`, skipping each part that already wears its colour: a write in
+    /// the middle of a large document shifts the storage's attribute runs after it, so the fewer the better. The
+    /// storage's colours are read in one pass beside the runs.
+    @MainActor
+    private func rewrite(_ clip: NSRange, overlaying runs: [(range: NSRange, color: NSColor)], into storage: NSTextStorage) {
+        guard let first = runs.first, let last = runs.last else { return }
+        let span = NSIntersectionRange(NSRange(location: first.range.location, length: NSMaxRange(last.range) - first.range.location), clip)
+        guard span.length > 0 else { return }
+        var stale: [(range: NSRange, color: NSColor)] = []
+        var next = 0
+        storage.enumerateAttribute(.foregroundColor, in: span, options: []) { value, range, _ in
+            let existing = value as? NSColor
+            while next < runs.count, NSMaxRange(runs[next].range) <= range.location { next += 1 }
+            var index = next
+            while index < runs.count, runs[index].range.location < NSMaxRange(range) {
+                let run = runs[index]
+                let part = NSIntersectionRange(run.range, range)
+                if part.length > 0, !(existing === run.color), !(existing?.isEqual(run.color) ?? false) {
+                    if let previous = stale.last, NSMaxRange(previous.range) == part.location, previous.color === run.color {
+                        stale[stale.count - 1].range.length += part.length
+                    } else {
+                        stale.append((part, run.color))
+                    }
+                }
+                index += 1
+            }
+        }
+        for run in stale { storage.addAttribute(.foregroundColor, value: run.color, range: run.range) }
+    }
+
+    /// The index of the last of `spans` (ascending) that starts at or before `location`.
+    private static func pieceIndex(holding location: Int, in spans: [NSRange]) -> Int {
+        var low = 0
+        var high = spans.count - 1
+        while low < high {
+            let mid = (low + high + 1) / 2
+            if spans[mid].location <= location { low = mid } else { high = mid - 1 }
+        }
+        return low
+    }
+
+    /// `expression` parsed on its own, its hits in document offsets.
+    @MainActor
+    private func isolatedHits(
+        _ expression: TemplateExpression, grammar: TreeSitterHighlighter.Grammar, parser: Parser, ns: NSString
+    ) -> [TreeSitterHighlighter.Hit] {
+        let code = (expression.prefix + ns.substring(with: expression.body) + expression.suffix) as NSString
+        guard let tree = parser.parse(code as String) else { return [] }
+        var base = 0
+        return TreeSitterHighlighter.collectHits(
+            grammar.highlights, tree: tree, source: code, offset: expression.body.location - (expression.prefix as NSString).length,
+            clip: expression.body, nextBase: &base)
+    }
+
+    /// The ranges of the ERROR and MISSING nodes under `node`, descending only where an error lives.
+    private static func errorRanges(in node: Node) -> [NSRange] {
+        guard node.hasError else { return [] }
+        if node.nodeType == "ERROR" || node.isMissing { return [node.range] }
+        return (0..<node.childCount).flatMap { index in node.child(at: index).map { errorRanges(in: $0) } ?? [] }
+    }
+
+    /// The `---` lines around the frontmatter are comments, as VS Code scopes Astro's and Markdown's.
+    @MainActor
+    private func paintFrontmatterFences(storage: NSTextStorage, ns: NSString, clip: NSRange) {
+        guard let fence = Self.frontmatter(in: ns) else { return }
+        let lines = [ns.lineRange(for: NSRange(location: 0, length: 0)), ns.lineRange(for: NSRange(location: fence.end - 1, length: 0))]
+        for line in lines {
+            let visible = NSIntersectionRange(line, clip)
+            if visible.length > 0 { storage.addAttribute(.foregroundColor, value: colors.color(for: .comment), range: visible) }
+        }
     }
 
     /// The parts of a Quarto / R Markdown block that are not code: a chunk's fence lines are keywords
@@ -238,6 +406,9 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
         if isExecutableMarkdown(language) { return markdownRegions(in: ns, chunks: chunks(in: ns)) }
 
         out += tagRegions(in: ns, from: scanFrom, host: language)
+        if language == .vue {
+            out = (out + customBlockRegions(in: ns)).sorted { $0.range.location < $1.range.location }
+        }
         return out
     }
 
@@ -397,6 +568,31 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
             loc = NSMaxRange(line)
         }
         return nil  // unterminated fence: treat the whole file as markup
+    }
+
+    /// A Vue custom block that names its language: `<i18n lang="json">`, `<custom lang="yaml">`, at a line's start.
+    /// Group 1 is the tag name, 2 the language.
+    private static let customBlockTag = try? NSRegularExpression(
+        pattern: "^<([a-z][\\w-]*)\\b[^>\\n]*\\blang\\s*=\\s*[\"']?([\\w+-]+)[^>\\n]*>", options: [.anchorsMatchLines])
+
+    /// The bodies of Vue's custom blocks with a `lang` naming a language Sidewatch knows (`<i18n lang="json">`), each
+    /// painted in that language. `<script>` and `<style>` are ``tagRegions(in:from:host:)``'s.
+    private static func customBlockRegions(in ns: NSString) -> [Region] {
+        guard let customBlockTag else { return [] }
+        var out: [Region] = []
+        customBlockTag.enumerateMatches(in: ns as String, options: [], range: NSRange(location: 0, length: ns.length)) { match, _, _ in
+            guard let match else { return }
+            let name = ns.substring(with: match.range(at: 1))
+            guard name != "script", name != "style", name != "template" else { return }
+            let lang = ns.substring(with: match.range(at: 2)).lowercased()
+            guard let language = Language(rawValue: lang == "yml" ? "yaml" : lang), language != .plainText else { return }
+            let bodyStart = NSMaxRange(match.range)
+            let closing = ns.range(
+                of: "</\(name)", options: .caseInsensitive, range: NSRange(location: bodyStart, length: ns.length - bodyStart))
+            guard closing.location != NSNotFound, closing.location > bodyStart else { return }
+            out.append(Region(range: NSRange(location: bodyStart, length: closing.location - bodyStart), language: language))
+        }
+        return out
     }
 
     /// Opening `<script …>` / `<style …>` tags. Attributes can't contain `>`,

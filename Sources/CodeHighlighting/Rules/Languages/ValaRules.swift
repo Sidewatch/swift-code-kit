@@ -29,6 +29,6 @@ extension RuleTables {
                 "bool", "char", "uchar", "int", "uint", "short", "ushort", "long", "ulong", "size_t", "ssize_t", "int8", "uint8",
                 "int16", "uint16", "int32", "uint32", "int64", "uint64", "unichar", "float", "double", "string", "time_t",
             ],
-            constants: ["true", "false", "null"], stringPrefix: "@?"
+            declarations: cTypeDeclarationKeywords + ["errordomain"], constants: ["true", "false", "null"], stringPrefix: "@?"
         )
 }

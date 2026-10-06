@@ -36,7 +36,11 @@ extension RuleTables {
                 "sort", "stcox", "stset", "summarize", "sum", "syntax", "sysuse", "table", "tabstat", "tabulate", "tab",
                 "teffects", "tempfile", "tempname", "tempvar", "test", "testparm", "timer", "tokenize", "tostring", "ttest",
                 "twoway", "use", "using", "version", "which", "while", "xtreg", "xtset",
+                // Commands and `set` / `estimates` / `frame` subcommands that read as words of their own.
+                "alpha", "copy", "gamma", "impute", "mean", "more", "on", "se", "simulate", "total", "type", "vif",
             ], .keyword),
+        // A merge's match type: `m:1`, `1:m`, `m:m`.
+        ("\\bm(?=:[1m]\\b)|(?<=\\b[1m]:)m\\b", .keyword),
         wordTrie(
             [
                 "byte", "int", "long", "float", "double", "str", "strL", "real", "string", "numeric", "pointer",

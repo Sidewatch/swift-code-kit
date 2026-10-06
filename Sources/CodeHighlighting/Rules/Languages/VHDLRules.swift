@@ -12,12 +12,18 @@ import Foundation
 
 /// VHDL: the IEEE 1076-2019 reserved words in any case, `"…"` strings with `""` escapes, `'c'`
 /// character literals (an attribute tick such as `clk'event` is not one), bit strings (`X"FF"`,
-/// `12SX"7FF"`) and based literals (`16#FF#`) as numbers, the standard types.
+/// `12SX"7FF"`) and based literals (`16#FF#`) as numbers, the standard types, and the name an `entity`,
+/// `architecture … of`, `component`, `configuration` or `package` declares (or an `end` repeats) as a type.
 extension RuleTables {
     static let vhdl: [(String, TokenKind)] = [
         // A string's quote never follows a letter or digit: that `"` closes a bit string (`X"FF"`).
         ("(?<![A-Za-z0-9\"])\"(?:[^\"\\n]|\"\")*\"", .string),
         ("(?<![\\w)\\]])'.'", .string),
+        // The name a design unit or record declares, or its `end` repeats, is a type; the keywords repaint below.
+        (
+            "(?i)\\b(?:entity|architecture|component|configuration|package(?:[ \\t]+body)?|end[ \\t]+(?:entity|architecture|component|configuration|package|record|units))[ \\t]+[a-z]\\w*(?:[ \\t]+of[ \\t]+[a-z]\\w*)?",
+            .type
+        ),
         wordTrie(vhdlReservedWords, .keyword, caseInsensitive: true),
         (
             "(?i)\\b(std_u?logic(?:_vector)?|u?x01z?|integer|natural|positive|boolean|bit(?:_vector)?|real|time|delay_length|string|character|severity_level|file_open_kind|line|text|(?:un)?signed|sfixed|ufixed|float(?:32|64|128)?|boolean_vector|integer_vector|real_vector|time_vector)\\b",

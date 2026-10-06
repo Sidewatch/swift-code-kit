@@ -53,11 +53,19 @@ extension RuleTables {
         .number
     )
 
+    /// The keywords that declare a type, each followed by the type's name: `struct Point`, `enum class
+    /// Mode`, `template <typename T>`.
+    static let cTypeDeclarationKeywords: [String] = [
+        "enum[ \\t]+class", "enum[ \\t]+struct", "struct", "union", "enum", "class", "typename", "interface",
+    ]
+
     /// A C-dialect table: comments, `"…"` strings (with `stringPrefix` before the quote; a trailing `\`
     /// continues one), C++ raw strings when `rawStrings`, `'…'` character literals that are never the
-    /// digit separator in `1'000`, `#include <path>`, preprocessor directives, then the words.
+    /// digit separator in `1'000`, `#include <path>`, preprocessor directives, the name after each of
+    /// `declarations` as a type, then the words.
     static func cDialect(
         keywords words: [String], types typeWords: [String] = [], typePatterns: [String] = [],
+        declarations: [String] = cTypeDeclarationKeywords,
         constants constantWords: [String] = ["true", "false", "NULL", "nullptr"], stringPrefix: String = "(?:u8|[uUL])?",
         rawStrings: Bool = false, blockComment block: (String, TokenKind) = blockComment
     ) -> [(String, TokenKind)] {
@@ -70,8 +78,12 @@ extension RuleTables {
             ("(?<=include|import)[ \\t]*<[^>\\n]*>", .string),
             ("\\b[A-Za-z_]\\w*(?=[ \\t]*\\()(?<!\\b" + notACall + ")", .function),
             ("^[ \\t]*#[ \\t]*[A-Za-z_]+", .keyword),
-            keywords(words),
         ]
+        if !declarations.isEmpty { rules.append(declaration(after: declarations)) }
+        rules.append(keywords(words))
+        // A call of the qualified `::operator new(n)` / `::operator delete(p)` functions; the word opens the match, so the
+        // lookbehind runs only there.
+        rules.append(("\\b(?:new|delete)\\b(?<=::operator[ \\t]{0,4}(?:new|delete))", .function))
         if !typeWords.isEmpty { rules.append(types(typeWords)) }
         rules += typePatterns.map { ($0, .type) }
         if !constantWords.isEmpty { rules.append(constants(constantWords)) }

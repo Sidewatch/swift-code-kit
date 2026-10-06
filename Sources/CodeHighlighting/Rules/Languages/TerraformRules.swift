@@ -26,11 +26,15 @@ extension RuleTables {
         hashComment,
         lineComment,
         blockComment,
-        (#"<<-?([A-Za-z_][\w-]*)[ \t]*\n[\s\S]*?^[ \t]*\1[ \t]*$"#, .string),
-        // A string that is not a name label, nor the gap between two labels (`" "` in `"a" "b" {`).
+        // A heredoc from its marker (the `<<` or `<<-` before it is an operator) to the line holding only the marker.
+        // The lookbehind runs only at capitals, the markers' convention: at every letter it is slow. A lowercase
+        // marker's heredoc takes its `<<` with it.
+        (#"([A-Z_])(?<=<<.|<<-.)([\w-]*)[ \t]*\n[\s\S]*?^[ \t]*\1\2[ \t]*$"#, .string),
+        (#"<<-?([a-z][\w-]*)[ \t]*\n[\s\S]*?^[ \t]*\1[ \t]*$"#, .string),
+        // A string that is not a name label, nor the blank gap between two labels (`" "` in `"a" "b" {`).
         (
-            "(?!\(hclNameLabel)\(hclRestOfBlockHeader))\"" + dollarBraceStringBody(multiline: false)
-                + "\"(?![^\"\\n]*\"\(hclRestOfBlockHeader))",
+            "(?!\(hclNameLabel)\(hclRestOfBlockHeader))(?!\"[ \\t]*\"[^\"\\n]*\"\(hclRestOfBlockHeader))\""
+                + dollarBraceStringBody(multiline: false) + "\"",
             .string
         ),
         (hclNameLabel + "(?=\(hclRestOfBlockHeader))", .type),

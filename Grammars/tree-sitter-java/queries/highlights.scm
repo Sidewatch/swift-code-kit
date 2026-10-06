@@ -157,3 +157,21 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "int" "byte" "char" "double" "float" "long" "short" ] @type.builtin
+
+; Binary literals (`0b1010_0101`) are numbers like the other integer forms.
+(binary_integer_literal) @number
+
+; A constructor declaration names a function (VS Code's `entity.name.function`), and so does an annotation
+; type's element (`String value() default "none";`).
+(constructor_declaration name: (identifier) @function)
+(compact_constructor_declaration name: (identifier) @function)
+(annotation_type_element_declaration name: (identifier) @function.method)
+
+; `? super T`: the bound's keyword, not a call of `super`.
+(wildcard (super) @keyword)
+
+; A record pattern (`o instanceof Item(String sku, var qty)`) names the record type it deconstructs.
+(record_pattern (identifier) @type)
+
+; `case null, default ->`: the grammar reads `default` there as a name.
+((switch_label (identifier) @keyword) (#eq? @keyword "default"))

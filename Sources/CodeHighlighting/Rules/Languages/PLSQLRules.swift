@@ -10,17 +10,24 @@
 
 import Foundation
 
-/// Oracle PL/SQL: `--` and `/* */` comments and SQL*Plus `REM` lines, `'…'` strings where `''` is a
-/// quote, `q'[…]'` alternative quoting with any bracket or character, `N'…'` national strings, the standard
-/// keywords with PL/SQL's own, `%TYPE` / `%ROWTYPE` attributes, `<<labels>>`, the Oracle types, and numbers.
+/// Oracle PL/SQL: `--` and `/* */` comments and SQL*Plus `REM` and `PROMPT` lines, `'…'` strings where `''`
+/// is a quote, `q'[…]'` alternative quoting with any bracket or character, `N'…'` national strings (the prefix
+/// stays code), `"…"` quoted names in the string colour as VS Code paints them, the names a `PACKAGE` or `TYPE`
+/// declares, the names a `FUNCTION` or `PROCEDURE` declares, the standard keywords with PL/SQL's own,
+/// `%TYPE` / `%ROWTYPE` attributes, `<<labels>>`, the Oracle types, and numbers.
 extension RuleTables {
     static let plsql: [(String, TokenKind)] = [
         dashComment,
         blockComment,
         ("(?i)^[ \\t]*REM(?:ARK)?\\b.*$", .comment),
-        ("(?i)\\b[NQ]?Q'(?:\\[[\\s\\S]*?\\]|\\{[\\s\\S]*?\\}|\\([\\s\\S]*?\\)|<[\\s\\S]*?>|([^\\s\\[{(<])[\\s\\S]*?\\1)'", .string),
-        ("(?i)(?:\\bN)?'(?:[^']|'')*'", .string),
+        ("(?i)^[ \\t]*PRO(?:MPT)?\\b.*$", .comment),
+        // The `q` / `N` prefix of a literal stays code: the string starts at its quote.
+        ("'(?<=(?i:\\b[NQ]?Q)')(?:\\[[\\s\\S]*?\\]|\\{[\\s\\S]*?\\}|\\([\\s\\S]*?\\)|<[\\s\\S]*?>|([^\\s\\[{(<])[\\s\\S]*?\\1)'", .string),
+        ("'(?:[^']|'')*'", .string),
+        doubleQuotedPlain,
         callee,
+        ("(?i)\\b(?:FUNCTION|PROCEDURE)[ \\t]+[A-Za-z_][\\w$#]*", .function),
+        ("(?i)\\b(?:PACKAGE|TYPE)[ \\t]+(?:BODY[ \\t]+)?[A-Za-z_][\\w$#]*(?:\\.[A-Za-z_][\\w$#]*)?", .type),
         sqlWords(
             sqlStandardKeywords + [
                 "PACKAGE", "BODY", "IS", "ELSIF", "PRAGMA", "AUTONOMOUS_TRANSACTION", "EXCEPTION_INIT", "RAISE",
@@ -36,14 +43,17 @@ extension RuleTables {
                 "ENABLE", "DISABLE", "EDITIONABLE", "NONEDITIONABLE", "ACCESSIBLE", "SHARING", "MODIFY", "SYNONYM",
                 "PUBLIC", "PRIVATE", "DIRECTORY", "CONTEXT", "AUDIT", "NOAUDIT", "LOCK", "MODE", "SHARE", "NOWAIT",
                 "WAIT", "SKIP", "LOCKED", "OF", "INDICES", "VALUES", "KEEP", "DENSE_RANK", "IGNORE", "RESPECT",
+                "EXCLUSIVE", "EXEC", "EXECUTE", "PCTFREE", "STORAGE", "MATERIALIZED", "CONNECT_BY_ROOT", "SERIALLY_REUSABLE",
+                "INLINE", "RESTRICT_REFERENCES",
             ], .keyword),
         sqlWords(
             sqlStandardTypes + [
                 "NUMBER", "VARCHAR2", "NVARCHAR2", "NCHAR", "NCLOB", "RAW", "LONG", "PLS_INTEGER", "BINARY_INTEGER",
                 "BINARY_FLOAT", "BINARY_DOUBLE", "SIMPLE_INTEGER", "NATURAL", "NATURALN", "POSITIVE", "POSITIVEN",
-                "SIGNTYPE", "ROWID", "UROWID", "BFILE", "XMLTYPE", "SYS_REFCURSOR", "STRING",
+                "SIGNTYPE", "ROWID", "UROWID", "BFILE", "XMLTYPE", "SYS_REFCURSOR", "STRING", "SIMPLE_DOUBLE", "SIMPLE_FLOAT",
             ], .type),
         ("(?i)%(?:TYPE|ROWTYPE|FOUND|NOTFOUND|ISOPEN|ROWCOUNT|BULK_ROWCOUNT|BULK_EXCEPTIONS)\\b", .keyword),
+        ("[Cc](?<=\\b(?i:LANGUAGE)[ \\t][Cc])\\b", .keyword),  // `LANGUAGE C`
         ("<<[A-Za-z_]\\w*>>", .attribute),
         ("(?i)\\b(TRUE|FALSE)\\b", .number),
         ("\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?[fFdD]?\\b|\\B\\.\\d+\\b", .number),

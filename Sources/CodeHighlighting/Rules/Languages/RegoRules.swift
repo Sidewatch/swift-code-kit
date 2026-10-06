@@ -19,7 +19,7 @@ extension RuleTables {
         ("`[^`]*`", .string),
         ("\\b[A-Za-z_][\\w.]*(?=\\()", .function),
         keywords([
-            "package", "import", "as", "default", "else", "if", "contains", "every", "some", "in", "not", "with", "set",
+            "package", "import", "as", "default", "else", "if", "contains", "every", "some", "in", "not", "with", "set", "data", "input",
         ]),
         constants(["true", "false", "null"]),
         ("(?<![\\w.])-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b", .number),

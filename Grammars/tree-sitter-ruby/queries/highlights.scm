@@ -1,7 +1,8 @@
 (identifier) @variable
 
-((identifier) @function.method
- (#is-not? local))
+; Sidewatch: upstream's `((identifier) @function.method (#is-not? local))` needs a locals pass this highlighter
+; does not run, so every identifier (locals and parameters included) painted as a method call. A bare
+; identifier is a plain name here; calls are recognised by the `call` patterns below.
 
 [
   "alias"
@@ -95,11 +96,12 @@
 
 [
   (string)
-  (bare_string)
   (subshell)
   (heredoc_body)
   (heredoc_beginning)
 ] @string
+; Sidewatch: a `%W[…]` word is its text, not the whole node, so a word that is only `#{expr}` stays code.
+(bare_string [(string_content) (escape_sequence)] @string)
 
 [
   (simple_symbol)
@@ -161,3 +163,29 @@
 (super) @keyword
 (string_array ["%w(" ")"] @string)
 (symbol_array ["%i(" ")"] @string.special.symbol)
+
+; A symbol is a constant (VS Code's `constant.other.symbol`), not a string: `:name`, `name:`, `%i[a b]`.
+[
+  (simple_symbol)
+  (delimited_symbol)
+  (hash_key_symbol)
+  (bare_symbol)
+] @constant
+(symbol_array ["%i(" ")"] @constant)
+
+; Operator and setter method names are the method's name: `def <=>(other)`, `def []=(k, v)`, `def name=(v)`.
+(method name: [(operator) (setter)] @function.method)
+(singleton_method name: [(operator) (setter)] @function.method)
+
+; Kernel and Module methods that read as keywords when called without a receiver (`include Comparable`,
+; `attr_reader :name`, `raise Error`, `loop do`), as both VS Code (`keyword.other.special-method`) and
+; Pygments class them.
+((identifier) @keyword
+ (#any-of? @keyword "include" "extend" "prepend" "attr_reader" "attr_writer" "attr_accessor" "attr" "private" "protected" "public" "module_function" "raise" "fail" "loop" "catch" "throw" "new"))
+(call
+  !receiver
+  method: (identifier) @keyword
+  (#any-of? @keyword "include" "extend" "prepend" "attr_reader" "attr_writer" "attr_accessor" "attr" "private" "protected" "public" "module_function" "raise" "fail" "loop" "catch" "throw" "new"))
+
+; An interpolation is code inside the string, symbol or regex: `#{expr}`.
+(interpolation) @code

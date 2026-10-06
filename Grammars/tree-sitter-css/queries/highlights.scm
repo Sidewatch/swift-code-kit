@@ -88,3 +88,15 @@
   "("
   "}"
 ] @punctuation.bracket
+
+; Sidewatch: a hex colour is a constant (VS Code's constant.other.color), and an unquoted `url()` argument is a
+; parameter, not a string, as VS Code scopes it.
+(color_value) @number
+(url_call
+  (arguments
+    (plain_value) @plain))
+; An `an+b` selector argument (`:nth-child(2n + 1)`) is a number.
+(pseudo_class_selector
+  (arguments
+    (plain_value) @number
+    (#match? @number "^[-+]?[0-9]*n( *[-+] *[0-9]+)?$")))

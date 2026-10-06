@@ -51,3 +51,11 @@
   "{"
   "}"
 ] @punctuation.bracket
+
+; Sidewatch: dates and times are constants (VS Code's constant.other.date), not strings.
+[
+  (offset_date_time)
+  (local_date_time)
+  (local_date)
+  (local_time)
+] @number

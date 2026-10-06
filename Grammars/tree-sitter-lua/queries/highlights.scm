@@ -202,3 +202,12 @@
 (string) @string
 
 (escape_sequence) @string.escape
+
+; `function Vector2:magnitude()` defines a method on the table before the colon: that table is the class,
+; painted as a type, as VS Code does (`entity.name.class`).
+(function_declaration
+  name: (method_index_expression
+    table: [
+      (identifier) @type
+      (dot_index_expression field: (identifier) @type)
+    ]))

@@ -97,7 +97,7 @@ final class WholeFileBatch3Tests: XCTestCase {
         XCTAssertEqual(kind("int", in: text, .d), .type)
         XCTAssertEqual(kind("foreach", in: text, .d), .keyword)
         XCTAssertEqual(kind("y)", in: text, .d), .string)
-        XCTAssertEqual(kind("auto y", in: text, .d), .string)
+        XCTAssertEqual(kind("auto y", in: text, .d), .keyword, "a q{…} token string holds tokens, painted as code")
     }
 
     func testSolidityKeywordsBeforeParentheses() {
@@ -153,9 +153,11 @@ final class WholeFileBatch3Tests: XCTestCase {
         }
     }
 
+    /// A unit wears the type colour beside its number, as the CSS grammar's `(unit) @type` paints it.
     func testStylesheetNumbersKeepPercentAndLeadingDot() {
         let text = ".a { width: 100%; opacity: .5; }\n"
-        XCTAssertEqual(kind("%", in: text, .scss), .number)
+        XCTAssertEqual(kind("100", in: text, .scss), .number)
+        XCTAssertEqual(kind("%", in: text, .scss), .type)
         XCTAssertEqual(kind(".5", in: text, .scss), .number)
     }
 

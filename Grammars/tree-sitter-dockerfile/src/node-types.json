@@ -12,6 +12,10 @@
           "named": true
         },
         {
+          "type": "json_string_array",
+          "named": true
+        },
+        {
           "type": "param",
           "named": true
         },
@@ -85,6 +89,10 @@
       "types": [
         {
           "type": "heredoc_block",
+          "named": true
+        },
+        {
+          "type": "json_string_array",
           "named": true
         },
         {
@@ -305,6 +313,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "double_quoted_string",
+          "named": true
+        },
         {
           "type": "expansion",
           "named": true
@@ -621,11 +633,19 @@
       "required": false,
       "types": [
         {
+          "type": "double_quoted_string",
+          "named": true
+        },
+        {
           "type": "expansion",
           "named": true
         },
         {
           "type": "heredoc_marker",
+          "named": true
+        },
+        {
+          "type": "single_quoted_string",
           "named": true
         }
       ]
@@ -838,6 +858,10 @@
       "required": false,
       "types": [
         {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
           "type": "expansion",
           "named": true
         }
@@ -1038,10 +1062,6 @@
   },
   {
     "type": "\\",
-    "named": false
-  },
-  {
-    "type": "\\ ",
     "named": false
   },
   {

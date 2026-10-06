@@ -446,3 +446,100 @@
   ","
   "."
 ] @punctuation.delimiter
+
+; Sidewatch: modifiers the upstream query captures as `@attribute` (`DESC`, `DEFAULT`, `NULLS LAST`, `COLLATE`,
+; `ATOMIC`) and the array keyword it captures as a call are SQL keywords, as VS Code paints them.
+[
+ (keyword_asc)
+ (keyword_desc)
+ (keyword_terminated)
+ (keyword_escaped)
+ (keyword_unsigned)
+ (keyword_nulls)
+ (keyword_last)
+ (keyword_delimited)
+ (keyword_replication)
+ (keyword_auto_increment)
+ (keyword_default)
+ (keyword_collate)
+ (keyword_concurrently)
+ (keyword_engine)
+ (keyword_always)
+ (keyword_generated)
+ (keyword_preceding)
+ (keyword_following)
+ (keyword_first)
+ (keyword_current_timestamp)
+ (keyword_immutable)
+ (keyword_atomic)
+ (keyword_parallel)
+ (keyword_leakproof)
+ (keyword_safe)
+ (keyword_cost)
+ (keyword_strict)
+ (keyword_array)
+] @keyword
+
+; A reserved word the grammar reads as a function name (`ROW(1, 2)`, `GROUP BY ROLLUP (…)`, `DISTINCT ON (…)`,
+; MySQL's `VALUES(col)` and `MATCH (…) AGAINST`) is a keyword: an unquoted name can never be one.
+(invocation
+  (object_reference
+    name: (identifier) @keyword)
+  (#match? @keyword "^(?i:on|row|values|rollup|cube|grouping|match|array)$"))
+
+; `GENERATED ALWAYS AS IDENTITY` reads as a generated column over a field named IDENTITY.
+(column_definition
+  (keyword_generated)
+  (field
+    name: (identifier) @keyword)
+  (#match? @keyword "^(?i:identity)$"))
+
+; `INTERVAL '2' HOUR` reads its unit as the term's alias.
+(term
+  value: (interval)
+  alias: (identifier) @keyword
+  (#match? @keyword "^(?i:year|month|day|hour|minute|second)$"))
+
+; MySQL index hints name the primary key `PRIMARY`; an unquoted `FROM` or `DEFAULT` (`VALUES (1, DEFAULT)`) is
+; never a column name.
+(index_hint
+  index_name: (identifier) @keyword
+  (#match? @keyword "^(?i:primary)$"))
+(field
+  name: (identifier) @keyword
+  (#match? @keyword "^(?i:from|default)$"))
+
+; `LANGUAGE SQL`: the routine's language name.
+(function_language
+  (identifier) @keyword)
+
+; `COST 10` and `ROWS 100` keep their number in a hidden node: paint the clause as a number, then its keyword.
+[(function_cost) (function_rows)] @number
+(function_cost (keyword_cost) @keyword)
+(function_rows (keyword_rows) @keyword)
+
+; A double-quoted identifier (`AS "quoted identifier"`, `COLLATE "C"`) paints as a string, as VS Code does.
+((identifier) @string
+  (#match? @string "^\""))
+
+; `SET NAMES utf8mb4`: a bare character-set name, not a string.
+(set_statement
+  (literal
+    (identifier) @plain))
+
+; MySQL table options: the option names are keywords, a row format is a keyword, and an option whose value is a
+; quoted string (`COMMENT='…'`, Hive `TBLPROPERTIES ('k'='v')`) keeps it in a hidden node: paint the option as a
+; string, then its name and `=` over it.
+(table_option
+  value: (identifier) @keyword
+  (#match? @keyword "^(?i:dynamic|fixed|compressed|redundant|compact)$"))
+((table_option
+  name: (identifier) @_name
+  !value) @string
+  (#match? @_name "^(?i:comment)$"))
+((table_option
+  !name) @string)
+(table_option
+  name: (identifier) @keyword)
+(table_option
+  "=" @plain)

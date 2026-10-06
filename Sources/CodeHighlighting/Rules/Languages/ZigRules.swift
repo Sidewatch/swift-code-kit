@@ -12,7 +12,7 @@ import Foundation
 
 /// Zig: `//`, `///` and `//!` comments (Zig has no block comment), `"…"` strings that end at the line,
 /// `\\` multiline string lines, `'x'` character literals, the Zig keywords (a keyword before `(` stays a
-/// keyword), `@builtin` calls, the primitive types — any `i7`/`u24` width among them — and numbers.
+/// keyword), `@builtin` calls, the primitive types — any `i7`/`u24` width among them — and numbers, hex floats included.
 extension RuleTables {
     static let zig: [(String, TokenKind)] = [
         lineComment,
@@ -34,5 +34,6 @@ extension RuleTables {
             .type
         ),
         decimal,
+        ("\\b0x[0-9a-fA-F_]+\\.[0-9a-fA-F_]+(?:[pP][+-]?\\d+)?", .number),  // a hex float, `0x1.8p3`
     ]
 }

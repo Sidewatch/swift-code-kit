@@ -13,7 +13,9 @@ import Foundation
 /// Pascal: `{ }`, `(* *)` and `//` comments (a `{$…}` directive is a comment to the compiler's
 /// reader too), `'…'` strings whose quote doubles as its own escape, Delphi's `'''` multi-line
 /// strings, `#13` character codes, `$FF` / `&17` / `%1010` numbers, and the reserved words in any
-/// case. A `"` delimits nothing, so a double quote inside a string stays part of it.
+/// case (the standard routines that read as words, `Exit`, `Break`, `Continue`, `New`, `Dispose`, too), and
+/// the name a `procedure`, `function`, `constructor` or `destructor` declares. A `"` delimits nothing, so a
+/// double quote inside a string stays part of it.
 extension RuleTables {
     static let pascal: [(String, TokenKind)] = [
         ("\\{[\\s\\S]*?\\}", .comment),
@@ -25,9 +27,13 @@ extension RuleTables {
         ("#(?:\\$[0-9A-Fa-f]+|\\d+)", .string),
         call,
         (
-            "(?i)\\b(absolute|and|array|as|asm|begin|bitpacked|case|class|const|constructor|destructor|dispinterface|div|do|downto|else|end|except|exports|file|finalization|finally|for|function|generic|goto|helper|if|implementation|in|inherited|initialization|inline|interface|is|label|library|mod|not|object|of|on|operator|or|out|packed|procedure|program|property|raise|record|reference|reintroduce|repeat|resourcestring|self|set|shl|shr|specialize|then|threadvar|to|try|type|unit|until|uses|var|while|with|xor|abstract|cdecl|default|deprecated|dynamic|external|forward|message|nested|overload|override|platform|private|protected|public|published|read|register|safecall|sealed|static|stdcall|stored|strict|virtual|write)\\b",
+            "(?i)\\b(absolute|and|array|as|asm|begin|bitpacked|case|class|const|constructor|destructor|dispinterface|div|do|downto|else|end|except|exports|file|finalization|finally|for|function|generic|goto|helper|if|implementation|in|inherited|initialization|inline|interface|is|label|library|mod|not|object|of|on|operator|or|out|packed|procedure|program|property|raise|record|reference|reintroduce|repeat|resourcestring|self|set|shl|shr|specialize|then|threadvar|to|try|type|unit|until|uses|var|while|with|xor|abstract|cdecl|default|deprecated|dynamic|external|forward|message|nested|overload|override|platform|private|protected|public|published|read|register|safecall|sealed|static|stdcall|stored|strict|virtual|write|index|name|assembler|continue|break|exit|new|dispose)\\b",
             .keyword
         ),
+        // The name a routine declares, `TOwner.` qualified or not; the routine's keyword is repainted after it. An
+        // `operator` keeps its keyword name (`class operator In`).
+        ("(?i)\\b(?:procedure|function|constructor|destructor)[ \\t]+(?:\\w+\\.)?\\w+", .function),
+        ("(?i)\\b(?:procedure|function|constructor|destructor)\\b", .keyword),
         (
             "(?i)\\b(boolean|byte|cardinal|char|currency|double|extended|int64|integer|longint|longword|nativeint|pchar|pointer|real|shortint|single|smallint|string|uint64|variant|widechar|word|ansistring|unicodestring|widestring)\\b",
             .type

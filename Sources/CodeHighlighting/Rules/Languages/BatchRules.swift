@@ -20,6 +20,9 @@ extension RuleTables {
         ("\"[^\"\\n]*(?:\"|$)", .string),
         // A caret escapes the next character (`^&`, `^"`): it is literal, and a `^"` opens no string.
         ("\\^.", .string),
+        // A doubled `%` that opens no FOR variable is an escaped percent sign; between spaces (`set /a 7 %% 5`)
+        // it is the modulo operator.
+        ("%%(?<![ \\t]%%)(?![~A-Za-z])|%%(?=[ \\t]*$)", .string),
         decimal,
         (
             wordTrie(
@@ -39,7 +42,7 @@ extension RuleTables {
         ("%%(?:~[a-zA-Z]*)?[a-zA-Z]|%~[a-zA-Z]*(?:\\$\\w+:)?[0-9]|%[0-9*]|%[A-Za-z_][^%\\n]*%|![A-Za-z_][^!\\n]*!", .type),
     ]
 
-    /// `REM` opens a comment only as a command: at the start of a line (after an optional `@`) or after `&`
-    /// or `(`. `echo rem` and `premium` are not comments.
-    static let batchRemComment: (String, TokenKind) = ("(?i)(?:^[ \\t]*@?|(?<=[&(])[ \\t]*)rem\\b.*$", .comment)
+    /// `REM` opens a comment only as a command: at the start of a line (after an optional `@`, which stays
+    /// code) or after `&` or `(`. `echo rem` and `premium` are not comments.
+    static let batchRemComment: (String, TokenKind) = ("(?i)rem\\b(?<=(?:^[ \\t]{0,20}@?|[&(][ \\t]{0,20})rem).*$", .comment)
 }

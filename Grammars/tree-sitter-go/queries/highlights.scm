@@ -140,3 +140,12 @@
 ; so `func (b Box) Method() int` drew its name property-colored too.
 (method_declaration
   name: (field_identifier) @function.method)
+
+; A predeclared type name stays a type where the grammar reads it as a value: a conversion
+; (`float64(n)`, `string(b)`) or a type argument in an index expression (`MaxOf[int]`).
+(call_expression
+ function: (identifier) @type.builtin
+ (#any-of? @type.builtin "bool" "byte" "complex64" "complex128" "error" "float32" "float64" "int" "int8" "int16" "int32" "int64" "rune" "string" "uint" "uint8" "uint16" "uint32" "uint64" "uintptr" "any" "comparable"))
+(index_expression
+ index: (identifier) @type.builtin
+ (#any-of? @type.builtin "bool" "byte" "complex64" "complex128" "error" "float32" "float64" "int" "int8" "int16" "int32" "int64" "rune" "string" "uint" "uint8" "uint16" "uint32" "uint64" "uintptr" "any" "comparable"))

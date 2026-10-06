@@ -11,7 +11,8 @@
 import Foundation
 
 /// Fortran (free form, with fixed-form `C` comment lines tolerated): `!` comments, the
-/// case-insensitive statement words, intrinsic types, `%` components, `1.0d0` literals. A fixed-form
+/// case-insensitive statement words, intrinsic types (`real(dp)` opening a declaration is the type, not the
+/// conversion), `%` components, `1.0d0`, `.5` and `5.` literals. A fixed-form
 /// comment is `*`, or a `C` that no letter follows, in the first column: `contains` there is the
 /// statement. A call's name is painted before the words, so `if (` and `intent(` stay keywords.
 extension RuleTables {
@@ -26,11 +27,13 @@ extension RuleTables {
             .keyword
         ),
         ("(?i)\\b(integer|real|double\\s+precision|double\\s+complex|complex|character|logical)\\b", .type),
-        ("\\b\\d+(\\.\\d*)?([dDeE][+-]?\\d+)?(_\\w+)?\\b", .number),
+        ("(?:\\b\\d+(?:\\.\\d*)?|\\.\\d+)(?:[dDeE][+-]?\\d+)?(?:_\\w+)?", .number),
         (
             "(?i)\\b(sum|size|abs|sqrt|exp|log|sin|cos|tan|min|max|mod|nint|int|real|dble|trim|len|allocated|present|associated|huge|tiny|epsilon|matmul|dot_product|transpose|reshape|maxval|minval|count|any|all)\\b(?=\\s*\\()",
             .function
         ),
         ("%\\w+", .property),
+        // A declaration's type keeps its kind bracket (`real(dp) ::`): it is not the `real()` conversion.
+        ("(?i)^[ \\t]*(?:integer|real|complex|character|logical)(?=[ \\t]*\\()", .type),
     ]
 }

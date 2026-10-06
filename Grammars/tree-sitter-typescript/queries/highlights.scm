@@ -37,3 +37,7 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "asserts" "is" "global" "module" "namespace" "declare" "readonly" "keyof" "infer" "satisfies" "override" "abstract" "implements" "enum" "type" "accessor" "in" "private" "protected" "public" "static" "get" "set" "any" "unknown" "never" "void" "object" "symbol" "boolean" "number" "string" ] @keyword
+
+; A template literal type (`` `get${Capitalize<K>}` ``) is a string with type code inside it.
+(template_literal_type) @string
+(template_type) @code

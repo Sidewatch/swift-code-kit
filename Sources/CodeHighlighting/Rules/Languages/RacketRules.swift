@@ -12,7 +12,9 @@ import Foundation
 
 /// Racket: Scheme's comments, characters and `|symbols|`, plus `#lang`, byte strings (`#"…"`), regexp
 /// literals (`#rx"…"`, `#px#"…"`), here strings (`#<<END` to the line `END`), `#:keyword` arguments
-/// and Racket's own forms (`define-values`, `for/list`, `match`, `struct`, the module forms).
+/// and Racket's own forms (`define-values`, `for/list`, `match`, `struct`, the module forms); octal
+/// characters (`#\101`), complex and inexact-digit numbers, quoted symbols with escapes and verbatim
+/// sections, and the name a `(define (name …)` binds as a function.
 extension RuleTables {
     static let racket: [(String, TokenKind)] = lispDialect(
         specialForms: schemeSpecialForms + [
@@ -33,10 +35,31 @@ extension RuleTables {
         constants: ["#t", "#f", "#true", "#false"],
         literals: [
             lispCharacter,
+            ("#\\\\[0-7]{3}", .string),
+            racketQuotedSymbol,
             schemeDatumComment,
             ("#<<(\\S+)\\n[\\s\\S]*?^\\1$", .string),
             ("#(?:rx|px)?#?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
             ("\\|(?:[^|\\\\]|\\\\.)*\\|", .string),
-        ]
+        ],
+        quotedSymbols: false,
+        numbers: [lispNumber, racketNumber],
+        definitions: [lispDefinedName(after: ["define", "define/contract", "define/public", "define/private"], parenthesised: true)]
     )
+
+    /// A quoted symbol the way Racket reads one: ordinary characters, `\`-escaped ones (`'a\ b`) and
+    /// `|verbatim|` sections in any mix (`'|a b|c`), and the `#%` prefix of a kernel name (`'#%app`).
+    static let racketQuotedSymbol: (String, TokenKind) = {
+        let piece = "(?:[^\\s()\\[\\]{}\"',`;|\\\\]|\\\\[\\s\\S]|\\|[^|\\n]*\\|)"
+        return ("(?<![\\w#\\\\])'(?:#%|(?!#)\(piece))\(piece)*", .string)
+    }()
+
+    /// Racket's other number forms: complex numbers (`1+2i`, `-i`, `3.0-4.5i`), polar ones (`1@2`), and
+    /// inexact digits written `#` (`1#.#`, `12##`).
+    static let racketNumber: (String, TokenKind) = {
+        let unsigned = "(?:(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eEdDfFsSlLtT][+-]?\\d+)?|inf\\.[0ft]|nan\\.[0ft])"
+        let real = "[+-]?" + unsigned
+        let complex = "(?:" + real + ")?[+-]" + unsigned + "?i|" + real + "@" + real + "|[+-]?\\d+#*\\.#*|[+-]?\\d+#+"
+        return (lispWordStart + "(?:" + complex + ")" + lispWordEnd, .number)
+    }()
 }

@@ -10,16 +10,19 @@
 
 import Foundation
 
-/// The regex rule table for Protobuf.
+/// The regex rule table for Protobuf: `"…"` and `'…'` strings, the keywords (`reserved 10 to 20`) and
+/// scalar types, and the type a `message`, `enum`, `service` or `extend` names (`google.protobuf.X` whole).
 /// Later rules repaint earlier ones; strings and comments paint last.
 extension RuleTables {
     static let protobuf: [(String, TokenKind)] = [
         lineComment,
         blockComment,
         doubleQuoted,
+        singleQuoted,
+        declaration(after: ["message", "enum", "service", "extend"], name: "[A-Za-z_][\\w.]*"),
         keywords([
             "syntax", "package", "import", "public", "weak", "message", "enum", "service", "rpc", "returns",
-            "option", "repeated", "optional", "required", "reserved", "oneof", "map", "extend", "group", "stream",
+            "option", "repeated", "optional", "required", "reserved", "oneof", "map", "extend", "group", "stream", "to", "max", "edition",
         ]),
         types([
             "double", "float", "int32", "int64", "uint32", "uint64", "sint32", "sint64", "fixed32", "fixed64",

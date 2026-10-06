@@ -26,7 +26,7 @@ extension RuleTables {
             "(?i)\\b(CreateObject|GetObject|MsgBox|InputBox|Len|Left|Right|Mid|Trim|LTrim|RTrim|Split|Join|Replace|InStr|InStrRev|UCase|LCase|CDbl|CInt|CLng|CStr|CBool|CDate|IsNumeric|IsNull|IsEmpty|IsObject|IsArray|Array|UBound|LBound|FormatNumber|FormatCurrency|FormatDateTime|Now|Date|Time|DateAdd|DateDiff|Abs|Int|Fix|Round|Sqr|Rnd|Chr|Asc|Hex|Oct|TypeName|VarType)\\b",
             .function
         ),
-        ("\\b\\d+(\\.\\d+)?\\b|&H[0-9A-Fa-f]+", .number),
+        ("(?i)(?:\\b\\d+(?:\\.\\d+)?|(?<![\\w.])\\.\\d+)(?:E[+-]?\\d+)?\\b|&H[0-9A-Fa-f]+&?", .number),
         ("\\b[A-Za-z_]\\w*(?=\\s*\\()", .function),
     ]
 }

@@ -280,3 +280,10 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "deferred" "hide" "show" "part" "async" "await" "yield" "late" "required" "covariant" "external" "factory" "operator" "typedef" "mixin" "extension" "on" "get" "set" "static" "final" "abstract" "base" "interface" "sealed" "when" "library" "export" "import" "as" "is" "this" "super" "new" "throw" "enum" "extends" "implements" "with" "var" ] @keyword
+
+; A constructor tear-off (`Item.new`) names the unnamed constructor with the keyword itself.
+((unconditional_assignable_selector (identifier) @keyword) (#eq? @keyword "new"))
+
+; An interpolation is code inside the string: `$name`, `${expr}`.
+(template_substitution) @code
+(identifier_dollar_escaped) @identifier.plain

@@ -57,10 +57,14 @@ final class WholeFileBatch2Tests: XCTestCase {
 
     // MARK: Hack
 
-    func testHackIndentedHeredocIsOneString() {
-        let text = "function f(): void {\n  $h = <<<EOT\n  Heredoc BODY with $int\n  EOT;\n  $after = 1;\n}\n"
-        XCTAssertEqual(role(of: "BODY", in: text, .hack), .string)
-        XCTAssertNotEqual(role(of: "$after", in: text, .hack), .string)
+    /// HHVM closes a heredoc only at a label right after a newline (`is_heredoc_tail`): an indented label is
+    /// body text, unlike PHP 7.3+.
+    func testHackHeredocClosesOnlyAtALabelInColumnZero() {
+        let closed = "function f(): void {\n  $h = <<<EOT\n  Heredoc BODY with $int\nEOT;\n  $after = 1;\n}\n"
+        XCTAssertEqual(role(of: "BODY", in: closed, .hack), .string)
+        XCTAssertNotEqual(role(of: "$after", in: closed, .hack), .string)
+        let indented = "function f(): void {\n  $h = <<<EOT\n  Heredoc BODY with $int\n  EOT;\n  $after = 1;\n}\n"
+        XCTAssertEqual(role(of: "$after", in: indented, .hack), .string, "an indented label does not close the heredoc")
     }
 
     func testHackNowdocIsOneString() {

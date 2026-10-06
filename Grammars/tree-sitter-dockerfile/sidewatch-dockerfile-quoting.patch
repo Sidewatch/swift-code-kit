@@ -1,0 +1,260 @@
+From 92302654390a9d3d8f6681cb15b2dcc5148daa55 Mon Sep 17 00:00:00 2001
+From: Sidewatch <noreply@example.com>
+Date: Tue, 6 Oct 2026 16:32:34 +0700
+Subject: [PATCH] Quoted paths and stage names, JSON-form ADD/COPY, escapes in
+ unquoted values
+
+COPY ["src one", "dest"] (the JSON form), COPY 'src one' "dest two", WORKDIR '/opt/a b',
+FROM x AS "name" and ENV A=\$B C=two\ words produced ERROR nodes; a backslash escape in an
+unquoted value is now an escape_sequence node.
+---
+ grammar.js              | 59 ++++++++++++++++++++++++++------------
+ test/corpus/env.txt     |  6 ++--
+ test/corpus/quoting.txt | 63 +++++++++++++++++++++++++++++++++++++++++
+ test/corpus/strings.txt |  3 +-
+ test/corpus/vars.txt    |  2 ++
+ 5 files changed, 112 insertions(+), 21 deletions(-)
+ create mode 100644 test/corpus/quoting.txt
+
+diff --git a/grammar.js b/grammar.js
+index 8cb14dc..f2fa34f 100644
+--- a/grammar.js
++++ b/grammar.js
+@@ -82,10 +82,16 @@ module.exports = grammar({
+       seq(
+         alias(/[aA][dD][dD]/, "ADD"),
+         repeat($.param),
+-        repeat1(
+-          seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace)
++        // The JSON form (`["src", "dest"]`) is the documented way to name paths that hold spaces.
++        choice(
++          $.json_string_array,
++          seq(
++            repeat1(
++              seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace)
++            ),
++            alias($.path_with_heredoc, $.path)
++          )
+         ),
+-        alias($.path_with_heredoc, $.path),
+         repeat($.heredoc_block)
+       ),
+ 
+@@ -93,10 +99,16 @@ module.exports = grammar({
+       seq(
+         alias(/[cC][oO][pP][yY]/, "COPY"),
+         repeat($.param),
+-        repeat1(
+-          seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace)
++        // The JSON form (`["src", "dest"]`) is the documented way to name paths that hold spaces.
++        choice(
++          $.json_string_array,
++          seq(
++            repeat1(
++              seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace)
++            ),
++            alias($.path_with_heredoc, $.path)
++          )
+         ),
+-        alias($.path_with_heredoc, $.path),
+         repeat($.heredoc_block)
+       ),
+ 
+@@ -220,22 +232,29 @@ module.exports = grammar({
+         $.heredoc_end
+       ),
+ 
++    // A quoted path (`WORKDIR '/opt/quoted dir'`, `COPY "src one" dest`) is word-processed like the shell's.
+     path: ($) =>
+-      seq(
+-        choice(
+-          /[^-\s\$<]/, // cannot start with a '-' to avoid conflicts with params
+-          /<[^<]/, // cannot start with a '<<' to avoid conflicts with heredocs (a single < is fine, though)
+-          $.expansion
+-        ),
+-        repeat(choice(token.immediate(/[^\s\$]+/), $._immediate_expansion))
++      choice(
++        $.double_quoted_string,
++        $.single_quoted_string,
++        seq(
++          choice(
++            /[^-\s\$<"']/, // cannot start with a '-' to avoid conflicts with params
++            /<[^<]/, // cannot start with a '<<' to avoid conflicts with heredocs (a single < is fine, though)
++            $.expansion
++          ),
++          repeat(choice(token.immediate(/[^\s\$]+/), $._immediate_expansion))
++        )
+       ),
+ 
+     path_with_heredoc: ($) =>
+       choice(
+         $.heredoc_marker,
++        $.double_quoted_string,
++        $.single_quoted_string,
+         seq(
+           choice(
+-            /[^-\s\$<]/, // cannot start with a '-' to avoid conflicts with params
++            /[^-\s\$<"']/, // cannot start with a '-' to avoid conflicts with params
+             /<[^-\s\$<]/,
+             $.expansion
+           ),
+@@ -371,9 +390,12 @@ module.exports = grammar({
+       optional(seq(token.immediate("="), token.immediate(/[^\s=,]+/)))
+     ),
+ 
+-    image_alias: ($) => seq(
+-      choice(/[-a-zA-Z0-9_]+/, $.expansion),
+-      repeat(choice(token.immediate(/[-a-zA-Z0-9_]+/), $._immediate_expansion))
++    image_alias: ($) => choice(
++      $.double_quoted_string,
++      seq(
++        choice(/[-a-zA-Z0-9_]+/, $.expansion),
++        repeat(choice(token.immediate(/[-a-zA-Z0-9_]+/), $._immediate_expansion))
++      )
+     ),
+ 
+     shell_command: ($) =>
+@@ -466,11 +488,12 @@ module.exports = grammar({
+         "'"
+       ),
+ 
++    // A backslash escapes the next character (`two\ words`, `\$NOT_EXPANDED`).
+     unquoted_string: ($) =>
+       repeat1(
+         choice(
+           token.immediate(/[^\s\n\"'\\\$]+/),
+-          token.immediate("\\ "),
++          alias(token.immediate(/\\[^\n]/), $.escape_sequence),
+           $._immediate_expansion
+         )
+       ),
+diff --git a/test/corpus/env.txt b/test/corpus/env.txt
+index c447ada..c32461a 100644
+--- a/test/corpus/env.txt
++++ b/test/corpus/env.txt
+@@ -24,7 +24,8 @@ ENV TEST_2=value\ 2
+   (env_instruction
+     (env_pair
+       name: (unquoted_string)
+-      value: (unquoted_string))))
++      value: (unquoted_string
++        (escape_sequence)))))
+ 
+ =========================================================
+ Single-letter variable
+@@ -72,7 +73,8 @@ ENV TEST="foo" TEST_2=foo\ bar
+       value: (double_quoted_string))
+     (env_pair
+       name: (unquoted_string)
+-      value: (unquoted_string))))
++      value: (unquoted_string
++        (escape_sequence)))))
+ 
+ ================================================================================
+ Multiline
+diff --git a/test/corpus/quoting.txt b/test/corpus/quoting.txt
+new file mode 100644
+index 0000000..c9d20ab
+--- /dev/null
++++ b/test/corpus/quoting.txt
+@@ -0,0 +1,63 @@
++================================================================================
++Quoted stage name, JSON-form ADD and COPY, quoted paths, escapes in unquoted values
++================================================================================
++
++FROM alpine AS "quoted-stage"
++FROM ${REGISTRY:-docker.io}/library/alpine:latest
++ADD --chown=1000:1000 --chmod=755 ["archive.tar.gz", "/opt/"]
++COPY ["file with spaces.txt", "/dest/"]
++COPY 'src one' "dest two"
++WORKDIR '/opt/quoted dir'
++ENV LITERAL=\$NOT_EXPANDED ESC_SPACE=two\ words
++COPY <<EOF /etc/x
++text
++EOF
++
++--------------------------------------------------------------------------------
++
++(source_file
++  (from_instruction
++    (image_spec
++      (image_name))
++    (image_alias
++      (double_quoted_string)))
++  (from_instruction
++    (image_spec
++      (image_name
++        (expansion
++          (variable)))
++      (image_tag)))
++  (add_instruction
++    (param)
++    (param)
++    (json_string_array
++      (json_string)
++      (json_string)))
++  (copy_instruction
++    (json_string_array
++      (json_string)
++      (json_string)))
++  (copy_instruction
++    (path
++      (single_quoted_string))
++    (path
++      (double_quoted_string)))
++  (workdir_instruction
++    (path
++      (single_quoted_string)))
++  (env_instruction
++    (env_pair
++      (unquoted_string)
++      (unquoted_string
++        (escape_sequence)))
++    (env_pair
++      (unquoted_string)
++      (unquoted_string
++        (escape_sequence))))
++  (copy_instruction
++    (path
++      (heredoc_marker))
++    (path)
++    (heredoc_block
++      (heredoc_line)
++      (heredoc_end))))
+diff --git a/test/corpus/strings.txt b/test/corpus/strings.txt
+index ee0aa62..4595c2a 100644
+--- a/test/corpus/strings.txt
++++ b/test/corpus/strings.txt
+@@ -135,7 +135,8 @@ ENV KEY $FOO${BAR}baz
+   (env_instruction
+     (env_pair
+       (unquoted_string)
+-      (unquoted_string)))
++      (unquoted_string
++        (escape_sequence))))
+   (env_instruction
+     (env_pair
+       (unquoted_string)
+diff --git a/test/corpus/vars.txt b/test/corpus/vars.txt
+index f0de645..e114f26 100644
+--- a/test/corpus/vars.txt
++++ b/test/corpus/vars.txt
+@@ -71,6 +71,7 @@ ENV TEST="foo$BAR" \
+     (env_pair
+       name: (unquoted_string)
+       value: (unquoted_string
++        (escape_sequence)
+         (expansion
+           (variable))))
+     (line_continuation)
+@@ -83,6 +84,7 @@ ENV TEST="foo$BAR" \
+     (env_pair
+       name: (unquoted_string)
+       value: (unquoted_string
++        (escape_sequence)
+         (expansion
+           (variable))))))
+ 
+-- 
+2.56.0
+

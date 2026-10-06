@@ -10,11 +10,11 @@
 
 import Foundation
 
-/// Fennel: `;` comments, `"…"` strings and `:string` shorthand, Lua's hex numbers, `nil` / `true` /
-/// `false`, and the special forms with the threading and nil-safe forms (`->>`, `?.`). The arithmetic,
-/// comparison and access operators (`+`, `=`, `.`, `:`) are forms too but stay plain, as operators do
-/// in every table: they are a third of a program's tokens, and each paint costs more the more the pass
-/// has painted.
+/// Fennel: `;` comments, `"…"` strings and `:string` shorthand, Lua's hex numbers (`0x1.8p1` too) and `1_000_000`
+/// separators, `nil` / `true` / `false`, and the special forms with the threading and nil-safe forms
+/// (`->>`, `?.`). The arithmetic, comparison and access operators (`+`, `=`, `..`, `.`, `#`, `:`) are
+/// special forms in Fennel and paint as keywords where they stand alone, as both VS Code and Pygments
+/// paint them; `x#` (an auto-gensym) stays one name.
 extension RuleTables {
     static let fennel: [(String, TokenKind)] = lispDialect(
         specialForms: [
@@ -23,10 +23,14 @@ extension RuleTables {
             "fcollect", "accumulate", "faccumulate", "doto", "with-open", "pick-values", "pick-args", "partial", "hashfn",
             "lua", "quote", "unquote", "comment", "include", "import-macros", "require-macros", "eval-compiler",
             "macrodebug", "assert-repl", "tail!", "length", "not", "not=", "and", "or", "band", "bor", "bxor", "bnot",
-            "lshift", "rshift", "->", "->>", "-?>", "-?>>", "?.",
+            "lshift", "rshift", "->", "->>", "-?>", "-?>>", "?.", "+", "-", "*", "/", "//", "%", "^", "..", ".", "#", ":",
+            "=", "~=", "<", ">", "<=", ">=",
         ],
         constants: ["nil", "true", "false"],
         quotedSymbols: false,
-        numbers: [lispNumber, (lispWordStart + "-?0[xX][0-9a-fA-F_]+" + lispWordEnd, .number)]
+        numbers: [
+            lispNumber, (lispWordStart + "-?0[xX][0-9a-fA-F_]*(?:\\.[0-9a-fA-F_]*)?(?:[pP][+-]?\\d+)?" + lispWordEnd, .number),
+            (lispWordStart + "[+-]?\\d[\\d_]*(?:\\.[\\d_]*)?(?:[eE][+-]?\\d+)?" + lispWordEnd, .number),
+        ]
     )
 }

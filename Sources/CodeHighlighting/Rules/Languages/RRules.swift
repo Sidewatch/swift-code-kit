@@ -22,8 +22,9 @@ extension RuleTables {
         ("[rR]([\"'])(-*)\\{(?:(?!\\}\\2\\1)[\\s\\S])*\\}\\2\\1", .string),
         doubleQuoted,
         singleQuoted,
-        ("\\b([A-Za-z.][\\w.]*)(?=\\s*\\()", .function),
-        keywords(["if", "else", "repeat", "while", "function", "for", "in", "next", "break", "switch", "return"]),
+        // A name may open with dots (`.(x)`, `...length()`) and hold them (`sys.function()`): one call.
+        ("(?<![\\w.])[A-Za-z.][\\w.]*(?=\\s*\\()", .function),
+        ("(?<![\\w.])(?:if|else|repeat|while|function|for|in|next|break|switch|return)(?![\\w.])", .keyword),
         ("\\b(TRUE|FALSE|NULL|NA|NA_integer_|NA_real_|NA_complex_|NA_character_|Inf|NaN|T|F)\\b", .number),
         ("\\b[A-Za-z.][\\w.]*(?=:::?)", .type),
         ("`[^`\\n]*`", .variable),

@@ -11,8 +11,8 @@
 import Foundation
 
 /// Blade: `{{-- --}}` comments (the language's own), the `{{ }}` / `{!! !!}` echoes, `@directives`,
-/// and the PHP inside an echo, a directive's arguments (to its line's end) or an `@php … @endphp`
-/// block: `//` and `#` comments, strings, `$variables`, keywords and numbers — with the HTML around
+/// and the PHP inside an echo, a directive's arguments (to its line's end), an `@php … @endphp`
+/// block or a `<?php ?>` tag: `//` and `#` comments, strings, `$variables`, keywords and numbers — with the HTML around
 /// them, whose attribute values are strings unless an echo sits inside one or the attribute is a
 /// `:bound` or `@event` one.
 extension RuleTables {
@@ -43,10 +43,11 @@ extension RuleTables {
             (insideBladeCode + decimal.0, .number),
         ]
 
-    /// Inside an echo (`{{ … }}`, `{!! … !!}`), a directive's arguments up to its line's end, or an
-    /// `@php … @endphp` block.
+    /// Inside an echo (`{{ … }}`, `{!! … !!}`), a directive's arguments up to its line's end, an
+    /// `@php … @endphp` block, or a plain PHP tag (`<?php … ?>`, `<?= … ?>`).
     static let insideBladeCode =
         inside(opens: ["\\{\\{", "\\{!!"], closes: ["\\}\\}", "!!\\}"])
         + inside(opens: ["@[A-Za-z]\\w{0,40}[ \\t]{0,4}\\("], closes: ["\\n"], within: 400)
         + inside(opens: ["@php\\b(?![ \\t]{0,4}\\()"], closes: ["@endphp"], within: 20000)
+        + inside(opens: ["<\\?(?:php\\b|=)"], closes: ["\\?>"], within: 20000)
 }

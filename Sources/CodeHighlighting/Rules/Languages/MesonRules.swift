@@ -11,7 +11,7 @@
 import Foundation
 
 /// Meson: `#` comments, `'…'` strings, the build functions and control words, `kwarg :`
-/// names, method calls, the built-in objects.
+/// names, method calls, the built-in objects, and decimal, `0x` hex, `0o` octal and `0b` binary numbers.
 extension RuleTables {
     static let meson: [(String, TokenKind)] = [
         hashComment,
@@ -22,6 +22,6 @@ extension RuleTables {
         ("\\b[a-z_]\\w*(?=\\s*:)", .attribute),
         ("\\.[a-z_]\\w*(?=\\()", .function),
         ("\\b[a-z_]\\w*(?=\\()", .function),
-        ("\\b\\d+\\b", .number),
+        ("\\b(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|\\d+)\\b", .number),
     ]
 }

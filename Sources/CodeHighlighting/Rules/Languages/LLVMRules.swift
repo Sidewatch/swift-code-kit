@@ -11,11 +11,11 @@
 import Foundation
 
 /// LLVM IR: `;` comments, `%locals`, `@globals`, `!metadata`, the integer and float types,
-/// the instruction and linkage words, `c"…"` constants.
+/// the instruction and linkage words, `c"…"` constants (the `c` a keyword), negative numbers whole.
 extension RuleTables {
     static let llvm: [(String, TokenKind)] = [
         (";.*$", .comment),
-        ("c?\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
+        ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
         ("%[\\w.]+", .variable),
         ("@[\\w.]+", .function),
         ("![\\w.]+", .property),
@@ -54,8 +54,12 @@ extension RuleTables {
             "noreturn", "norecurse", "nocallback", "noprofile", "nosanitize_coverage", "null_pointer_is_valid",
             "returns_twice", "safestack", "sanitize_address", "sanitize_memory", "sanitize_thread", "speculatable",
             "strictfp", "memory", "argmem", "inaccessiblemem", "read", "write", "readwrite", "none", "allocsize",
-            "allockind", "nounwind", "uselistorder", "vscale", "splat", "notail", "x",
+            "allockind", "nounwind", "uselistorder", "uselistorder_bb", "vscale", "splat", "notail", "x",
+            "optforfuzzing", "alignstack", "caller", "xchg", "nand", "max", "min", "umax", "umin", "fmax", "fmin",
+            "fmaximum", "fminimum", "uinc_wrap", "udec_wrap", "usub_cond", "usub_sat",
         ]),
-        ("\\b-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b|\\b0x[0-9a-fA-F]+\\b", .number),
+        // `c"…"`: the `c` marks a character-array constant.
+        ("\\bc(?=\")", .keyword),
+        ("(?<![\\w.])-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b|\\b0x[0-9a-fA-F]+\\b", .number),
     ]
 }

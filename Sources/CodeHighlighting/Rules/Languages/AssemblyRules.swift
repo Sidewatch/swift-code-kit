@@ -11,18 +11,21 @@
 import Foundation
 
 /// Assembly, NASM and GAS: `;` and `#` comments, labels, directives, the x86 and ARM register
-/// names, an indented mnemonic, memory operands, hex / binary literals.
+/// names, an indented mnemonic, memory operands (a size keyword inside one stays a keyword), and numbers in
+/// every NASM form (`0b1010_0101`, `777o`, `0A5h`, `1.0e10`).
 extension RuleTables {
     static let assembly: [(String, TokenKind)] = [
         (";.*$", .comment),
         ("^\\s*#.*$", .comment),
-        ("//.*$", .comment),
+        // `//` opens a GAS comment; followed by a number or a bracket it is NASM's signed division.
+        ("//(?![ \\t]*[\\d(]).*$", .comment),
         doubleQuotedPlain,
         singleQuotedPlain,
         ("^\\s*[A-Za-z_.$][\\w.$]*:", .function),
+        ("\\[[^\\]]*\\]", .property),
         ("^\\s*\\.[a-z_]+\\b", .keyword),
         (
-            "(?i)\\b(section|segment|global|globl|extern|equ|db|dw|dd|dq|dt|resb|resw|resd|resq|times|org|bits|default|align|use32|use64|struc|endstruc|macro|endmacro|include|incbin|byte|word|dword|qword|ptr|offset|rel)\\b",
+            "(?i)\\b(section|segment|global|globl|extern|common|static|equ|db|dw|dd|dq|dt|do|dy|dz|resb|resw|resd|resq|rest|reso|resy|resz|times|org|bits|default|align|alignb|use16|use32|use64|struc|endstruc|istruc|iend|at|macro|endmacro|include|incbin|byte|word|dword|qword|tword|oword|yword|zword|ptr|offset|rel|abs|strict|nosplit|seg|wrt|absolute)\\b",
             .keyword
         ),
         (
@@ -31,7 +34,9 @@ extension RuleTables {
         ),
         ("%[a-z]+[0-9a-z]*", .variable),
         ("^\\s+[a-zA-Z][a-zA-Z0-9.]*\\b", .keyword),
-        ("\\[[^\\]]*\\]", .property),
-        ("\\b(0x[0-9a-fA-F]+|[0-9][0-9a-fA-F]*[hH]|[01]+[bB]|\\d+)\\b|\\$[0-9a-fA-Fx]+", .number),
+        (
+            "\\b(?:0[xX][0-9a-fA-F_]+|0[oOqQ][0-7_]+|0[bByY][01_]+|[0-9][0-9a-fA-F_]*[hH]|[0-7][0-7_]*[oOqQ]|[01][01_]*[bByY]|\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:[eE][-+]?\\d+)?)\\b|\\$[0-9a-fA-Fx]+",
+            .number
+        ),
     ]
 }

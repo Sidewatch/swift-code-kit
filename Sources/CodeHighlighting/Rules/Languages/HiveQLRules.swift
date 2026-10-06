@@ -31,7 +31,8 @@ extension RuleTables {
                 "REBUILD", "DISABLE", "ENABLE", "REWRITE", "MACRO", "INPUTFORMAT", "OUTPUTFORMAT", "PURGE", "VERSION",
                 "VIEW", "OWNER", "DBPROPERTIES", "ADMIN", "OPTION", "PRIVILEGES", "ROLES", "SCHEMAS", "UNIQUEJOIN",
                 "CONF", "LOCK", "UNLOCK", "SHARED", "EXCLUSIVE", "COMPACT", "COMPACTIONS", "TRANSACTIONS", "ABORT",
-                "DUMP", "REPL", "STATUS", "CONSTRAINTS", "NOVALIDATE", "RELY", "NORELY", "DIRECTORY", "TRANSACTIONAL", "MANAGED",
+                "DUMP", "REPL", "STATUS", "FILE", "FILES", "JAR", "JARS", "CONSTRAINTS", "NOVALIDATE", "RELY", "NORELY", "DIRECTORY",
+                "TRANSACTIONAL", "MANAGED",
             ], .keyword),
         sqlWords(
             sqlStandardTypes + [

@@ -86,3 +86,28 @@
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "goto" "register" "extern" "static" "inline" "volatile" "const" "signed" "unsigned" "restrict" "_Atomic" "_Noreturn" "typedef" "sizeof" "_BitInt" "_Complex" "_Imaginary" "_Thread_local" "thread_local" "_Pragma" ] @keyword
 [ (true) (false) ] @boolean
+
+; A primitive type name the grammar reads as an identifier (a macro argument: `va_arg(args, int)`) is still
+; the type keyword; `auto(n)` is C++23's decay-copy, not a call of something named `auto`.
+(argument_list
+  (identifier) @type.builtin
+  (#any-of? @type.builtin "char" "short" "int" "long" "float" "double" "void" "signed" "unsigned" "bool" "_Bool"))
+(call_expression function: (identifier) @keyword (#eq? @keyword "auto"))
+
+; `_BitInt(8)`: the width is a number inside the type.
+(bit_int_specifier (number_literal) @number)
+
+; GNU inline assembly and the Microsoft calling-convention and pointer modifiers are keywords.
+(gnu_asm_expression ["asm" "__asm__" "__asm"] @keyword)
+(ms_call_modifier) @keyword
+(ms_pointer_modifier) @keyword
+(ms_based_modifier "__based" @keyword)
+
+; `#if 0 … #endif` is code switched off: a comment, as VS Code paints it. The directives themselves, the
+; condition and an `#else` branch keep their own colours (`@code` spans inside the comment).
+((preproc_if
+  "#if" @code
+  condition: (number_literal) @_zero @code
+  alternative: (_)? @code
+  "#endif" @code) @comment
+ (#eq? @_zero "0"))

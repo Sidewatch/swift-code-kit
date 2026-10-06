@@ -12,8 +12,10 @@ import Foundation
 
 /// Agda: `--` comments and nesting `{- -}` block comments, `"…"` strings, `'x'` character literals
 /// (a prime ending a name, `⊥'`, opens nothing), the keywords of the Agda reference — dashed ones like
-/// `no-eta-equality` whole — and the reserved symbols `→ -> λ \ ∀ : = |` where they stand alone, and
-/// numbers. Names hold dashes and primes, so a keyword is a whole space-separated token.
+/// `no-eta-equality` whole — and the reserved symbols `→ -> λ \ ∀ : = |` where they stand alone, the
+/// irrelevance dot (`.A`, `.(x : A)`), and numbers with `_` separators. Names hold dashes and primes, so a
+/// keyword is a whole space-separated token. The name a signature declares (`name :` opening a line,
+/// mixfix `_+_` and unicode names included) is a function.
 extension RuleTables {
     static let agda: [(String, TokenKind)] = [
         dashComment,
@@ -26,6 +28,8 @@ extension RuleTables {
         ),
         ("(?<=[\\s({]|^)(?:→|->|λ|\\\\|∀|:|=|\\||\\.\\.\\.?)(?=[\\s)}]|$)", .keyword),
         ("(?<![\\w'-])(?:Set|Prop)[₀-₉\\d]*(?![\\w'-])", .type),
-        ("(?<![\\w'-])(?:0x[0-9a-fA-F]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)(?![\\w'-])", .number),
+        ("(?<![\\w'-])(?:0x[0-9a-fA-F_]+|\\d[\\d_]*(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)(?![\\w'-])", .number),
+        ("\\.(?<=\\s\\.)(?=[({\\w])", .keyword),
+        ("^[ \\t]*[^\\s(){}:;\"]+(?=[ \\t]*:(?=\\s))", .function),
     ]
 }

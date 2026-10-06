@@ -192,7 +192,10 @@
 (wildcard) @parameter
 
 ; Only the `@` and the name: an annotation's arguments keep their own colours (strings, numbers).
-(annotation "@" @attribute name: (_) @attribute)
+(annotation "@" @attribute name: (type_identifier) @attribute)
+(annotation "@" @attribute name: (stable_type_identifier) @attribute)
+; `@throws[Exception]`: the annotation's own name, not its type arguments.
+(annotation "@" @attribute name: (generic_type type: (_) @attribute))
 
 ;; special keywords
 
@@ -291,3 +294,17 @@
 (export_declaration (namespace_wildcard) @namespace.prefix)
 ((import_declaration (identifier) @type) (#match? @type "^[A-Z]"))
 ((export_declaration (identifier) @type) (#match? @type "^[A-Z]"))
+
+; A `//> using` directive is a comment to the compiler (Scala CLI reads it): its key and value too.
+(using_directive_key) @comment
+(using_directive_value) @comment
+
+; A definition's name is a function even where a later rule claims the word: the auxiliary
+; constructor `def this()`, an operator method `def ++(a: Int)`.
+(function_definition name: [(identifier) (operator_identifier)] @function)
+
+; `import a.b.given` imports the given instances: `given` is the keyword, not a receding path segment.
+(namespace_wildcard "given" @keyword)
+
+; An interpolation is code inside the string: `$name`, `${expr}`.
+(interpolation) @code

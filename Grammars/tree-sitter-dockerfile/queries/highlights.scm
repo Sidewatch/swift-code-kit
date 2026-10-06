@@ -56,3 +56,12 @@
  (#match? @constant "^[A-Z][A-Z_0-9]*$"))
 
 
+
+; Sidewatch: a heredoc's lines are plain text (VS Code paints them plain, not as a string); a whole-line comment in
+; one (`#!/bin/sh` opening a `RUN <<EOT` script) is a comment.
+(heredoc_line) @plain
+((heredoc_line) @comment
+  (#match? @comment "^[ \t]*#"))
+; A backslash escape in an unquoted value (`two\ words`, `\$NOT_EXPANDED`) is quoted text.
+(unquoted_string
+  (escape_sequence) @string)

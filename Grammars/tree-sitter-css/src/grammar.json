@@ -2949,8 +2949,12 @@
     "unit": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "[a-zA-Z%]+"
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[a-zA-Z%]+"
+        }
       }
     },
     "grid_value": {

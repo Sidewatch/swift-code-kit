@@ -12,19 +12,21 @@ import Foundation
 
 /// Groovy (and Gradle's Groovy DSL): `//` and `/* */` comments, `"…"` / `'…'` strings, `"""…"""` and
 /// `'''…'''` across lines, slashy `/…/` strings where a value starts (after `=`, `(`, `,`, `~`, `:`,
-/// `[`, `{`, `return`), dollar-slashy `$/…/$` across lines, the Groovy keywords, the primitive types,
-/// annotations and calls.
+/// `[`, `{`, `return`), dollar-slashy `$/…/$` across lines (`$$` and `$/` are escapes inside it, and `/` before an interpolation's `$` never closes it), the
+/// Groovy keywords, the primitive types, annotations and calls, and the type a `class`, `interface`,
+/// `trait`, `enum` or `record` declares or `extends` / `implements` / `permits` names.
 extension RuleTables {
     static let groovy: [(String, TokenKind)] = [
         lineComment,
         blockComment,
         tripleDoubleQuoted,
         tripleSingleQuoted,
-        ("\\$/[\\s\\S]*?/\\$", .string),
+        ("\\$/(?:\\$[$/]|\\$(?![$/])|[^/$]|/(?!\\$(?![${A-Za-z_])))*+/\\$(?![${A-Za-z_])", .string),
         ("(?:(?<=[=(,~:\\[{!&|?][ \\t]{0,20})|(?<=^[ \\t]{0,40})|(?<=\\breturn[ \\t]{1,20}))/(?![/*\\s])(?:[^/\\\\\\n]|\\\\.)+/", .string),
         ("\"(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
         ("'(?:[^'\\\\\\n]|\\\\.)*'", .string),
         ("\\b[A-Za-z_]\\w*(?=[ \\t]*\\()", .function),
+        declaration(after: ["class", "interface", "trait", "enum", "record", "extends", "implements", "permits"]),
         keywords([
             "abstract", "as", "assert", "break", "case", "catch", "class", "const", "continue", "def", "default", "do", "else",
             "enum", "extends", "final", "finally", "for", "goto", "if", "implements", "import", "in", "instanceof",

@@ -11,7 +11,8 @@
 import Foundation
 
 /// Reason: `//` and nesting `/* */` comments, `"…"` strings, `{|…|}` and `{js|…|js}` quoted strings,
-/// `'x'` character literals (`'a` alone is a type variable), the Reason keywords, the primitive types and
+/// `'x'` character literals (`'a` alone is a type variable), the Reason keywords (the infix word operators
+/// `mod`, `land`, `lsl`, … and the wildcard `_` among them), the primitive types and
 /// capitalised module and constructor names, and numbers.
 extension RuleTables {
     static let reason: [(String, TokenKind)] = [
@@ -25,7 +26,9 @@ extension RuleTables {
             "external", "for", "fun", "function", "functor", "if", "in", "include", "inherit", "initializer", "lazy",
             "let", "module", "mutable", "new", "nonrec", "object", "of", "open", "or", "pri", "pub", "rec", "sig",
             "struct", "switch", "then", "to", "try", "type", "val", "virtual", "when", "while", "with",
+            "mod", "land", "lor", "lxor", "lsl", "lsr", "asr",
         ]),
+        ("\\b_\\b", .keyword),
         ("\\b[A-Z]\\w*\\b", .type),
         types(["int", "float", "string", "bool", "char", "unit", "list", "array", "option", "int32", "int64", "nativeint"]),
         constants(["true", "false"]),

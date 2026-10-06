@@ -11,14 +11,14 @@
 import Foundation
 
 /// D: every string form — `"…"` with a `c`/`w`/`d` suffix, `r"…"` and `` `…` `` WYSIWYG, `x"…"` hex,
-/// `q"(…)"` / `q"[…]"` / `q"{…}"` / `q"<…>"` delimited, `q"EOS … EOS"` heredoc, `q{…}` token strings —
+/// `q"(…)"` / `q"[…]"` / `q"{…}"` / `q"<…>"` delimited, `q"EOS … EOS"` heredoc, the `q{` of a token string (whose contents are D tokens, painted as code) —
 /// `'c'` characters, the language's keywords and basic types. A call is any other name before `(`, so
 /// `if (`, `foreach (` and `assert(` stay keywords.
 extension RuleTables {
     static let d: [(String, TokenKind)] = [
         ("q\"(\\w+)\\n[\\s\\S]*?\\n\\1\"", .string),
         ("q\"\\((?:[^()]|\\([^()]*\\))*\\)\"|q\"\\[[^\\]]*\\]\"|q\"\\{[^}]*\\}\"|q\"<[^>]*>\"", .string),
-        ("q\\{(?:[^{}]|\\{(?:[^{}]|\\{[^{}]*\\})*\\})*\\}", .string),
+        ("q\\{", .string),
         ("\\b[rx]\"[^\"]*\"[cwd]?", .string),
         ("`[^`]*`[cwd]?", .string),
         ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"[cwd]?", .string),

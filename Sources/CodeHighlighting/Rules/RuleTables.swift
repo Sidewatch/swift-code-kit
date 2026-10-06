@@ -33,7 +33,8 @@ enum RuleTables {
         case .astro: return astro
         case .html: return html
         case .css: return css
-        case .scss, .sass, .less: return scss
+        case .scss, .less: return scss
+        case .sass: return sass
         case .postcss: return postcss
         case .stylus: return stylus
         case .json: return json
@@ -71,7 +72,8 @@ enum RuleTables {
         case .ruby: return ruby
         case .gettext: return gettext
         case .gitignore: return gitignore
-        case .vue, .svelte: return vue
+        case .vue: return vue
+        case .svelte: return svelte
         case .terraform, .hcl: return terraform
         case .graphql: return graphql
         case .prisma: return prisma
@@ -181,6 +183,8 @@ enum RuleTables {
         case .scheme: return scheme
         case .racket: return racket
         case .fennel: return fennel
+        case .clojure: return clojure
+        case .elm: return elm
         case .wat: return wat
         case .starlark: return starlark
         case .rego: return rego
@@ -198,6 +202,9 @@ enum RuleTables {
         case .plsql: return plsql
         case .plpgsql: return plpgsql
         case .apacheconf: return apacheconf
+        case .cmake: return cmake
+        case .odin: return odin
+        case .cairo: return cairo
         default: return table(for: lang.family)
         }
     }

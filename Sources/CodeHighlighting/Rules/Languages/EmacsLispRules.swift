@@ -37,6 +37,11 @@ extension RuleTables {
                 .string
             ),
             ("\\\\.", .string),
+        ],
+        definitions: [
+            lispDefinedName(
+                after: ["defun", "defmacro", "defsubst", "define-inline", "cl-defun", "cl-defmacro", "cl-defgeneric", "cl-defmethod"],
+                parenthesised: false)
         ]
     )
 }

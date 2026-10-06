@@ -81,3 +81,16 @@
   "---"
   "..."
 ] @punctuation.special
+
+; Sidewatch: a directive's version is a number and its tag handle a keyword (`%YAML 1.2`, `%TAG !e! …`), as
+; VS Code scopes them.
+(yaml_directive
+  (yaml_version) @number)
+(tag_directive
+  (tag_handle) @keyword)
+; The rest of the YAML 1.1 booleans (`y`, `n`) and timestamps (`2026-03-01`, `2026-03-01T09:30:00Z`), which
+; VS Code paints as constants.
+((string_scalar) @boolean
+  (#match? @boolean "^(y|Y|n|N)$"))
+((string_scalar) @number
+  (#match? @number "^[0-9]{4}-([0-9]{2}-[0-9]{2}|[0-9]{1,2}-[0-9]{1,2}([Tt]|[ \t]+)[0-9]{1,2}:[0-9]{2}:[0-9]{2}(\\.[0-9]*)?([ \t]*Z|[ \t]*[-+][0-9]{1,2}(:[0-9]{2})?)?)$"))

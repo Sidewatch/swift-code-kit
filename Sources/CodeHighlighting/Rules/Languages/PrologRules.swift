@@ -11,7 +11,7 @@
 import Foundation
 
 /// Prolog: `%` and block comments, quoted atoms, `` `codes` ``, capitalised variables, the `:-` neck,
-/// predicate calls. A character code (`0'a`, `0''`, `0'''`, `0'\n`) is painted whole as a literal and a
+/// predicate calls, and the head of a clause or grammar rule with no arguments (`main :-`, `ws -->`). A character code (`0'a`, `0''`, `0'''`, `0'\n`) is painted whole as a literal and a
 /// radix number (`16'FF`) as a number, so neither quote opens a quoted atom.
 extension RuleTables {
     static let prolog: [(String, TokenKind)] = [
@@ -29,6 +29,7 @@ extension RuleTables {
         ]),
         ("\\b[A-Z_][A-Za-z0-9_]*\\b", .variable),
         ("\\b[a-z]\\w*(?=\\()", .function),
+        ("^[a-z]\\w*(?=[ \\t]*(?::-|-->))", .function),
         (
             "\\b(?:0x[0-9a-fA-F_]+|0o[0-7_]+|0b[01_]+|\\d+'[0-9a-zA-Z]+|\\d+(?:_\\d+)*(?:\\.\\d+(?:[eE][+-]?\\d+)?(?:Inf|NaN)?|[eE][+-]?\\d+|r\\d+)?)\\b",
             .number

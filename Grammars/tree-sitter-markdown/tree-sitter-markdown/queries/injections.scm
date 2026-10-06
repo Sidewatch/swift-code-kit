@@ -23,3 +23,7 @@
 
 ((inline) @injection.content
   (#set! injection.language "markdown_inline"))
+
+; Sidewatch: a table cell holds inline Markdown (code spans, emphasis, links), as nvim-treesitter injects it.
+((pipe_table_cell) @injection.content
+  (#set! injection.language "markdown_inline"))

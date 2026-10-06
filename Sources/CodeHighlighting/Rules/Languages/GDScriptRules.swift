@@ -12,7 +12,7 @@ import Foundation
 
 /// GDScript (Godot 4): `#` and `##` comments (the language table adds them); `"…"`, `'…'`, `"""…"""` and
 /// `'''…'''` strings, `r"…"` raw strings, `&"StringName"` and `^"NodePath"` literals; `$Node/Path` and
-/// `%Unique` node references; `@annotations`; the reference's keywords; capitalised built-in and engine types.
+/// `%Unique` node references; `@annotations`; the reference's keywords; capitalised built-in and engine types; numbers, `5.` included.
 extension RuleTables {
     static let gdscript: [(String, TokenKind)] = [
         (
@@ -32,5 +32,6 @@ extension RuleTables {
         ("@[A-Za-z_]\\w*", .attribute),
         ("\\$(?:\"[^\"\\n]*\"|[A-Za-z_][\\w/]*)|%[A-Za-z_]\\w*", .property),
         decimal,
+        ("\\b\\d+\\.(?![\\w.])", .number),  // a float with a trailing dot, `5.`
     ]
 }

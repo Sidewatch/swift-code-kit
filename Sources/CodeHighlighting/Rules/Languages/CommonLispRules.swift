@@ -39,6 +39,9 @@ extension RuleTables {
             lispCharacter,
             ("\\|(?:[^|\\\\]|\\\\[\\s\\S])*\\|", .string),
             ("\\\\.", .string),
+        ],
+        definitions: [
+            lispDefinedName(after: ["defun", "defmacro", "defgeneric", "defmethod", "define-compiler-macro"], parenthesised: false)
         ]
     )
 }

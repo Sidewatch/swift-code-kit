@@ -25,11 +25,14 @@ extension RuleTables {
         ("^=begin[ \\t]+([\\w-]+)[\\s\\S]*?^=end[ \\t]+\\1\\b.*$", .comment),
         ("^=for\\b.*(?:\\n(?![ \\t]*$).*)*", .comment),
         ("^=END\\b[\\s\\S]*", .comment),
+        // An abbreviated block (`=defn Term`, `=item`, `=head1`) runs to the next blank line; a directive is one line.
+        ("^=(?!begin\\b|end\\b|for\\b|config\\b|END\\b)[A-Za-z]\\w*\\b.*(?:\\n(?![ \\t]*$).*)*", .comment),
         ("^=[A-Za-z]\\w*\\b.*$", .comment),
         ("\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"", .string),
         ("'(?:[^'\\\\]|\\\\[\\s\\S])*'", .string),
-        // `«words»` quotes only when a word follows the `«` on its line: `»+«`, `-« (1, 2)` are hyper operators.
-        ("｢[^｣]*｣|“[^”]*”|‘[^’]*’|„[^“”]*[“”]|«(?![\\s+\\-*/~%^=<>!?&|.,»«])[^»«\\n]*»|<<[^<>\\n]*>>", .string),
+        // `«words»` (and `<<words>>`) quotes only when a word follows the `«` on its line: `»+«`, `-« (1, 2)` and
+        // `<<+>>` are hyper operators.
+        ("｢[^｣]*｣|“[^”]*”|‘[^’]*’|„[^“”]*[“”]|«(?![\\s+\\-*/~%^=<>!?&|.,»«])[^»«\\n]*»|<<(?=[\\w\"'$])[^<>\\n]*>>", .string),
         // `q:to/END/` and `qq:to [END]`: the body runs from the next line to the terminator on a line of its own.
         ("(?<![$@%&\\w-])(?:q|qq|Q)(?::!?\\w+)*:to\\s*/(\\w+)/.*\\n[\\s\\S]*?^[ \\t]*\\1[ \\t]*$", .string),
         ("(?<![$@%&\\w-])(?:q|qq|Q)(?::!?\\w+)*:to\\s*\\[(\\w+)\\].*\\n[\\s\\S]*?^[ \\t]*\\1[ \\t]*$", .string),

@@ -203,3 +203,12 @@
   "with"
   "yield"
 ] @keyword
+
+; Sidewatch: `constructor` names a class's constructor, a keyword-like name as in VS Code (`storage.type`).
+((method_definition name: (property_identifier) @keyword) (#eq? @keyword "constructor"))
+
+; `export { x as default }`: `default` is the keyword even where the grammar reads it as an identifier.
+((export_specifier alias: (identifier) @keyword) (#eq? @keyword "default"))
+
+; A template literal's `${…}` is code inside the string.
+(template_substitution) @code

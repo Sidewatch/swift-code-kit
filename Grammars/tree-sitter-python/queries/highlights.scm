@@ -148,3 +148,6 @@
 ; heuristics above) keep their current colors. (17 Sep 2026.)
 (call
   function: (attribute attribute: (identifier) @function.method))
+
+; An f-string's `{…}` replacement field is code inside the string.
+(interpolation) @code

@@ -349,3 +349,33 @@
 [ (self_expression) (super_expression) ] @keyword
 ((navigation_suffix suffix: (simple_identifier) @keyword) (#eq? @keyword "self"))
 "case" @keyword
+
+; An imported module and every segment of an import path name a module or type: `import Foundation`,
+; `import struct Foundation.URL`.
+(import_declaration (identifier (simple_identifier) @namespace))
+
+; `init` declares an initializer the way `func` declares a function: the keyword colour.
+(init_declaration "init" @keyword)
+
+; `fallthrough` ends a switch case, though the grammar reads it as a one-name statement.
+((statements (simple_identifier) @keyword) (#eq? @keyword "fallthrough"))
+
+; `unowned(unsafe) var`, `weak var`; `(Int).Type`, `P.Protocol`.
+(ownership_modifier) @keyword
+(metatype ["Type" "Protocol"] @keyword)
+
+; A precedence group's attribute names (`associativity: left`, `higherThan:`, `assignment:`) and the
+; associativity values are keywords; a `higherThan` value is a group name.
+(precedence_group_attribute . (simple_identifier) @keyword)
+((precedence_group_attribute (simple_identifier) @keyword .) (#any-of? @keyword "left" "right" "none"))
+
+; Attributes wear the type colour (`@objc`, `@MainActor`, `@available`), wherever they stand.
+(attribute "@" @type (user_type (type_identifier) @type))
+
+; `self.init(…)`, `super.init(…)`: `init` is the keyword there too.
+((navigation_suffix suffix: (simple_identifier) @keyword) (#eq? @keyword "init"))
+
+; A version (`swift(>=5.9)`, `@available(macOS 10.15, *)`) is two integer literals to the grammar: the dot
+; between them is part of the number. (An anchored `(integer_literal) . "."` finds only the first version.)
+(directive "." @number)
+(attribute "." @number)

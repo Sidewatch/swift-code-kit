@@ -799,6 +799,16 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// into one later-wins order, as if each pass were applied after the last.
     typealias Hit = (range: NSRange, pattern: Int, color: NSColor)
 
+    /// The capture that marks code embedded in a string (an interpolation): `@code`. It paints
+    /// nothing itself; a capture whose range strictly contains it (the string around it) paints
+    /// around it, so the code inside keeps its own colours whatever their pattern order. Needed
+    /// where a grammar hides the string's delimiters, leaving the whole literal as the only node a
+    /// query can capture as string.
+    static let codeCapture = "code"
+
+    /// The hit colour standing for a ``codeCapture`` range, recognised by identity.
+    static let codeHole = NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 0)
+
     /// Runs a highlights query over `tree` (parsed from `source`), resolving predicates, and
     /// returns the coloured hits offset into storage coordinates by `offset`, clipped to `clip`.
     /// The cursor is bounded to the clip (bytes = UTF-16 index × 2), so iteration is O(viewport),
@@ -823,7 +833,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         var hits: [Hit] = []
         while let match = resolving.next() {
             for capture in match.captures {
-                guard let name = capture.name, let color = color(for: name) else { continue }
+                guard let name = capture.name, let color = name == codeCapture ? codeHole : color(for: name) else { continue }
                 let r = capture.range
                 guard r.length > 0, NSMaxRange(r) <= ns.length else { continue }
                 // A plain name only fills what nothing else paints, in any pass: its hit sorts below every
@@ -868,11 +878,14 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // Desired color per position, painted in ascending precedence so later
         // patterns overwrite earlier ones — same math as sequential application.
         var desired = ContiguousArray<NSColor?>(repeating: nil, count: clipped.length)
-        for hit in hits.sorted(by: { $0.pattern < $1.pattern }) {
+        let holes = hits.filter { $0.color === codeHole }.map(\.range).sorted { ($0.location, -$0.length) < ($1.location, -$1.length) }
+        for hit in hits.sorted(by: { $0.pattern < $1.pattern }) where hit.color !== codeHole {
             let r = NSIntersectionRange(hit.range, clipped)
             guard r.length > 0 else { continue }
-            for i in (r.location - clipped.location)..<(NSMaxRange(r) - clipped.location) {
-                desired[i] = hit.color
+            if holes.isEmpty {
+                for i in (r.location - clipped.location)..<(NSMaxRange(r) - clipped.location) { desired[i] = hit.color }
+            } else {
+                paint(hit, within: r, around: holes, clipped: clipped, into: &desired)
             }
         }
 
@@ -919,6 +932,32 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         return writes.count
     }
 
+    /// Paints `hit` over `r` (its range clipped) except inside the ``codeCapture`` ranges its range strictly
+    /// contains: the spans a string's capture leaves for the code inside it. `holes` is sorted by location,
+    /// outer before inner; a hole nested in an earlier one is already skipped with it.
+    private static func paint(
+        _ hit: Hit, within r: NSRange, around holes: [NSRange], clipped: NSRange, into desired: inout ContiguousArray<NSColor?>
+    ) {
+        var lo = 0, hi = holes.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if holes[mid].location < hit.range.location { lo = mid + 1 } else { hi = mid }
+        }
+        var from = r.location
+        var k = lo
+        while k < holes.count, holes[k].location < NSMaxRange(hit.range) {
+            let hole = holes[k]
+            k += 1
+            guard NSMaxRange(hole) <= NSMaxRange(hit.range), hole != hit.range else { continue }
+            let start = max(from, hole.location), end = min(NSMaxRange(r), NSMaxRange(hole))
+            guard start < end else { continue }
+            for i in (from - clipped.location)..<(start - clipped.location) { desired[i] = hit.color }
+            from = end
+        }
+        guard from < NSMaxRange(r) else { return }
+        for i in (from - clipped.location)..<(NSMaxRange(r) - clipped.location) { desired[i] = hit.color }
+    }
+
     /// Diagnostic seam: invoked once per ACTUAL attribute write (the minimal
     /// diff-aware ranges), so hosts/probes can verify the zero-write contract
     /// over settled text. Nil (and free) in production. Main-thread only,
@@ -934,7 +973,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         hits: [(range: NSRange, pattern: Int, color: NSColor)],
         clip: NSRange, into storage: NSTextStorage
     ) {
-        for hit in hits.sorted(by: { $0.pattern < $1.pattern }) {
+        for hit in hits.sorted(by: { $0.pattern < $1.pattern }) where hit.color !== codeHole {
             let r = NSIntersectionRange(hit.range, clip)
             if r.length > 0 { storage.addAttribute(.foregroundColor, value: hit.color, range: r) }
         }
@@ -1158,7 +1197,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
                 name.unicodeScalars.append(c)
                 j = scalars.index(after: j)
             }
-            if role(for: name) != nil { return true }
+            if role(for: name) != nil || name == codeCapture { return true }
             scalars = scalars[j...]
         }
         return false
@@ -1181,10 +1220,9 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // calls every import alias a `type_identifier`, whatever it renames).
         // NOT wired to nvim's `@none`, which the Dart/Dockerfile/Kotlin/Scala queries
         // put on string interpolations (`"$name"`, `${…}`): those patterns are colorless,
-        // so `prunedQuerySource` drops them and interpolations stay string-colored. Giving
-        // `@none` this role would flip all four languages at once — and because those
-        // patterns sit AFTER the property/identifier ones, it would flatten `${a.size}`
-        // to plain rather than highlight it as code.
+        // so `prunedQuerySource` drops them. Giving `@none` this role would flatten
+        // `${a.size}` to plain; an interpolation is marked `@code` instead (``codeCapture``),
+        // which keeps the string's colour off it and leaves its tokens their own.
         if capture == "plain" { return "plain" }
         switch capture.split(separator: ".").first.map(String.init) ?? capture {
         case "keyword", "conditional", "repeat", "include", "exception",

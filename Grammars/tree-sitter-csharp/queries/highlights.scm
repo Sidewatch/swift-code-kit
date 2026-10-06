@@ -219,3 +219,11 @@
 ; Sidewatch additions (4 Sep 2026): tokens the grammar defines but the upstream query left plain.
 ; Appended last on purpose — the highlighter lets the highest pattern index win.
 [ "fixed" "unsafe" "checked" "unchecked" "stackalloc" "lock" "sizeof" "typeof" "is" "as" "in" "out" "ref" "params" "when" "where" "yield" "await" "async" "operator" "implicit" "explicit" "extern" "volatile" "unmanaged" "notnull" "with" "init" "required" "file" "scoped" "managed" "global" "alias" "add" "remove" "get" "set" "partial" "record" "sealed" "virtual" "override" "abstract" "readonly" "const" "static" "new" "base" "this" "event" "delegate" "default" ] @keyword
+
+; A constructor or finalizer declaration names a function (VS Code's `entity.name.function`), though its
+; name is the type's; `new Bin()` keeps the type colour.
+(constructor_declaration name: (identifier) @function)
+(destructor_declaration name: (identifier) @function)
+
+; `operator true(Money a)`: the operator being declared is the function's name, not a literal.
+(operator_declaration operator: ["true" "false"] @function)

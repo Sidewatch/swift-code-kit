@@ -11,11 +11,16 @@
 import Foundation
 
 /// Tcl: `#` comments where a command starts (the line's start or after `;` — `uplevel #0` is an
-/// argument), `"…"` strings, the control and definition commands as keywords, the other core commands
-/// as built-ins, `$name` / `${name}` / `$ns::name` substitutions, `-options`, and numbers.
+/// argument), `"…"` strings (a `[command]` inside one may quote again), the control and definition commands as keywords, the other core commands
+/// as built-ins, `$name` / `${name}` / `$ns::name` substitutions, `-options`, and numbers (signed, and
+/// `1.4.0` versions whole).
 extension RuleTables {
     static let tcl: [(String, TokenKind)] = [
-        doubleQuoted,
+        // A `[command]` inside a string may hold quoted strings of its own, two levels deep: one string.
+        (
+            "\"(?:[^\"\\\\\\[]|\\\\[\\s\\S]|\\[(?:[^\\[\\]\"]|\"(?:[^\"\\\\\\[]|\\\\.|\\[(?:[^\\[\\]\"]|\"[^\"\\n]*\")*\\])*\"|\\[[^\\[\\]]*\\])*\\]|\\[)*\"",
+            .string
+        ),
         tclWords(
             [
                 "after", "apply", "array", "break", "catch", "continue", "coroutine", "else", "elseif", "error", "eval",
@@ -37,7 +42,7 @@ extension RuleTables {
         ("(?<=\\s)-[a-z][\\w-]*", .property),
         constants(["true", "false", "yes", "no", "Inf", "NaN"]),
         (
-            "(?<![\\w.$-])(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|\\d+\\.?\\d*(?:[eE][+-]?\\d+)?|\\.\\d+(?:[eE][+-]?\\d+)?)(?![\\w.])",
+            "(?<![\\w.$-])-?(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|\\d+(?:\\.\\d+){2,}|\\d+\\.?\\d*(?:[eE][+-]?\\d+)?|\\.\\d+(?:[eE][+-]?\\d+)?)(?![\\w.])",
             .number
         ),
     ]

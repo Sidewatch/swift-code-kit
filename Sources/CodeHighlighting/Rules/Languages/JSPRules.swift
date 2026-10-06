@@ -13,7 +13,7 @@ import Foundation
 /// JSP: `<%-- --%>` comments (the language's own), the `<% %>` / `<%= %>` / `<%! %>` / `<%@ %>`
 /// delimiters and the Java inside them (`//` and `/* */` comments, strings and text blocks, keywords,
 /// types, numbers), Expression Language in `${ }` / `#{ }`, and the XML-style tags around them, whose
-/// attribute values are strings.
+/// attribute values are strings (an expression or an action inside one included, a scriptlet not).
 extension RuleTables {
     static let jsp: [(String, TokenKind)] =
         [
@@ -22,8 +22,11 @@ extension RuleTables {
             (insideScriptletTag + "/\\*[\\s\\S]*?\\*/", .comment),
             (insideScriptletTag + "\"\"\"[\\s\\S]*?\"\"\"", .string),
         ] + tagStrings(insideJSPCode) + [
-            ("(?<==)\"[^\"<\\n]*\"", .string),
-            ("(?<==)'[^'<\\n]*'", .string),
+            // An attribute value is a string whole, an expression or an action inside it included; one
+            // that holds a scriptlet (`value="<%= year %>"`) keeps only its quotes in the string colour.
+            ("(?<==)\"(?:[^\"\\n<]|<(?!%))*\"", .string),
+            ("(?<==)'(?:[^'\\n<]|<(?!%))*'", .string),
+            ("(?<==)[\"'](?=[^\"'\\n]*<%)|[\"'](?<=%>[\"'])", .string),
             ("</?[A-Za-z][\\w:.-]*|/>|>", .keyword),
             ("\\b[A-Za-z-]+=", .attribute),
             ("<%[!=@]?|%>|[$#]\\{", .keyword),

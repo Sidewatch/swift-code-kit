@@ -16,7 +16,8 @@ import Foundation
 /// numbers with `&H` / `&O` / `&B` prefixes and type suffixes; the language reference's keywords.
 extension RuleTables {
     static let vbnet: [(String, TokenKind)] = [
-        ("\\$?\"(?:[^\"]|\"\")*\"[cC]?", .string),
+        // An interpolated string's `$` marks the string; the quotes open it.
+        ("\"(?:[^\"]|\"\")*\"[cC]?", .string),
         callee,
         wordTrie(
             [

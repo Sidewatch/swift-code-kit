@@ -20,9 +20,9 @@ extension RuleTables {
         // A directive's value (`v-if="count > 5"`, `:items="visible"`, `@click="go"`) is a JavaScript
         // expression, not a string — neither its opening quote nor its closing one starts a string; the two
         // quotes are painted alone, and quotes inside it are strings of their own.
-        ("(?<=\\s(?:v-|[:@#])[\\w.:\\[\\]-]{0,60}=(?:\"[^\"\\n]{0,400})?)\"", .string),
+        ("(?<=\\s(?:v-|[:@#])[\\w.:\\[\\]-]{0,40}=(?:\"[^\"\\n]{0,200})?)\"", .string),
         (
-            "(?<!\\s(?:v-[\\w.:\\[\\]-]|[:@#])[\\w.:\\[\\]-]{0,60}=(?:\"[^\"\\n]{0,400})?)"
+            "(?<!\\s(?:v-[\\w.:\\[\\]-]|[:@#])[\\w.:\\[\\]-]{0,40}=(?:\"[^\"\\n]{0,200})?)"
                 + "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
             .string
         ),

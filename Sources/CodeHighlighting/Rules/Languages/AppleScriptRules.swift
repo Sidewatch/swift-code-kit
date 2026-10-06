@@ -12,7 +12,7 @@ import Foundation
 
 /// AppleScript: `--` and `#` line comments (a `#!` shebang among them), `(* … *)` block comments that
 /// nest, `"…"` strings with backslash escapes, `«…»` raw codes, the reserved words of the AppleScript
-/// Language Guide, and numbers.
+/// Language Guide (`using terms from` among them), the handler an `on` / `to` line defines, and numbers.
 extension RuleTables {
     static let applescript: [(String, TokenKind)] = [
         dashComment,
@@ -21,6 +21,8 @@ extension RuleTables {
         doubleQuoted,
         ("«[^»\\n]*»", .type),
         callee,
+        // The handler an `on` or `to` line defines.
+        ("^[ \\t]*(?:on|to)[ \\t]+[A-Za-z_]\\w*", .function),
         keywords([
             "about", "above", "after", "against", "and", "apart", "around", "as", "aside", "at", "back", "before",
             "beginning", "behind", "below", "beneath", "beside", "between", "but", "by", "considering", "contain",
@@ -30,7 +32,7 @@ extension RuleTables {
             "on", "onto", "or", "out", "over", "prop", "property", "put", "ref", "reference", "repeat", "return",
             "returning", "script", "second", "set", "seventh", "since", "sixth", "some", "tell", "tenth", "that",
             "the", "then", "third", "through", "thru", "timeout", "times", "to", "transaction", "try", "until", "use",
-            "where", "while", "whose", "with", "without",
+            "where", "while", "whose", "with", "without", "using", "terms",
         ]),
         constants(["true", "false", "missing value"]),
         decimal,

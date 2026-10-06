@@ -17,7 +17,7 @@ extension RuleTables {
         jinja + templateAttributeStrings + [
             templateTagKeywords([
                 "elseif", "asyncEach", "endeach", "asyncAll", "endall", "ifAsync", "endifAsync", "each", "switch", "endswitch", "case",
-                "default", "null",
+                "default", "null", "verbatim", "endverbatim",
             ])
         ]
 }

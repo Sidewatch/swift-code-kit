@@ -23,7 +23,7 @@ extension RuleTables {
                 "from", "as", "macro", "endmacro", "call", "endcall", "filter", "endfilter", "with", "endwith", "raw", "endraw",
                 "autoescape",
                 "endautoescape", "is", "not", "and", "or", "true", "false", "none", "True", "False", "None", "loop", "recursive", "scoped",
-                "ignore", "missing", "context", "without", "do", "trans", "endtrans", "pluralize", "break", "continue",
+                "ignore", "missing", "context", "without", "do", "trans", "endtrans", "pluralize", "break", "continue", "debug",
             ]),
             ("\\|\\s*[a-z_]\\w*", .function),
             ("\\b[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)+\\b", .property),

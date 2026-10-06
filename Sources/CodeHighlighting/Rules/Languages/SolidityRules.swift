@@ -10,12 +10,12 @@
 
 import Foundation
 
-/// Solidity: `"…"` and `'…'` strings with their `hex"…"` and `unicode"…"` forms, the language's
+/// Solidity: `"…"` and `'…'` strings, the `hex` / `unicode` prefix of `hex"…"` and `unicode"…"` as a keyword
+/// before its string, the language's
 /// keywords, `uint256` / `bytes32` / `address` value types, ether and time units. Calls paint
 /// before keywords, so `returns (`, `require(` and `mapping(` stay keywords.
 extension RuleTables {
     static let solidity: [(String, TokenKind)] = [
-        ("\\b(?:hex|unicode)(?:\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"|'(?:[^'\\\\]|\\\\[\\s\\S])*')", .string),
         doubleQuoted,
         singleQuoted,
         call,
@@ -28,6 +28,7 @@ extension RuleTables {
             "anonymous", "unchecked", "assembly", "let", "leave", "switch", "case", "default", "type", "this", "super",
             "global", "layout", "at",
         ]),
+        ("\\b(?:hex|unicode)(?=[\"'])", .keyword),
         types(["address", "bool", "string", "bytes\\d*", "u?int\\d*", "u?fixed[\\dx]*", "byte"]),
         constants(["true", "false"]),
         decimal,

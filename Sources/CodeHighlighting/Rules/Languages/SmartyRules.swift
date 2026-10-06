@@ -11,9 +11,11 @@
 import Foundation
 
 /// Smarty: `{* *}` comments (the language's own), tags that open with a `{` and no space after it,
-/// their names and `{/closers}`, `$variables`, `|modifiers`, and the strings, numbers and constants
-/// inside a tag, with the HTML around them. A `{ ` followed by a space is a literal brace (Smarty's
-/// auto-literal rule), so CSS and script blocks stay out of it.
+/// their names and `{/closers}` — a control tag (`{if}`, `{foreach}`, `{block}`) as a keyword, any other
+/// (`{assign}`, `{include}`, `{html_options}`, which the Smarty manual calls functions) as a function —
+/// `$variables`, `|modifiers`, and the strings, numbers and constants inside a tag, with the HTML around
+/// them. A `{ ` followed by a space is a literal brace (Smarty's auto-literal rule), so CSS and script
+/// blocks stay out of it.
 extension RuleTables {
     static let smarty: [(String, TokenKind)] = [
         htmlComment,
@@ -23,14 +25,21 @@ extension RuleTables {
         ("(?<==)'[^'{\\n]*'", .string),
         ("</?[A-Za-z][\\w:-]*|/>|>", .keyword),
         ("\\b[A-Za-z-]+=", .attribute),
-        ("\\{/?(?=[^\\s*])", .keyword),
+        ("\\{(?=[^\\s*])", .keyword),
         (insideSmartyTag + "\\}", .keyword),
-        ("(?<=\\{/?)[a-z_]\\w*", .keyword),
         ("\\$[A-Za-z_]\\w*", .variable),
         ("\\|@?[a-z_]\\w*", .function),
         (
             insideSmartyTag
                 + "\\b(?:as|and|or|not|mod|is|div|by|even|odd|eq|ne|neq|gt|lt|gte|ge|lte|le|from|item|key|name|to|step|in|loop|nocache)\\b",
+            .keyword
+        ),
+        // After the words above: a tag named like one of them (`{nocache}`) is still a tag name. A
+        // control tag (`{if}`, `{foreach}`) is a keyword, as every template language's control words are;
+        // the other tags (`{assign}`, `{include}`, `{html_options}`) are the functions the manual calls them.
+        ("(?<=\\{)/?[a-z_]\\w*", .function),
+        (
+            "(?<=\\{)/?(?:if|elseif|else|foreach|foreachelse|for|forelse|while|section|sectionelse|literal|strip|nocache|block|capture|function|call|setfilter)\\b",
             .keyword
         ),
         (insideSmartyTag + "\\b(?:true|false|null|TRUE|FALSE|NULL)\\b", .number),

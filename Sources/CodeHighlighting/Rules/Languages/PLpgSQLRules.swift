@@ -11,17 +11,24 @@
 import Foundation
 
 /// PostgreSQL and PL/pgSQL: `--` and `/* */` comments, `'…'` strings where `''` is a quote, `E'…'` strings
-/// with backslash escapes, `U&'…'` / `B'…'` / `X'…'` literals, `"quoted identifiers"` left plain, and a
-/// `$$…$$` or `$tag$…$tag$` literal that closes on its own line — a dollar-quoted function body spans
-/// lines and is PL/pgSQL code, painted as code. Then the standard keywords with PostgreSQL's and
+/// with backslash escapes, `U&'…'` / `B'…'` / `X'…'` literals (the `B` / `X` prefix stays code),
+/// `"quoted identifiers"` in the string colour as VS Code paints them, and a `$$…$$` or `$tag$…$tag$`
+/// literal that closes on its own line — a dollar-quoted function body spans lines and is PL/pgSQL code,
+/// painted as code, as is a one-line `DO` block's. Block comments nest. Then the standard keywords with PostgreSQL's and
 /// PL/pgSQL's own, the PostgreSQL types, `::casts`, `$1` parameters, and numbers.
 extension RuleTables {
     static let plpgsql: [(String, TokenKind)] = [
         dashComment,
-        blockComment,
+        nestedBlock("/*", "*/"),
         ("(?i)\\bE'(?:[^'\\\\]|\\\\[\\s\\S]|'')*'", .string),
-        ("(?i)(?:\\bU&|\\b[BX])?'(?:[^']|'')*'", .string),
-        ("\\$([A-Za-z_]\\w*)?\\$[^\\n]*?\\$\\1\\$", .string),
+        ("(?i)(?:\\bU&)?'(?:[^']|'')*'", .string),
+        ("\"(?:[^\"]|\"\")*\"", .string),
+        // A one-line dollar quote is a string literal, except the body of a `DO` block, which is code. The tag group
+        // always takes part (empty for `$$`): ICU fails a backreference to a group that did not.
+        (
+            "(?i)\\$(?<!\\bDO[ \\t]\\$)(?<!\\bDO[ \\t]LANGUAGE[ \\t][A-Za-z_]{1,30}[ \\t]\\$)((?:[A-Za-z_]\\w*)?)\\$[^\\n]*?\\$\\1\\$",
+            .string
+        ),
         callee,
         sqlWords(
             sqlStandardKeywords + [
@@ -40,7 +47,9 @@ extension RuleTables {
                 "NOWAIT", "SKIP", "LOCKED", "OIDS", "PREPARE", "DEALLOCATE", "DISCARD", "RESET", "ATTACH", "DETACH",
                 "REPLICA", "IDENTITY", "STORED", "VIRTUAL", "PROCEDURAL", "TRUSTED", "HANDLER", "VALIDATOR", "SECURITY_BARRIER",
                 "WORK", "ISOLATION", "SERIALIZABLE", "READ", "COMMITTED", "REPEATABLE", "WRITE", "ABSOLUTE", "RELATIVE",
-                "PRIOR", "SCROLL", "HOLD", "MOVE", "BACKWARD", "FORWARD", "NO", "INSTEAD",
+                "PRIOR", "SCROLL", "HOLD", "MOVE", "BACKWARD", "FORWARD", "NO", "INSTEAD", "EVENT", "SYMMETRIC", "OPTION",
+                "PASSWORD", "AGGREGATE", "CONNECTION", "CONFIGURATION", "LOCATION", "EXTERNAL", "SESSION", "CHECKPOINT",
+                "ATOMIC", "OBJECT", "MATCH", "SQL",
             ], .keyword),
         sqlWords(
             sqlStandardTypes + [

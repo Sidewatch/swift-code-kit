@@ -12,7 +12,7 @@ import Foundation
 
 /// Handlebars: `{{!-- --}}` and the short `{{! }}` comments, the `{{ }}` / `{{{ }}}` delimiters with
 /// their `~` trims, block helpers (`#each` … `/each`), `else` / `as` / `this`, `@data` variables, and
-/// literals inside a mustache, with the HTML around them.
+/// literals inside a mustache, with the HTML around them and a `<script>` block's keywords and strings.
 extension RuleTables {
     static let handlebars: [(String, TokenKind)] =
         [
@@ -32,5 +32,5 @@ extension RuleTables {
             (insideTemplateTag + "@[\\w.]+", .variable),
             templateTagConstants(["true", "false", "null", "undefined"]),
             (insideTemplateTag + "-?\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b", .number),
-        ]
+        ] + pageScriptRules
 }

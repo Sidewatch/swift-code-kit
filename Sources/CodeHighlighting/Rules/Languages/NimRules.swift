@@ -13,7 +13,7 @@ import Foundation
 /// Nim: `#` comments, `#[ … ]#` and `##[ … ]##` block comments (nested to two levels), `"…"` strings
 /// that end at the line, `"""…"""` triple strings, raw and generalised `r"…"` / `fmt"…"` strings (a
 /// doubled `""` is a quote), one-character `'…'` literals (the `'` of `1'i32` opens nothing), the
-/// keywords, types, and `proc`-style declarations.
+/// keywords, types, and the routine a `proc`-style declaration names (a quoted operator too).
 extension RuleTables {
     static let nim: [(String, TokenKind)] = [
         ("##\\[[\\s\\S]*?\\]##", .comment),
@@ -27,6 +27,8 @@ extension RuleTables {
         tripleDoubleQuoted,
         ("\"(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
         ("(?<![\\w'])'(?:[^'\\\\\\n]|\\\\(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[^\\n]\\w*))'", .string),
+        // A call's name is painted before the words, so `not (`, `type(`, `const (` and `do (` stay keywords.
+        call,
         keywords([
             "proc", "func", "method", "iterator", "template", "macro", "converter", "type", "var", "let",
             "const", "if", "elif", "else", "when", "case", "of", "while", "for", "in", "notin", "is", "isnot",
@@ -44,6 +46,9 @@ extension RuleTables {
         ("\\{\\.[^}]*\\.\\}", .attribute),
         ("\\b[A-Z]\\w*\\b", .type),
         ("\\b0[xX][0-9a-fA-F_]+|\\b0[bB][01_]+|\\b0o[0-7_]+|\\b\\d[\\d_]*(\\.\\d[\\d_]*)?([eE][+-]?\\d+)?('[iIuUfFdD]\\d*)?", .number),
-        call,
+        // The routine a declaration names, a quoted operator (`` `+` ``, `` `=sink` ``) included; its keyword
+        // is repainted after it.
+        ("\\b(?:proc|func|method|iterator|template|macro|converter)[ \\t]+(?:`[^`\\n]+`|[A-Za-z_]\\w*)", .function),
+        ("\\b(?:proc|func|method|iterator|template|macro|converter)\\b", .keyword),
     ]
 }

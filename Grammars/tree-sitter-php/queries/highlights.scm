@@ -312,3 +312,17 @@
         (qualified_name (name) @constant)
         alias: (name) @constant
       ])))
+
+; `self::`, `parent::`, `static::` are keywords, as in VS Code (`storage.type`); `var $x` too.
+(relative_scope) @keyword
+(var_modifier) @keyword
+
+; A shell command in backticks is a string like the others.
+(shell_command_expression) @string
+
+; The variables and expressions interpolated into a string, heredoc or shell command are code
+; (`"$obj->prop"`, `"{$list['b'][0]}"`); their text and escapes keep the string colour.
+(encapsed_string (_) @code)
+(heredoc_body (_) @code)
+(shell_command_expression (_) @code)
+(escape_sequence) @string

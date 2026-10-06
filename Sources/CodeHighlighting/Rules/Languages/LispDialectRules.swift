@@ -46,15 +46,27 @@ extension RuleTables {
         return (lispWordStart + "(?:" + alternatives.joined(separator: "|") + ")" + lispWordEnd, kind)
     }
 
+    /// The name a defining form binds, as a function: `(defun name` — or, `parenthesised`, the name of
+    /// `(define (name args)`. The rule is scoped to the form's head, from its `(` to the end of the name,
+    /// and also matches the form's own word there, which the special-form rule after it paints back.
+    static func lispDefinedName(after forms: [String], parenthesised: Bool) -> (String, TokenKind) {
+        let words = forms.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
+        let open = "\\((?:" + words + ")[ \\t]+" + (parenthesised ? "\\(" : "")
+        let scope = RuleScope.marker(opens: [open], closes: ["[\\s()\\[\\]]"], within: 200)
+        return (scope + "[^\\s()\\[\\]{}\"';|#][^\\s()\\[\\]{}\"';|]*", .function)
+    }
+
     /// A Lisp-dialect table: `;` comments, `"…"` strings across lines, the dialect's own literal forms
-    /// (`literals`, painted as strings or comments), quoted symbols, `:keywords`, the special forms, the
-    /// constants and numbers.
+    /// (`literals`, painted as strings or comments), quoted symbols, the names `definitions` declare,
+    /// `:keywords`, the special forms, the constants and numbers.
     static func lispDialect(
         specialForms: [String], constants constantWords: [String], literals: [(String, TokenKind)] = [],
-        quotedSymbols: Bool = true, keywordSymbols: String = "#?:[^\\s()\\[\\]{}\"';]+", numbers: [(String, TokenKind)] = [lispNumber]
+        quotedSymbols: Bool = true, keywordSymbols: String = "#?:[^\\s()\\[\\]{}\"';]+", numbers: [(String, TokenKind)] = [lispNumber],
+        definitions: [(String, TokenKind)] = []
     ) -> [(String, TokenKind)] {
         var rules: [(String, TokenKind)] = [(";.*$", .comment), doubleQuoted] + literals
         if quotedSymbols { rules.append(lispQuotedSymbol) }
+        rules += definitions
         rules += [
             (lispWordStart + keywordSymbols, .type),
             lispWords(specialForms, .keyword),
