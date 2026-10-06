@@ -48,5 +48,7 @@ extension RuleTables {
             decimal,
             ("\\B\\.\\d+\\b", .number),
         ]
-        + templateLiteralPieces(skip: [htmlComment.0, "//(?<!\\S//)[^\\n]*", blockComment.0, "\"(?:[^\"\\\\\\n]|\\\\.)*\"", "'(?:[^'\\\\\\n]|\\\\.)*'"])
+        + templateLiteralPieces(skip: [
+            htmlComment.0, "//(?<!\\S//)[^\\n]*", blockComment.0, "\"(?:[^\"\\\\\\n]|\\\\.)*\"", "'(?:[^'\\\\\\n]|\\\\.)*'",
+        ])
 }

@@ -26,7 +26,8 @@ extension RuleTables {
             (juliaTriple, .string),
         ]
         + interpolatedStringPieces(
-            open: "\"", close: "\"", literal: "[^\"\\\\$\\n]|\\\\[\\s\\S]|\\$(?!\\()", hole: juliaHole, holeOpen: "\\$\\(", holeClose: "\\)",
+            open: "\"", close: "\"", literal: "[^\"\\\\$\\n]|\\\\[\\s\\S]|\\$(?!\\()", hole: juliaHole, holeOpen: "\\$\\(",
+            holeClose: "\\)",
             afterHole: "(?<=\\))(?<!\\w\\([^()\\n]{0,30}\\))", multiline: true, skip: juliaSkip)
         + [
             ("`[^`]*`", .string),

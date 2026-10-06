@@ -17,6 +17,7 @@ extension RuleTables {
         cLikeFamily.filter { $0.0 != doubleQuoted.0 }
         + interpolatedStringPieces(
             open: "\"", close: "\"", literal: "[^\"\\\\&\\n]|\\\\[\\s\\S]|&(?![&A-Za-z_])", hole: "&+[A-Za-z_]\\w*\\.?", holeOpen: "&",
-            holeClose: "[\\w.]", afterHole: "(?<=[\\w.])(?!\\w)(?<![^&\\w]\\w{1,32}|[^&\\w]\\w{1,32}\\.)(?<=&[A-Za-z_]\\w{0,31}\\.?)", multiline: true,
+            holeClose: "[\\w.]", afterHole: "(?<=[\\w.])(?!\\w)(?<![^&\\w]\\w{1,32}|[^&\\w]\\w{1,32}\\.)(?<=&[A-Za-z_]\\w{0,31}\\.?)",
+            multiline: true,
             skip: [blockComment.0, lineComment.0, singleQuoted.0, "%?\\*(?<=(?:^|\\n)[ \\t]{0,40}%?\\*)[^;]*;"])
 }

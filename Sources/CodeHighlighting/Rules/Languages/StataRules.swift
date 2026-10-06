@@ -31,7 +31,8 @@ extension RuleTables {
             // A `'` with another `'` ahead in the same run of text closes a macro nested in the reference
             // (`` `=`x' * 2' ``); a `$name` ends at its name's end, which a cheap look back for no `$` before the
             // word rules out first (the exact one alone, at every word's end, measured 10 times the cost).
-            afterHole: "(?<=['}\\w])(?:(?<=')(?![^`'\"\\n]*')|(?<=\\})(?<=\\$\\{[^{}\\n]{0,40}\\})|(?!\\w)(?<![^$\\w]\\w{1,31})(?<=\\$[A-Za-z_]\\w{0,31}))",
+            afterHole:
+                "(?<=['}\\w])(?:(?<=')(?![^`'\"\\n]*')|(?<=\\})(?<=\\$\\{[^{}\\n]{0,40}\\})|(?!\\w)(?<![^$\\w]\\w{1,31})(?<=\\$[A-Za-z_]\\w{0,31}))",
             skip: ["^[ \\t]*\\*[^\\n]*", "///?[^\\n]*", "/\\*[\\s\\S]*?\\*/"])
         + [
             wordTrie(

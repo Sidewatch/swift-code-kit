@@ -87,7 +87,8 @@ extension RuleTables {
     private static func continuation(of form: InterpolatedStringForm, holeClose: String, skip: [String]) -> (String, TokenKind) {
         let (open, close, hole, holeOpen) = ("(?:\(form.open))", "(?:\(form.close))", "(?:\(form.hole))", "(?=\(form.holeOpen))")
         let end = "(?:\(close)(?:\(holeOpen)[\\s\\S])?|\(holeOpen))"
-        let pieces = "\(open)(?<!\(holeClose)\(open))\(text(of: form))*\(end)|\(holeOpen)\\G\(hole)" + RuleScope.region("\(text(of: form))*") + end
+        let pieces =
+            "\(open)(?<!\(holeClose)\(open))\(text(of: form))*\(end)|\(holeOpen)\\G\(hole)" + RuleScope.region("\(text(of: form))*") + end
         let inText = RuleScope.marker(steppingOver: skip.map { "(?:\($0))(?:\(holeOpen)[\\s\\S])?" }, regions: pieces, within: 4000)
         return (inText + "\\n(?:\(form.literal))*\(close)?", .string)
     }
