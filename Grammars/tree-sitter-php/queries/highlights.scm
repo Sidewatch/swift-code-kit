@@ -326,8 +326,11 @@
 (shell_command_expression (_) @code)
 (escape_sequence) @string
 
-; A namespace declaration's whole path recedes like a qualified name's prefix
-; (`namespace Vendor\Plugin\Feature;`): every segment names a namespace, not a
-; class, and an all-caps segment (`EDD`) is not a constant. Appended last so it
-; outranks the @module and @constant captures of the same segments.
-(namespace_definition name: (namespace_name) @namespace.prefix)
+; A namespace declaration reads like a qualified name (`new Admin\Fields`): the
+; path recedes and the last segment keeps the type colour
+; (`namespace Vendor\Plugin\Feature;` greys `Vendor\Plugin\`). An all-caps
+; segment (`EDD`) is not a constant. Appended last so these outrank the @module
+; and @constant captures of the same segments; the last-segment pattern comes
+; after the receding one so it wins.
+(namespace_definition name: (namespace_name [(name) "\\"] @namespace.prefix))
+(namespace_definition name: (namespace_name (name) @type .))
