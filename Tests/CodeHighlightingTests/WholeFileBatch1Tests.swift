@@ -184,7 +184,8 @@ final class WholeFileBatch1Tests: XCTestCase {
 
     func testNixIndentedStringEscapesAndNestedQuotes() {
         XCTAssertEqual(kind(of: "TAIL", in: "x = '' a ''$ b ''\\n c ''' TAIL '';\n", .nix), .string)
-        XCTAssertEqual(kind(of: "INNER", in: "y = \"a ${f \"b\" INNER} c\";\n", .nix), .string)
+        XCTAssertNotEqual(kind(of: "INNER", in: "y = \"a ${f \"b\" INNER} c\";\n", .nix), .string, "the hole is code")
+        XCTAssertEqual(kind(of: " c", in: "y = \"a ${f \"b\" INNER} c\";\n", .nix), .string, "the hole's quotes end nothing")
         XCTAssertNotEqual(kind(of: "//", in: "z = { a = 1; } // { b = 2; };\n", .nix), .string)
     }
 

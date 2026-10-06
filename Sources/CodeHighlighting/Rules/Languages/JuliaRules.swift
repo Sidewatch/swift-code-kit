@@ -26,8 +26,8 @@ extension RuleTables {
             (juliaTriple, .string),
         ]
         + interpolatedStringPieces(
-            whole: juliaStrings, skip: juliaSkip, open: "\"", close: "\"",
-            literal: "[^\"\\\\$]|\\\\[\\s\\S]|\\$(?!\\()", holeClose: "\\)", nested: "\\w\\([^()\\n]{0,30}\\)")
+            open: "\"", close: "\"", literal: "[^\"\\\\$\\n]|\\\\[\\s\\S]|\\$(?!\\()", hole: juliaHole, holeOpen: "\\$\\(", holeClose: "\\)",
+            afterHole: "(?<=\\))(?<!\\w\\([^()\\n]{0,30}\\))", multiline: true, skip: juliaSkip)
         + [
             ("`[^`]*`", .string),
             // A character literal follows no operand: after a name, `)`, `]`, `}` or `'` the quote is a transpose.
@@ -51,16 +51,14 @@ extension RuleTables {
             ("\\b([A-Za-z_]\\w*!?)(?=\\()", .function),
         ]
 
-    /// Every interpolated string, `"""…"""` before `"…"`: where a `"…"` string's tail may start.
-    private static let juliaStrings = juliaTriple + "|" + "\"(?:[^\"\\\\$]|\\\\[\\s\\S]|\\$(?!\\()|" + juliaHole + ")*\""
-
     /// A `"""…"""` string, holes included.
     private static let juliaTriple = "\"\"\"(?:[^\"\\\\$]|\\\\[\\s\\S]|\\$(?!\\()|\"(?!\"\")|" + juliaHole + ")*\"\"\""
 
-    /// The comments, prefixed literals, commands and characters a search for a `"…"` string steps over.
+    /// The comments, `"""…"""` strings, prefixed literals, commands and characters a search for a `"…"`
+    /// string steps over.
     private static let juliaSkip = [
-        "#=[\\s\\S]*?=#", "#[^\\n]*", "\\b[A-Za-z_]\\w*\"\"\"[\\s\\S]*?\"\"\"", "\\b[A-Za-z_]\\w*\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
-        "`[^`]*`", "(?<![\\w)\\]}'.!])'(?:\\\\.[^'\\n]{0,8}|[^'\\\\\\n])'",
+        "\"\"\"(?<=\\w\"\"\")[\\s\\S]*?\"\"\"", "\"(?<=\\w\")(?:[^\"\\\\]|\\\\[\\s\\S])*\"", juliaTriple, "#=[\\s\\S]*?=#", "#[^\\n]*",
+        "`[^`]*`", "'(?<![\\w)\\]}'.!]')(?:\\\\.[^'\\n]{0,8}|[^'\\\\\\n])'",
     ]
 
     /// A `$( … )` hole: brackets two deep, strings inside it (which may hold a hole of their own).

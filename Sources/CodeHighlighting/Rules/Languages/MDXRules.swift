@@ -39,14 +39,15 @@ extension RuleTables {
             ("__(?:[^_\\n]|_(?!_))+?__", .function),
             (strikethrough + "~~?", .string),
             ("(?<!`)(`+)(?!`)(?:(?!\\$\\{)[^\\n])*?(?<!`)\\1(?!`)", .string),
-            // Links: the brackets, destination and title of `[text](url "title")`, `[text][ref]`, `[ref]: url`,
-            // `[^note]`; an autolink `<https://…>`; a bare URL, `www.` host or e-mail address.
+            // Links: the brackets, destination and title of `[text](url "title")`, `[text][ref]`, a shortcut
+            // `[ref]`, `[ref]: url` (an angle-bracketed destination may hold spaces), `[^note]`; an autolink
+            // `<https://…>`; a bare URL, `www.` host or e-mail address.
             (
                 "!?\\[\\^?(?=[^\\]\\n]*\\](?:\\(|\\[|:))|\\]\\((?:<[^>\\n]*>|[^)\\s]*)(?:[ \\t]+(?:\\\"[^\\\"\\n]*\\\"|'[^'\\n]*'|\\([^)\\n]*\\)))?\\)",
                 .string
             ),
-            (linkBrackets + "\\]|\\[\\^?", .string),
-            (" (?<=\\]: )(?<!\\[\\^[^\\]\\n]{1,60}\\]: )\\S+(?:[ \\t]+(?:\\\"[^\\\"\\n]*\\\"|'[^'\\n]*'|\\([^)\\n]*\\)))?", .string),
+            (linkBrackets + "\\]|!?\\[\\^?", .string),
+            (" (?<=\\]: )(?<!\\[\\^[^\\]\\n]{1,60}\\]: )(?:<[^>\\n]*>|\\S+)(?:[ \\t]+(?:\\\"[^\\\"\\n]*\\\"|'[^'\\n]*'|\\([^)\\n]*\\)))?", .string),
             ("(?:https?|ftp|mailto):(?<=<(?:https?|ftp|mailto):)[^\\s<>]*>", .string),
             (
                 "\\bhttps?://[^\\s<>()\\[\\]]*[^\\s<>()\\[\\].,;:]|\\bwww\\.[\\w-]+(?:\\.[\\w-]+)+|\\b[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+\\b",
@@ -95,7 +96,10 @@ extension RuleTables {
                     + "\\b(?:0[xXbBoO][0-9a-fA-F_]+|\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:[eE][+-]?\\d+)?)|\\B\\.\\d[\\d_]*(?:[eE][+-]?\\d+)?",
                 .number
             ),
-        ] + interpolatedStrings(quote: "`", sigil: "\\$", scope: javaScript)
+        ]
+        // A template literal opens in the JavaScript; the scan for whole ones steps over fence lines, the
+        // prose's multi-backtick code spans and escapes (`\``), whose backticks are not a literal's.
+        + templateLiteralPieces(skip: ["(?m:^)[ \\t>]*`{3,}[^\\n]*", "``+(?:[^`\\n]|`(?!`))*?``+", "\\\\[\\s\\S]"], scope: javaScript)
 
     /// The YAML front matter: from a `---` that opens the file to the `---` that closes it.
     private static let frontMatter = inside(opens: ["\\A---[ \\t]*\\n"], closes: ["\\n---[ \\t]*(?=\\n|$)"], within: 4000)
@@ -117,9 +121,15 @@ extension RuleTables {
     private static let pythonFence = fence("python|py")
 
     /// A link's closing bracket and the brackets of its reference (`[text][ref]`), a footnote's `[^` and
-    /// `]`, a definition's `[label]:`.
+    /// `]`, a definition's `[label]:`, and a shortcut reference (`[label]`, `![label]`), which the MDX grammar
+    /// reads in any bracketed prose. A shortcut's label holds no comma, quote, brace or bracket, and its `[`
+    /// follows no name, bracket, brace, `=`, `$`, `.` or backslash: that is a JavaScript array or index, or an
+    /// escape. A list item's task box (`- [x]`) is not one.
     private static let linkBrackets = inside(
-        opens: ["!?\\[[^\\]\\n]*\\](?:\\[[^\\]\\n]*\\]|:)|\\[\\^[^\\]\\n]+\\]"], closes: [""], within: 0)
+        opens: [
+            "!?\\[[^\\]\\n]*\\](?:\\[[^\\]\\n]*\\]|:)|\\[\\^[^\\]\\n]+\\]",
+            "(?:!\\[(?<![\\w\\])}{=$.\\\\]!\\[)|\\[(?<![\\w\\])}{=$.!\\\\]\\[))(?!(?<=[-*+] \\[)[ xX]\\])[^\\]\\[\\n,\"'{}()=;<>]+\\](?![(\\[:])",
+        ], closes: [""], within: 0)
 
     /// A JSX tag, from its `<name` to its `>` (an attribute value in braces may hold quotes and braces).
     private static let jsxTag = inside(

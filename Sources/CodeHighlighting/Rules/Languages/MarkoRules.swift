@@ -12,7 +12,7 @@ import Foundation
 
 /// Marko: a JavaScript module and its markup in one file — `//` comments (at a line's start or after
 /// whitespace, so a URL's `//` opens none) and `/* */`, `<!-- -->` and `<html-comment>` comments,
-/// JavaScript's strings, regular expressions and template literals (``templateLiteralStrings``),
+/// JavaScript's strings, regular expressions and template literals (``templateLiteralPieces(skip:scope:)``),
 /// keywords, type names, arrows and numbers, `$ ` scriptlets and `${ }` placeholders, tags with their
 /// `.class` / `#id` shorthands, CDATA text, and a style block's language and units.
 extension RuleTables {
@@ -47,5 +47,6 @@ extension RuleTables {
             constants(["true", "false", "null", "undefined"]),
             decimal,
             ("\\B\\.\\d+\\b", .number),
-        ] + templateLiteralStrings
+        ]
+        + templateLiteralPieces(skip: [htmlComment.0, "//(?<!\\S//)[^\\n]*", blockComment.0, "\"(?:[^\"\\\\\\n]|\\\\.)*\"", "'(?:[^'\\\\\\n]|\\\\.)*'"])
 }

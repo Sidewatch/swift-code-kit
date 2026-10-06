@@ -22,10 +22,13 @@ extension RuleTables {
             blockComment,
             doubleQuoted,
         ]
-        + quotedStringPieces(
-            quote: "'", body: "\\$\\$|\\\\[\\s\\S]|[^'\\\\]",
-            hole: "\\$\\{(?:[^{}'\\n]|'[^'\\n]*'|\\{[^{}\\n]*\\})*\\}|\\$[A-Za-z_]\\w*", holeEnd: "[}\\w]",
-            afterHole: "(?:(?<=\\})|(?<=\\w)(?!\\w))")
+        // A `'…'` string interpolates `${expr}` and `$name`; `$$` is a dollar sign.
+        + interpolatedStringPieces(
+            open: "'", close: "'", literal: "[^'\\\\$\\n]|\\$\\$|\\\\[\\s\\S]|\\$(?![{A-Za-z_])",
+            hole: "\\$\\{(?:[^{}'\\n]|'[^'\\n]*'|\\{[^{}\\n]*\\})*\\}|\\$[A-Za-z_]\\w*", holeOpen: "\\$[{A-Za-z_]",
+            holeClose: "\\}|\\$[A-Za-z_]\\w{0,40}",
+            afterHole: "(?<=[}\\w])(?:(?<=\\})(?!\\})|(?!\\w)(?<![^$\\w]\\w{1,40})(?<=\\$[A-Za-z_]\\w{0,40}))", multiline: true,
+            skip: [lineComment.0, blockComment.0, doubleQuoted.0, "~/(?:[^/\\\\\\n]|\\\\.)+/"])
         + [
             ("~/(?:[^/\\\\\\n]|\\\\.)+/[gimsu]*", .string),
             callee,

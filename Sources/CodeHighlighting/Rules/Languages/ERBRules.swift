@@ -13,7 +13,7 @@ import Foundation
 /// ERB: `<%# %>` comments (the language's own), the `<% %>` / `<%= %>` / `<%- -%>` delimiters, and
 /// the Ruby inside them — `#` comments to the line end or the tag's close, `=begin … =end` blocks,
 /// strings (a `"…"` string's `#{ }` interpolations stay code:
-/// ``interpolatedStrings(quote:sigil:scope:multiline:)``) and `%w[]` literals, symbols, instance variables, keywords and numbers — with the HTML around them.
+/// ``rubyStringPieces(multiline:skip:scope:)``) and `%w[]` literals, symbols, instance variables, keywords and numbers — with the HTML around them.
 extension RuleTables {
     static let erb: [(String, TokenKind)] =
         [
@@ -23,7 +23,7 @@ extension RuleTables {
             (insideScriptletTag + "^=begin\\b[\\s\\S]*?^=end\\b.*$", .comment),
             // `%w[a b]`, `%i(x y)`, `%q{text}`: a percent literal on one line.
             (insideScriptletTag + "%[qQwWiI]?(?:\\[[^\\]\\n]*\\]|\\([^)\\n]*\\)|\\{[^}\\n]*\\})", .string),
-        ] + interpolatedStrings(quote: "\"", sigil: "#", scope: insideScriptletTag) + [
+        ] + rubyStringPieces(multiline: true, skip: [], scope: insideScriptletTag) + [
             (insideScriptletTag + "'(?:[^'\\\\]|\\\\[\\s\\S])*'", .string),
             ("(?<==)\"[^\"{<\\n]*\"", .string),
             ("(?<==)'[^'{<\\n]*'", .string),

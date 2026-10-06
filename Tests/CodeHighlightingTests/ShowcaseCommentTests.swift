@@ -38,6 +38,11 @@ final class ShowcaseCommentTests: XCTestCase {
     static let notComments: [String: Set<String>] = [
         "julia": ["# Arguments", "# Examples"],
         "elixir": ["## Examples"],
+        // A Mermaid `%%{init: …}%%` line is a directive, not a comment.
+        "mermaid": [
+            #"%%{init: {"theme": "neutral", "securityLevel": "loose"}}%%"#,
+            #"%%{ init: { "flowchart": { "htmlLabels": false } } }%%"#,
+        ],
     ]
 
     /// Languages the editor paints through another tier, so the regex tier is not what a reader sees.

@@ -80,9 +80,11 @@ extension RuleTables {
     /// A `quote`-delimited Sass string: single-line, escapes, and `#{…}` holes that stay code and may hold
     /// quoted strings.
     private static func interpolatedString(quote: String) -> [(String, TokenKind)] {
-        quotedStringPieces(
-            quote: quote, body: "[^\(quote)\\\\\\n]|\\\\[\\s\\S]",
-            hole: "#\\{(?:[^{}\"'\\n]|\"[^\"\\n]*\"|'[^'\\n]*')*\\}", holeEnd: "\\}", afterHole: "(?<=\\})")
+        let other = quote == "\"" ? "'" : "\""
+        return interpolatedStringPieces(
+            open: quote, close: quote, literal: "[^\(quote)\\\\\\n#]|\\\\[\\s\\S]|#(?!\\{)",
+            hole: "#\\{(?:[^{}\"'\\n]|\"[^\"\\n]*\"|'[^'\\n]*')*\\}", holeOpen: "#\\{", holeClose: "\\}",
+            skip: [blockComment.0, "url\\([^)\"'\\s]*\\)", "//[^\\n]*", "\(other)(?:[^\(other)\\\\\\n]|\\\\[\\s\\S])*\(other)"])
     }
 }
 

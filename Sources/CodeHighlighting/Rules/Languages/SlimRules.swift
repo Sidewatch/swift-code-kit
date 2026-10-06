@@ -28,7 +28,7 @@ extension RuleTables {
             // `=`, `(`, `[`, `,`, `|`, `<` or `>`), so a quote in a tag's inline text (`p say "hi"`) is text.
             (rubyLine + interpolation + "'(?:[^'\\\\\\n]|\\\\.)*'", .string),
             ("'(?<=[=(\\[,|<>][ \\t]?')(?:[^'\\\\\\n]|\\\\.)*'", .string),
-        ] + interpolatedStrings(quote: "\"", sigil: "#", scope: rubyLine + valueStart + interpolation, multiline: false) + [
+        ] + rubyStringPieces(multiline: false, skip: ["'(?:[^'\\\\\\n]|\\\\.)*'"], scope: rubyLine + valueStart + interpolation) + [
             // A Ruby symbol (`as: :item`, `params[:q]`, `&:qty`) after a space, bracket, comma or `&`, and a
             // hash key (`count: n`) on a code line.
             ("(?<=[\\s(\\[,{&]):[A-Za-z_]\\w*[?!]?", .string),

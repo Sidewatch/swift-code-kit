@@ -12,7 +12,7 @@ import Foundation
 
 /// PowerShell: `#` and `<# … #>` comments, here-strings `@"…"@` and `@'…'@` (the closing mark opens
 /// a line), `'…'` strings where `''` is a quote and nothing is escaped, `"…"` strings escaped by the
-/// backtick (and `""`) whose `$( … )` subexpressions paint as code, `$variables` including `${braced name}`
+/// backtick (and `""`) whose `$( … )` subexpressions paint as code (a `@"…"@` here-string's too), `$variables` including `${braced name}`
 /// and `$env:NAME`, a `global:` / `script:` scope prefix, `Verb-Noun` cmdlets, `-operator` words, and the
 /// language's keywords in any case.
 extension RuleTables {
@@ -20,13 +20,19 @@ extension RuleTables {
         [
             ("<#[\\s\\S]*?#>", .comment),
             hashComment,
-            ("@\"[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n\"@", .string),
             ("@'[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n'@", .string),
             ("'(?:[^']|'')*'", .string),
         ]
         + interpolatedStringPieces(
-            whole: "\"(?:[^\"`$]|`[\\s\\S]|\"\"|\\$(?!\\()|" + powershellHole + ")*\"", skip: powershellSkip, open: "\"", close: "\"",
-            literal: "[^\"`$]|`[\\s\\S]|\"\"|\\$(?!\\()", holeClose: "\\)", nested: "\\w\\([^()\\n]{0,30}\\)")
+            open: "\"", close: "\"", literal: "[^\"`$\\n]|`[\\s\\S]|\"\"|\\$(?!\\()", hole: powershellHole, holeOpen: "\\$\\(",
+            holeClose: "\\)",
+            afterHole: powershellAfterHole, multiline: true, skip: powershellSkip)
+        // A here-string's text holds quotes; only a `"@` that opens a line closes it. Its tails need their own
+        // rule: a `"…"` string's would end at the first quote.
+        + interpolatedStringPieces(
+            open: "@\"[ \\t]{0,40}\\r?\\n", close: "(?<=\\n)\"@", literal: "[^\"`$\\n]|`[\\s\\S]|\\$(?!\\()|\"(?<=[^\\n]\")|\"(?!@)",
+            hole: powershellHole, holeOpen: "\\$\\(", holeClose: "\\)", afterHole: powershellAfterHole, multiline: true,
+            skip: ["<#[\\s\\S]*?#>", "#[^\\n]*", "@'[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n'@", "'(?:[^']|'')*'", "\"(?:[^\"`]|`[\\s\\S]|\"\")*\""])
         + [
             wordTrie(
                 [
@@ -52,6 +58,9 @@ extension RuleTables {
         "<#[\\s\\S]*?#>", "#[^\\n]*", "@\"[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n\"@", "@'[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n'@",
         "'(?:[^']|'')*'",
     ]
+
+    /// A subexpression's `)`, not one that closes a call inside it (`$($a.Where({ $_ })[0])`).
+    private static let powershellAfterHole = "(?<=\\))(?<!\\w\\([^()\\n]{0,30}\\))"
 
     /// A `$( … )` subexpression: brackets two deep, strings inside it.
     private static let powershellHole = "\\$\\((?:[^()\"]|\"(?:[^\"`]|`.)*\"|\\((?:[^()]|\\([^()]*\\))*\\))*\\)"

@@ -17,11 +17,17 @@ import FoundationExtensions
 /// and ``SyntaxHighlighter`` keeps only the matches that START inside one of the rule's regions. The
 /// regions are found once per paint with a forward scan, where a look back on every candidate would
 /// rescan the same text again and again.
+///
+/// A region pattern with a group named `region` (``marker(steppingOver:regions:within:)``) makes only that
+/// group's range a region: the scan's other matches, and the rest of a match, are text it steps over to stay
+/// in step, never regions.
 struct RuleScope {
     /// Finds the regions, each from an open delimiter to its close (included), or a bounded length.
     let region: NSRegularExpression
     /// How far before a painted range a region can start and still reach into it.
     let reach: Int
+    /// Whether only the `region` group of a match is a region (see the type's documentation).
+    let regionGroupOnly: Bool
 
     /// The marker that scopes a rule to the text between one of `opens` and the next of `closes`
     /// (regex forms, close included), at most `within` characters after the open.
@@ -30,6 +36,18 @@ struct RuleScope {
         let pattern = "(?:" + opens.joined(separator: "|") + ")(?:(?!" + close + ")[\\s\\S]){0,\(within)}(?:" + close + ")?"
         return prefix + Data((pattern + "\u{1}\(within + 64)").utf8).base64EncodedString() + ")"
     }
+
+    /// The marker that scopes a rule to the regions one forward scan finds: at each place it tries `skip`
+    /// first, each match of which is passed over whole and is never a region (so a quote inside a comment or
+    /// another string form cannot put the scan out of step), then `regions` (a regex, at most `within`
+    /// characters long), of which the part marked ``region(_:)`` is the region, or all of it when no part is.
+    static func marker(steppingOver skip: [String], regions: String, within: Int) -> String {
+        let marked = regions.contains("(?<\(regionGroup)>") ? regions : region(regions)
+        return marker(opens: skip + [marked], closes: [""], within: within)
+    }
+
+    /// `pattern` marked as the region part of a match (``marker(steppingOver:regions:within:)``).
+    static func region(_ pattern: String) -> String { "(?<\(regionGroup)>\(pattern))" }
 
     /// `pattern`'s leading scope markers, decoded, and the pattern without them. A marker that does
     /// not decode is left in place, where it is an ordinary regex comment.
@@ -42,7 +60,7 @@ struct RuleScope {
                 let separator = decoded.lastIndex(of: "\u{1}"), let reach = Int(decoded[decoded.index(after: separator)...]),
                 let regex = try? NSRegularExpression(pattern: String(decoded[..<separator]), options: [])
             else { break }
-            scopes.append(RuleScope(region: regex, reach: reach))
+            scopes.append(RuleScope(region: regex, reach: reach, regionGroupOnly: regex.pattern.contains("(?<\(regionGroup)>")))
             rest = rest[rest.index(after: end)...]
         }
         return (scopes, String(rest))
@@ -52,7 +70,10 @@ struct RuleScope {
     func regions(in text: String, around range: NSRange) -> [NSRange] {
         let start = max(0, range.location - reach)
         let search = NSRange(location: start, length: NSMaxRange(range) - start)
-        return region.matches(in: text, options: [], range: search).map(\.range).filter { NSMaxRange($0) > range.location }
+        return region.matches(in: text, options: [], range: search).compactMap { match in
+            let r = regionGroupOnly ? match.range(withName: Self.regionGroup) : match.range
+            return r.location == NSNotFound || NSMaxRange(r) <= range.location ? nil : r
+        }
     }
 
     /// Several region lists as one: ascending, overlaps merged.
@@ -80,4 +101,7 @@ struct RuleScope {
     }
 
     private static let prefix = "(?#in:"
+
+    /// The group name that marks the region part of a region pattern.
+    private static let regionGroup = "region"
 }

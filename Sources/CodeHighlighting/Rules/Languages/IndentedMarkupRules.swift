@@ -28,7 +28,7 @@ extension RuleTables {
             ("'(?:[^'\\\\\\n]|\\\\.)*'", .string),
             // A Ruby code line's `%w[a b]` / `%i(x y)` literal.
             (rubyCodeLine + "%[qQwWiI]?(?:\\[[^\\]\\n]*\\]|\\([^)\\n]*\\)|\\{[^}\\n]*\\})", .string),
-        ] + interpolatedStrings(quote: "\"", sigil: "#", multiline: false) + [
+        ] + rubyStringPieces(multiline: false, skip: ["'(?:[^'\\\\\\n]|\\\\.)*'"]) + [
             // A piped line (`| text`) is text: only its pipe is markup.
             ("^\\s*\\|", .keyword),
             ("^\\s*(doctype|!!!)\\b.*$", .keyword),

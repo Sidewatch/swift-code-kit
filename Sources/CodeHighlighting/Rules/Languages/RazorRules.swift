@@ -39,7 +39,7 @@ extension RuleTables {
             ("@@", .string),
             // `@addTagHelper *, Assembly` and its kin take the rest of their line as a string.
             (" (?<=^@(?:addTagHelper|removeTagHelper|tagHelperPrefix) )\\S.*$", .string),
-        ] + interpolatedCSharpStrings + [
+        ] + interpolatedStrings + [
             ("</?[A-Za-z][\\w:.-]*|/>|>", .keyword),
             ("\\b[A-Za-z-]+=", .attribute),
             // An implicit expression (`@Model.User.Name`); its `@` is repainted a keyword just below.
@@ -99,25 +99,22 @@ extension RuleTables {
             (directiveLine + "\\bstatic\\b", .keyword),
             tagWords(["true", "false", "null"], .number, insideRazorCode),
             decimal,
-        ] + templateLiteralHeads + pageScriptRules + pageStyleNumbers
+        ] + pageScriptRules + pageStyleNumbers
 
-    /// A C# interpolated string, `$"a {b} c"`: its text is string, a `{ }` hole holding no quote or brace
-    /// stays code (a doubled `{{` is a brace of the text). One whose holes nest paints whole.
-    static let interpolatedCSharpStrings: [(String, TokenKind)] = {
-        let text = "[^\"\\\\{}\\n`$]|\\\\.|\\{\\{|\\}\\}|\\$(?!\\{)"
-        let hole = "\\{(?!\\{)[^{}\"\\n]*\\}"
-        let simple = inside(opens: ["\\$\"(?:\(text)|\(hole))*\""], closes: [""], within: 0)
-        return [
-            ("\\$\"(?:\(text))*(?:\"|(?=\(hole)(?:\(text)|\(hole))*\"))", .string),
-            ("\\$\"(?!(?:\(text)|\(hole))*\")(?:[^\"\\\\\\n]|\\\\.)*\"", .string),
-            // One pass finds the pieces after a hole of a C# string and of a script's template literal.
-            (
-                simple + insideSimpleTemplateLiteral
-                    + "(?<=\\})(?:(?:\(text))++(?:\"|(?=\\{(?!\\{)))|\"|(?:\(templateLiteralText))++(?:`|(?=\\$\\{))|`)",
-                .string
-            ),
-        ]
+    /// C#'s interpolated strings, `$"a {b} c"` (a doubled `{{` is a brace of the text), and the template literals
+    /// of the page's scripts, painted in pieces so their holes stay code. One rule finds both forms' tails: a
+    /// tail after a simple `{ … }` that no `$` opens is C#'s.
+    static let interpolatedStrings: [(String, TokenKind)] = {
+        let csharp = InterpolatedStringForm(
+            open: "\\$\"", close: "\"", literal: "[^\"\\\\{}\\n]|\\\\.|\\{\\{|\\}\\}",
+            hole: "\\{(?!\\{)(?:[^{}\"\\n]|\"(?:[^\"\\\\\\n]|\\\\.)*\"|\\{[^{}\\n]*\\})*\\}", holeOpen: "\\{(?!\\{)",
+            afterHole: "(?<=\\{[^{}\\n]{0,120}\\})(?<!\\$\\{[^{}\\n]{0,120}\\})")
+        return interpolatedStringPieces(
+            [csharp, templateLiteralForm()], holeClose: "\\}", skip: razorStrings + ["//[^\\n]*", "/\\*[\\s\\S]*?\\*/"])
     }()
+
+    /// The strings the scan for whole interpolated literals steps over: C#'s raw, verbatim and plain ones.
+    private static let razorStrings = ["\"\"\"[\\s\\S]*?\"\"\"", "@\"(?:[^\"]|\"\")*\"", "\"(?:[^\"\\\\\\n]|\\\\.)*\""]
 
     /// A directive line that names types (`@model`, `@inject`, `@using` a namespace, …), after its word;
     /// `@addTagHelper`, `@removeTagHelper` and `@tagHelperPrefix` take a string.

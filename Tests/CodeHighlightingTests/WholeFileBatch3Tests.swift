@@ -67,7 +67,7 @@ final class WholeFileBatch3Tests: XCTestCase {
 
     func testShellQuotesInsideCommandSubstitutionStayInTheString() {
         let text = "nested=\"$(echo \"$(basename \"$PWD\")\")\"\n# after\n"
-        XCTAssertEqual(kind("basename", in: text, .sh), .string)
+        XCTAssertNotEqual(kind("basename", in: text, .sh), .string, "a command substitution is code")
         XCTAssertEqual(kind("# after", in: text, .sh), .comment)
     }
 

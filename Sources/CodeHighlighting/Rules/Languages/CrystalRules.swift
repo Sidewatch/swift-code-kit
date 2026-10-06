@@ -18,16 +18,32 @@ import Foundation
 /// inherits (`< Base`), and the method a `def`, `macro` or `fun` declares, operator methods included.
 extension RuleTables {
     static let crystal: [(String, TokenKind)] =
-        quotedStringPieces(
-            quote: "\"", body: "[^\"\\\\]|\\\\[\\s\\S]", hole: crystalHole, holeEnd: "\\}",
-            afterHole: "(?<=\\})")
+        interpolatedStringPieces(
+            open: "\"", close: "\"", literal: "[^\"\\\\{\\n]|\\\\[\\s\\S]|\\{(?<![^\\\\]#\\{)(?!\\{)", hole: crystalHole,
+            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}",
+            // A `}` with another `}` ahead in the same run of text closes a macro's `{{ … }}` inside the hole.
+            afterHole: "(?<=\\})(?!\\})(?![^\"\\\\\\n}#]*\\})", multiline: true,
+            skip: [
+                "#(?!\\{)[^\\n]*", "'(?:\\\\[^\\n]{1,10}|[^'\\\\\\n])'",
+                "<<-(['\"]?)([A-Za-z_]\\w*)\\1[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\2\\b",
+            ])
+        + interpolatedStringPieces(
+            open: "%Q?\\(", close: "\\)", literal: "[^()\\\\{\\n]|\\\\[\\s\\S]|\\{(?<![^\\\\]#\\{)(?!\\{)|\\([^()\\n]*\\)",
+            hole: crystalHole,
+            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^)\\\\\\n}#]*\\})", multiline: true,
+            skip: ["#(?!\\{)[^\\n]*", "'(?:\\\\[^\\n]{1,10}|[^'\\\\\\n])'", "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\""])
+        + interpolatedStringPieces(
+            open: "/(?<![\\w)\\]}.]/)(?![\\s/=])", close: "/[imx]*", literal: "[^/\\\\{\\n]|\\\\.|\\{(?<![^\\\\]#\\{)(?!\\{)",
+            hole: crystalHole,
+            holeOpen: "\\{(?<=[^\\\\]#\\{)|\\{\\{", holeClose: "\\}", afterHole: "(?<=\\})(?!\\})(?![^/\\\\\\n}#]*\\})",
+            skip: ["#(?!\\{)[^\\n]*", "'(?:\\\\[^\\n]{1,10}|[^'\\\\\\n])'", "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\""])
         + [
             ("'(?:\\\\(?:u\\{[0-9a-fA-F]+\\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[0-7]{1,3}|[^\\n])|[^'\\\\\\n])'", .string),
             backQuoted,
-            ("(?<![\\w)\\]}.])/(?![\\s/=])(?:[^/\\\\\\n]|\\\\.)+/[imx]*", .string),
             ("<<-(['\"]?)([A-Za-z_]\\w*)\\1[^\\n]*\\n[\\s\\S]*?^[ \\t]*\\2\\b", .string),
+            // A percent literal painted whole; `%( … )` and `%Q( … )`, painted in pieces above, are not.
             (
-                "%[qQwiIrx]?(?:\\((?:[^()\\\\]|\\\\.|\\([^()]*\\))*\\)|\\[(?:[^\\[\\]\\\\]|\\\\.|\\[[^\\[\\]]*\\])*\\]|\\{(?:[^{}\\\\]|\\\\.|\\{[^{}]*\\})*\\}|<[^<>\\n]*>|\\|[^|\\n]*\\|)",
+                "%(?:[qwiIrx]|Q(?!\\())?(?:(?<![%Q])\\((?:[^()\\\\]|\\\\.|\\([^()]*\\))*\\)|\\[(?:[^\\[\\]\\\\]|\\\\.|\\[[^\\[\\]]*\\])*\\]|\\{(?:[^{}\\\\]|\\\\.|\\{[^{}]*\\})*\\}|<[^<>\\n]*>|\\|[^|\\n]*\\|)",
                 .string
             ),
             declaration(

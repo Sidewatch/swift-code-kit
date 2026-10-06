@@ -11,10 +11,9 @@
 import Foundation
 
 /// CoffeeScript: `#` comments and `### … ###` block comments; `'…'` and `"…"` strings with backslash
-/// escapes (a `\'` does not end one), a `"…"` string's `#{ … }` interpolation painted as code (it may itself
-/// hold a string with its own interpolation, three levels deep), `'''` and `"""` heredocs and `///` block
-/// regexes (whole, holes included),
-/// `/regex/` literals where a value starts, backtick JavaScript (code, painted with these rules), `->` / `=>`
+/// escapes (a `\'` does not end one), the `#{ … }` interpolations of a `"…"` string, a `"""` heredoc and a
+/// `///` block regex painted as code (one may itself hold a string with its own interpolation, three levels
+/// deep), `'''` heredocs, `/regex/` literals where a value starts, backtick JavaScript (code, painted with these rules), `->` / `=>`
 /// arrows, `@` members.
 extension RuleTables {
     static let coffeescript: [(String, TokenKind)] =
@@ -22,13 +21,17 @@ extension RuleTables {
             ("###[\\s\\S]*?###", .comment),
             ("#(?!\\{).*$", .comment),
             ("'\'\'[\\s\\S]*?'\'\'", .string),
-            // A heredoc or block regex paints whole, holes included; only a `"…"` string is split around its holes.
-            (coffeeTriple, .string),
-            (coffeeHeregex, .string),
         ]
         + interpolatedStringPieces(
-            whole: coffeeStrings, skip: coffeeSkip, open: "\"", close: "\"",
-            literal: "[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)", holeClose: "\\}", nested: coffeeNotHole)
+            open: "\"", close: "\"", literal: "[^\"\\\\#\\n]|\\\\[\\s\\S]|#(?!\\{)", hole: coffeeHole, holeOpen: "#\\{", holeClose: "\\}",
+            afterHole: coffeeAfterHole, multiline: true, skip: coffeeSkip)
+        // A heredoc's and a block regex's text holds the other forms' quotes, so each finds its own tails.
+        + interpolatedStringPieces(
+            open: "\"\"\"", close: "\"\"\"", literal: "[^\"\\\\#\\n]|\\\\[\\s\\S]|#(?!\\{)|\"(?!\"\")", hole: coffeeHole, holeOpen: "#\\{",
+            holeClose: "\\}", afterHole: coffeeAfterHole, multiline: true, skip: [coffeeHeregex, coffeeQuoted] + coffeeSkip.dropFirst(2))
+        + interpolatedStringPieces(
+            open: "///", close: "///[gimsuy]*", literal: "[^/\\\\#\\n]|\\\\[\\s\\S]|#(?!\\{)|/(?!//)", hole: coffeeHole, holeOpen: "#\\{",
+            holeClose: "\\}", afterHole: coffeeAfterHole, multiline: true, skip: [coffeeTriple, coffeeQuoted] + coffeeSkip.dropFirst(2))
         + [
             singleQuoted,
             // A regex literal opens where a value starts: after an operator, an opening bracket or a backtick.
@@ -47,22 +50,21 @@ extension RuleTables {
             ("\\b([a-zA-Z_$][\\w$]*)\\s*\\(", .function),
         ]
 
-    /// Every interpolated string: `"""…"""`, `///…///`, then `"…"`: where a `"…"` string's tail may start.
-    private static let coffeeStrings = [coffeeTriple, coffeeHeregex, "\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|" + coffeeHole + ")*\""].joined(
-        separator: "|")
-
     /// A `"""…"""` heredoc, holes included.
     private static let coffeeTriple = "\"\"\"(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|\"(?!\"\")|" + coffeeHole + ")*\"\"\""
 
     /// A `///…///` block regex, holes included.
     private static let coffeeHeregex = "///(?:[^/\\\\#]|\\\\[\\s\\S]|#(?!\\{)|/(?!//)|" + coffeeHole + ")*///[gimsuy]*"
 
-    /// A `{ … }` that no `#` opens (a regex's `{2,3}`, an object literal): its brace ends no hole.
-    private static let coffeeNotHole = "(?:^|[^#])\\{[^{}\\n]{0,30}\\}"
+    /// A hole's `}`, not one closing a `{ … }` that no `#` opens inside it (a regex's `{2,3}`, an object literal).
+    private static let coffeeAfterHole = "(?<=\\})(?<!(?:^|[^#])\\{[^{}\\n]{0,30}\\})"
 
-    /// The comments and other strings a search for an interpolated string steps over.
+    /// A whole `"…"` string, holes included, for the heredoc's and block regex's scans to step over.
+    private static let coffeeQuoted = "\"(?!\"\")(?:[^\"\\\\#]|\\\\[\\s\\S]|#(?!\\{)|" + coffeeHole + ")*\""
+
+    /// The heredocs, block regexes, comments and other strings a search for a `"…"` string steps over.
     private static let coffeeSkip = [
-        "###[\\s\\S]*?###", "#(?!\\{)[^\\n]*", "'''[\\s\\S]*?'''", "'(?:[^'\\\\]|\\\\[\\s\\S])*'",
+        coffeeTriple, coffeeHeregex, "###[\\s\\S]*?###", "#(?!\\{)[^\\n]*", "'''[\\s\\S]*?'''", "'(?:[^'\\\\]|\\\\[\\s\\S])*'",
     ]
 
     /// A `#{ … }` hole, three levels of braces deep.

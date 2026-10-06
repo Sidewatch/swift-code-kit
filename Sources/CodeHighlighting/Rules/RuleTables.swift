@@ -144,6 +144,7 @@ enum RuleTables {
         case .org: return org
         case .elixir: return elixir
         case .stata: return stata
+        case .sas: return sas
         case .hack: return hack
         case .properties: return properties
         case .jsonnet: return jsonnet

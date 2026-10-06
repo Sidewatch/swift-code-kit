@@ -231,7 +231,7 @@ final class OraclePassFTests: XCTestCase {
         let text = "echo \"${HOME:=/root} $((1 + 2)) $(date)\"\nx=hello\\ world\nlegacy=`uname -s`\n"
         XCTAssertEqual(role(":=", in: text, .sh), "plain", "a parameter expansion's operator")
         XCTAssertEqual(role("2", in: text, .sh), "number", "arithmetic")
-        XCTAssertEqual(role("$(date)", in: text, .sh), "string", "a command substitution stays in the string")
+        XCTAssertNotEqual(role("date", in: text, .sh), "string", "a command substitution is code")
         XCTAssertEqual(role("\\ ", in: text, .sh), "string")
         XCTAssertEqual(role("`", in: text, .sh), "string")
     }
