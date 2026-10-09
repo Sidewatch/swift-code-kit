@@ -84,18 +84,18 @@ public enum TOMLStructure {
         return current
     }
 
-    private static func addPairs(of node: Node, into table: LocatedBuilder, ns: NSString) {
-        for pair in YAMLStructure.namedChildren(node) where pair.nodeType == "pair" { addPair(pair, into: table, ns: ns) }
+    private static func addPairs(of node: Node, into table: LocatedBuilder, ns: NSString, depth: Int = 1) {
+        for pair in YAMLStructure.namedChildren(node) where pair.nodeType == "pair" { addPair(pair, into: table, ns: ns, depth: depth) }
     }
 
-    private static func addPair(_ pair: Node, into table: LocatedBuilder, ns: NSString) {
+    private static func addPair(_ pair: Node, into table: LocatedBuilder, ns: NSString, depth: Int = 1) {
         let children = YAMLStructure.namedChildren(pair)
         guard let keyNode = children.first(where: isKey), let valueNode = children.first(where: { !isKey($0) && $0.nodeType != "comment" })
         else { return }
         let segments = keyPath(keyNode, ns)
         guard let last = segments.last else { return }
         let parent = descend(table, Array(segments.dropLast()), last: .mapping)
-        parent.pairs.append((last.text, last.range, build(valueNode, ns: ns)))
+        parent.pairs.append((last.text, last.range, build(valueNode, ns: ns, depth: depth)))
     }
 
     /// A key's segments in order: `a.b."c d"` is three, each with its own range.
@@ -107,16 +107,19 @@ public enum TOMLStructure {
         }
     }
 
-    private static func build(_ node: Node, ns: NSString) -> LocatedBuilder {
+    /// `depth` counts the containers entered, the document's own table being the first; past
+    /// `StructureDepth.limit` the value is `StructureDepth.exceeded`, never one more frame.
+    private static func build(_ node: Node, ns: NSString, depth: Int = 1) -> LocatedBuilder {
+        guard depth <= StructureDepth.limit else { return .scalar(StructureDepth.exceeded, range: node.range) }
         let raw = YAMLStructure.text(node, ns)
         switch node.nodeType ?? "" {
         case "array":
             let b = LocatedBuilder(.sequence, range: node.range)
-            b.items = YAMLStructure.namedChildren(node).filter { $0.nodeType != "comment" }.map { build($0, ns: ns) }
+            b.items = YAMLStructure.namedChildren(node).filter { $0.nodeType != "comment" }.map { build($0, ns: ns, depth: depth + 1) }
             return b
         case "inline_table":
             let b = LocatedBuilder(.mapping, range: node.range)
-            addPairs(of: node, into: b, ns: ns)
+            addPairs(of: node, into: b, ns: ns, depth: depth + 1)
             return b
         case "string": return .scalar(.string(unquoted(raw)), range: node.range)
         case "integer": return .scalar(integer(raw), range: node.range)

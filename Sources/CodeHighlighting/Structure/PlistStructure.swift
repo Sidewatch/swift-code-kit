@@ -62,6 +62,7 @@ public enum PlistStructure {
 
     /// The document as a ``LocatedValue``, ranges and all; nil when there is nothing to read.
     static func located(_ text: String) -> LocatedValue? {
+        guard !StructureDepth.exceedsLimit(markup: text) else { return StructureDepth.exceededDocument }
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .xml) else { return nil }
         let ns = text as NSString
         guard var element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" })
@@ -110,7 +111,10 @@ public enum PlistStructure {
         )
     }
 
-    private static func build(_ element: Node, ns: NSString) -> LocatedBuilder {
+    /// `depth` counts the dicts and arrays entered; past `StructureDepth.limit` the value is
+    /// `StructureDepth.exceeded`, never one more frame.
+    private static func build(_ element: Node, ns: NSString, depth: Int = 0) -> LocatedBuilder {
+        guard depth <= StructureDepth.limit else { return .scalar(StructureDepth.exceeded, range: element.range) }
         switch name(of: element, ns) {
         case "dict":
             let builder = LocatedBuilder(.mapping, range: element.range)
@@ -119,13 +123,13 @@ public enum PlistStructure {
             while i + 1 < elements.count {
                 guard name(of: elements[i], ns) == "key" else { i += 1; continue }
                 let key = content(of: elements[i], ns: ns)
-                builder.pairs.append((key.text, key.range, build(elements[i + 1], ns: ns)))
+                builder.pairs.append((key.text, key.range, build(elements[i + 1], ns: ns, depth: depth + 1)))
                 i += 2
             }
             return builder
         case "array":
             let builder = LocatedBuilder(.sequence, range: element.range)
-            builder.items = childElements(of: element).map { build($0, ns: ns) }
+            builder.items = childElements(of: element).map { build($0, ns: ns, depth: depth + 1) }
             return builder
         case "integer":
             let c = content(of: element, ns: ns)

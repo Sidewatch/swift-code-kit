@@ -71,3 +71,14 @@ map was missing `Rules/`, `Models/`, `Extensions/`, `SymbolKind`, `OutlineNode`,
 - 25 Sep 2026 — 20 rule tables for the languages a corpus sweep found flat or nearly so; `RuleTableCoverageTests` (three roles per table; the mutant that drops a mapping fails); the rule-table snapshot re-recorded.
 - 25 Sep 2026 — nine more rule tables (BibTeX, DOT, EdgeQL, go.mod, MANIFEST.MF, Meson, Quarto/R Markdown, .strings, Texinfo); `YAMLStructure.site(in:path:)` (`YAMLEditSiteTests`; mutants: the pair's whole range and a reversed sequence each fail).
 - 3 Oct 2026 — local grammar patches for bash 5.3 / escaped test operators, Dockerfile multi-name `ARG` and valueless flags, and the Swift typed-throws keyword (`Grammars/VERSIONS.md`), plus `defer` as a keyword in the Swift query; Quarto and R Markdown chunks painted in their own languages through `EmbeddedMarkupHighlighter` (one parse per language across all chunks, one table pass per language), front matter as YAML. `ShellDockerSwiftGrammarTests` (mutant: the unpatched grammars and query, 6 of 7 fail; the seventh is the `deferred` guard), `ExecutableMarkdownTests` (mutant: no chunk language, 4 of 7 fail; the other three pin fences, options and text blocks, which that mutant leaves alone).
+- 9 Oct 2026 — corrupt-input pass (`DeepStructureTests`). Fixed: every structure reader converted a
+  grammar's tree by one call per nesting level, so `a: [[[[…` 50,000 deep overflowed the main thread's
+  stack in `YAMLStructure.convert` (the app crashed, signal 11, `KERN_PROTECTION_FAILURE` in the stack
+  guard). `StructureDepth.limit` (256) now bounds `YAMLStructure.convert`, `TOMLStructure.build`,
+  `XMLStructure.build` and `PlistStructure.build`; a value past it reads as `StructureDepth.exceeded`.
+  Measured and fixed differently for XML: tree-sitter-xml's parse goes quadratic and error-ridden past
+  about a thousand nested elements (0.08 s at 1,000, 2.0 s at 8,000, 167 s and a nil result at 50,000),
+  so `XMLStructure.located` and `PlistStructure.located` refuse the depth BEFORE the parse with
+  `StructureDepth.exceedsLimit(markup:)` — one linear pass counting tags, CDATA and comments skipped,
+  leaving at the limit — and answer a one-row document that says so (4 ms at 50,000). Mutants: YAML and TOML
+  unguarded each crash the test process (signal 11); XML unguarded returns nil after 167 s.

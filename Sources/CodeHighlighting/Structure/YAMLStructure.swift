@@ -64,34 +64,37 @@ public enum YAMLStructure {
     }
 
     /// The node's content: a `block_node` / `flow_node` unwraps to the collection or scalar inside
-    /// it (past any anchor, tag or comment).
-    static func convert(_ node: Node, ns: NSString) -> Value {
+    /// it (past any anchor, tag or comment). `depth` counts the collections entered; past
+    /// `StructureDepth.limit` the value is `StructureDepth.exceeded`, never one more frame.
+    static func convert(_ node: Node, ns: NSString, depth: Int = 0) -> Value {
+        guard depth <= StructureDepth.limit else { return StructureDepth.exceeded }
         switch node.nodeType ?? "" {
         case "block_node", "flow_node":
             guard let inner = namedChildren(node).first(where: { !["anchor", "tag", "comment"].contains($0.nodeType ?? "") }) else {
                 return .null
             }
-            return convert(inner, ns: ns)
+            return convert(inner, ns: ns, depth: depth)
         case "block_mapping", "flow_mapping":
             let pairs = namedChildren(node).filter { ["block_mapping_pair", "flow_pair"].contains($0.nodeType ?? "") }.map { pair -> Pair in
                 let key = pair.child(byFieldName: "key").map { keyName($0, ns: ns) } ?? ""
-                let value = pair.child(byFieldName: "value").map { convert($0, ns: ns) } ?? .null
+                let value = pair.child(byFieldName: "value").map { convert($0, ns: ns, depth: depth + 1) } ?? .null
                 return Pair(key: key, value: value)
             }
             return .mapping(pairs)
         case "block_sequence":
             return .sequence(
                 namedChildren(node).filter { $0.nodeType == "block_sequence_item" }.map { item in
-                    namedChildren(item).first(where: { $0.nodeType != "comment" }).map { convert($0, ns: ns) } ?? .null
+                    namedChildren(item).first(where: { $0.nodeType != "comment" }).map { convert($0, ns: ns, depth: depth + 1) } ?? .null
                 })
         case "flow_sequence":
-            return .sequence(namedChildren(node).filter { $0.nodeType != "comment" }.map { convert($0, ns: ns) })
+            return .sequence(namedChildren(node).filter { $0.nodeType != "comment" }.map { convert($0, ns: ns, depth: depth + 1) })
         case "flow_pair":  // a single `key: value` inside a flow sequence
-            let key = node.child(byFieldName: "key").map { keyText(convert($0, ns: ns)) } ?? ""
-            return .mapping([Pair(key: key, value: node.child(byFieldName: "value").map { convert($0, ns: ns) } ?? .null)])
+            let key = node.child(byFieldName: "key").map { keyText(convert($0, ns: ns, depth: depth + 1)) } ?? ""
+            return .mapping([Pair(key: key, value: node.child(byFieldName: "value").map { convert($0, ns: ns, depth: depth + 1) } ?? .null)]
+            )
         case "plain_scalar":
             guard let inner = namedChildren(node).first else { return .string(text(node, ns)) }
-            return convert(inner, ns: ns)
+            return convert(inner, ns: ns, depth: depth)
         case "string_scalar": return .string(text(node, ns))
         case "integer_scalar":
             let raw = text(node, ns).replacingOccurrences(of: "_", with: "")

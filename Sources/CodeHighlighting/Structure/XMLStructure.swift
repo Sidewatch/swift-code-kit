@@ -42,6 +42,9 @@ public enum XMLStructure {
 
     /// The document as a ``LocatedValue``, ranges and all; nil when there is nothing to read.
     static func located(_ text: String) -> LocatedValue? {
+        // The grammar's parse goes quadratic (and error-ridden) past about a thousand nested
+        // elements — seconds on the thread that asked — so the depth is refused before the parse.
+        guard !StructureDepth.exceedsLimit(markup: text) else { return StructureDepth.exceededDocument }
         guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .xml) else { return nil }
         let ns = text as NSString
         guard let element = root.child(byFieldName: "root") ?? YAMLStructure.namedChildren(root).first(where: { $0.nodeType == "element" })
@@ -52,12 +55,14 @@ public enum XMLStructure {
         return document.frozen
     }
 
-    /// The element's name and its structure.
-    static func build(_ element: Node, ns: NSString) -> (name: String, value: LocatedBuilder) {
+    /// The element's name and its structure. `depth` counts the elements entered; past
+    /// `StructureDepth.limit` an element is read as `StructureDepth.exceeded`, never one more frame.
+    static func build(_ element: Node, ns: NSString, depth: Int = 0) -> (name: String, value: LocatedBuilder) {
         let children = YAMLStructure.namedChildren(element)
         let tag = children.first { ["STag", "EmptyElemTag"].contains($0.nodeType ?? "") }
         let tagChildren = tag.map(YAMLStructure.namedChildren) ?? []
         let name = tagChildren.first { $0.nodeType == "Name" }.map { YAMLStructure.text($0, ns) } ?? ""
+        guard depth <= StructureDepth.limit else { return (name, .scalar(StructureDepth.exceeded, range: element.range)) }
         var attributes: [(key: String, keyRange: NSRange?, value: LocatedBuilder)] = []
         for attribute in tagChildren where attribute.nodeType == "Attribute" {
             let parts = YAMLStructure.namedChildren(attribute)
@@ -89,7 +94,7 @@ public enum XMLStructure {
                         text += YAMLStructure.text(data, ns)
                     }
                     textSpan = textSpan.map { NSUnionRange($0, piece.range) } ?? piece.range
-                case "element": elements.append(build(piece, ns: ns))
+                case "element": elements.append(build(piece, ns: ns, depth: depth + 1))
                 default: continue  // Comment, PI
                 }
             }
