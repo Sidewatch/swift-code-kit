@@ -47,6 +47,11 @@ final class CodeLanguageTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: ".env"), .dotenv)
         XCTAssertEqual(Language.detect(filename: ".env.local"), .dotenv)  // prefix rule
         XCTAssertEqual(Language.detect(filename: ".dev.vars"), .dotenv)  // Wrangler's local secrets
+        XCTAssertEqual(Language.detect(filename: "index.js.map"), .json)  // a source map
+        XCTAssertEqual(Language.detect(filename: "styles.css.map"), .json)
+        XCTAssertEqual(Language.detect(filename: "types.d.ts.map"), .json)
+        XCTAssertEqual(Language.detect(filename: "chunk.mjs.map"), .json)
+        XCTAssertEqual(Language.detect(filename: "linker.map"), .plainText)  // not a source map
         XCTAssertEqual(Language.detect(filename: ".dev.vars.example"), .dotenv)
         XCTAssertEqual(Language.detect(filename: ".dev.vars.staging"), .dotenv)
         XCTAssertEqual(Language.detect(filename: "dev.vars"), .plainText)  // only the dotfile name

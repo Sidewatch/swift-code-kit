@@ -556,6 +556,13 @@ public extension Language {
     internal static let compoundExtensionMap: [String: Language] = [
         "blade.php": .blade,
         "html.erb": .erb,
+        // Source maps are JSON; a bare `.map` is left alone (linker maps, MapServer mapfiles).
+        "js.map": .json,
+        "mjs.map": .json,
+        "cjs.map": .json,
+        "jsx.map": .json,
+        "ts.map": .json,
+        "css.map": .json,
     ]
 
     /// Exact (lowercased) filenames — the highest-precedence rule.
