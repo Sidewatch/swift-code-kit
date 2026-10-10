@@ -11,6 +11,7 @@
 
 import AppKit
 import CodeLanguage
+import FoundationExtensions
 
 /// Dependency-light regex highlighter: per-language rule tables for the common
 /// languages, plus a `HighlightFamily` fallback so every language `CodeLanguage`
@@ -64,8 +65,11 @@ public final class SyntaxHighlighter: CodeHighlighter {
         commentRules = comments
     }
 
-    /// Recolors the lines that intersect `editedRange` (expanded to whole lines).
-    /// Only the `.foregroundColor` attribute is touched — never `.font`, which
+    /// How far past the asked range a pass widens to whole lines; a longer line is cut there.
+    public static let lineReach = 4_096
+
+    /// Recolors the lines that intersect `editedRange` (expanded to whole lines, at most
+    /// ``lineReach`` past it). Only the `.foregroundColor` attribute is touched — never `.font`, which
     /// would invalidate layout on every keystroke.
     @MainActor
     public func highlight(_ storage: NSTextStorage, in editedRange: NSRange) {
@@ -74,13 +78,17 @@ public final class SyntaxHighlighter: CodeHighlighter {
 
         // Clamp like TreeSitterHighlighter.highlight does: the two tiers are
         // interchangeable, so a stale range safe against one must not crash the other.
-        let start = string.lineRange(for: NSRange(location: min(editedRange.location, string.length), length: 0)).location
+        // Whole lines, but a line longer than the reach (a minified bundle, a source map's one 4 MB
+        // line) is cut there: widening a visible screenful into the whole line repainted megabytes
+        // per scroll, and even finding its ends walked all of it.
+        let start = string.lineRange(for: NSRange(location: min(editedRange.location, string.length), length: 0), reach: Self.lineReach)
+            .location
         let end: Int = {
             let e = NSMaxRange(editedRange)
             let clamped = min(e, string.length)
-            return NSMaxRange(string.lineRange(for: NSRange(location: max(clamped - 1, 0), length: 0)))
+            return NSMaxRange(string.lineRange(for: NSRange(location: max(clamped - 1, 0), length: 0), reach: Self.lineReach))
         }()
-        let range = NSRange(location: start, length: end - start)
+        let range = NSRange(location: start, length: max(0, end - start))
         guard range.length > 0 else { return }
 
         // Only reset the color — NOT the font. Changing .font invalidates the

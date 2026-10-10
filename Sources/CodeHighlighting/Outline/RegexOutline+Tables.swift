@@ -638,6 +638,9 @@ extension RegexOutline {
                 return r("^" + marks + #"[ \t]*([^=\n].*?)[ \t]*"# + marks + #"[ \t]*$"#, .heading, level)
             }, scoping: .levels)
         t[.http] = Table(rules: [r(#"^###[ \t]*(\S.*?)[ \t]*$"#, .function)], scoping: .flat)
+        // A static host's files: each `_headers` block by its URL pattern, each `_redirects` rule by its source.
+        t[.staticheaders] = Table(rules: [r(#"^([^ \t\n#][^\n]*?)[ \t]*$"#, .module)], scoping: .flat)
+        t[.staticredirects] = Table(rules: [r(#"^[ \t]*([^ \t\n#]\S*)"#, .constant)], scoping: .flat)
         t[.bibtex] = Table(
             rules: [r(#"(?i:^[ \t]*@(?!comment\b|preamble\b|string\b)\w+[ \t]*\{[ \t]*([^,\s]+))"#, .constant)], scoping: .flat)
         t[.diff] = Table(
