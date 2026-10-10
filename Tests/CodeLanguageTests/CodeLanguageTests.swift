@@ -46,6 +46,10 @@ final class CodeLanguageTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: "Dockerfile.prod"), .dockerfile)  // prefix rule
         XCTAssertEqual(Language.detect(filename: ".env"), .dotenv)
         XCTAssertEqual(Language.detect(filename: ".env.local"), .dotenv)  // prefix rule
+        XCTAssertEqual(Language.detect(filename: ".dev.vars"), .dotenv)  // Wrangler's local secrets
+        XCTAssertEqual(Language.detect(filename: ".dev.vars.example"), .dotenv)
+        XCTAssertEqual(Language.detect(filename: ".dev.vars.staging"), .dotenv)
+        XCTAssertEqual(Language.detect(filename: "dev.vars"), .plainText)  // only the dotfile name
     }
 
     func testDetectsMarkdownVariants() {

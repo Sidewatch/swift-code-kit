@@ -15,6 +15,8 @@ final class FileSymbolTests: XCTestCase {
     func testDotfilesKindsAndLanguagesInThatOrder() {
         XCTAssertEqual(Language.symbolName(forFilename: ".env"), "key")
         XCTAssertEqual(Language.symbolName(forFilename: ".env.local"), "key")
+        XCTAssertEqual(Language.symbolName(forFilename: ".dev.vars"), "key")
+        XCTAssertEqual(Language.symbolName(forFilename: ".dev.vars.example"), "key")
         XCTAssertEqual(Language.symbolName(forFilename: ".gitignore"), "eye.slash")
         XCTAssertEqual(Language.symbolName(forFilename: "Photo.JPG"), "photo", "the extension is case-folded")
         XCTAssertEqual(Language.symbolName(forFilename: "yarn.lock"), "lock")

@@ -16,7 +16,9 @@ public extension Language {
     /// their own glyph, and everything else its detected language's ``symbolName``.
     static func symbolName(forFilename filename: String) -> String {
         let lower = filename.lowercased()
-        if lower == ".env" || lower.hasPrefix(".env.") || lower.hasSuffix(".env") { return "key" }
+        if lower == ".env" || lower.hasPrefix(".env.") || lower.hasSuffix(".env") || lower == ".dev.vars" || lower.hasPrefix(".dev.vars.") {
+            return "key"
+        }
         if lower == ".gitignore" || lower == ".ignore" { return "eye.slash" }
         if let kind = symbolName(forKindExtension: (lower as NSString).pathExtension) { return kind }
         return detect(filename: filename).symbolName

@@ -22,13 +22,15 @@ public extension Language {
     ///
     /// Matching is case-insensitive and applies rules in precedence order:
     /// exact filename (`Makefile`, `tsconfig.json`) → prefix rules
-    /// (`Dockerfile.*`, `.env.*`) → compound extensions (`.blade.php`) →
+    /// (`Dockerfile.*`, `.env.*`, `.dev.vars.*`) → compound extensions (`.blade.php`) →
     /// plain last extension. Returns ``plainText`` when nothing matches.
     static func detect(filename: String) -> Language {
         let name = filename.lowercased()
         if let l = Self.filenameMap[name] { return l }
         if name == "dockerfile" || name.hasPrefix("dockerfile.") { return .dockerfile }
         if name == ".env" || name.hasPrefix(".env.") { return .dotenv }
+        // Cloudflare Wrangler's local secrets: `.dev.vars`, per environment `.dev.vars.staging`.
+        if name == ".dev.vars" || name.hasPrefix(".dev.vars.") { return .dotenv }
         for (ext, lang) in Self.compoundExtensionMap where name.hasSuffix("." + ext) { return lang }
         if let dot = name.lastIndex(of: "."), dot < name.index(before: name.endIndex) {
             let ext = String(name[name.index(after: dot)...])
