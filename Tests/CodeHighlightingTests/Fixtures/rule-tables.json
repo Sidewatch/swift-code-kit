@@ -11065,6 +11065,62 @@
       "comment"
     ]
   ],
+  "lang:staticheaders" : [
+    [
+      "^[^ \\t\\n#][^\\n]*$",
+      "type"
+    ],
+    [
+      "(?#in:KD86KD9tKV5bIFx0XStbQS1aYS16XVtcdy1dezAsODB9OlsgXHRdezAsOH0oPzxyZWdpb24+XFNbXlxuXSopKSg\/Oig\/ISlbXHNcU10pezAsNDAwMH0oPzopPwE0MDY0)\\S[^\\n]*$",
+      "string"
+    ],
+    [
+      "^[ \\t]+[A-Za-z][\\w-]*(?=[ \\t]*:)",
+      "property"
+    ],
+    [
+      "^[ \\t]+![ \\t]*[A-Za-z][\\w-]*[ \\t]*$",
+      "keyword"
+    ],
+    [
+      "\\*|:[A-Za-z_]\\w*",
+      "variable"
+    ],
+    [
+      "^[ \\t]*#.*$",
+      "comment"
+    ]
+  ],
+  "lang:staticredirects" : [
+    [
+      "^[ \\t]*[^ \\t\\n#]\\S*",
+      "type"
+    ],
+    [
+      "(?<=[ \\t])(?:https?:\/\/|\/)\\S*",
+      "type"
+    ],
+    [
+      "(?<=[ \\t])[A-Za-z][\\w-]*(?==)",
+      "property"
+    ],
+    [
+      "(?<=[ \\t])[1-5]\\d\\d(?=!?(?:[ \\t]|$))",
+      "number"
+    ],
+    [
+      "(?<=\\d\\d\\d)!(?=[ \\t]|$)",
+      "keyword"
+    ],
+    [
+      "\\*|:[A-Za-z_]\\w*",
+      "variable"
+    ],
+    [
+      "^[ \\t]*#.*$",
+      "comment"
+    ]
+  ],
   "lang:strings" : [
     [
       "\/\\*[\\s\\S]*?\\*\/",

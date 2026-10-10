@@ -184,6 +184,10 @@ public enum Language: String, CaseIterable, Sendable {
     case html
     /// HTTP request files (`.http`, the JetBrains / VS Code REST Client format).
     case http
+    /// A static host's `_headers` file (Cloudflare Pages / Workers Static Assets, Netlify).
+    case staticheaders
+    /// A static host's `_redirects` file (Cloudflare Pages / Workers Static Assets, Netlify).
+    case staticredirects
     /// Idris.
     case idris
     /// INI.

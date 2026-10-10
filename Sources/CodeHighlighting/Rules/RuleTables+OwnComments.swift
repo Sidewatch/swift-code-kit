@@ -73,6 +73,9 @@ extension RuleTables {
         .tcl: ("(?:(?<=^[ \\t]{0,80})|(?<=;[ \\t]{0,20}))#.*$", .comment),
         // A dotenv `#` opens a comment at a line's start or after whitespace: `value#frag` is one value.
         .dotenv: ("(?:^|(?<=[ \\t]))#.*$", .comment),
+        // A static host's `_headers` / `_redirects` comment is a whole line: `/to#anchor` is one URL.
+        .staticheaders: ("^[ \\t]*#.*$", .comment),
+        .staticredirects: ("^[ \\t]*#.*$", .comment),
         // An Apache httpd comment is a whole line: a `#` inside an argument (`IndexIgnore *#`) is literal.
         .apacheconf: ("^[ \\t]*#.*$", .comment),
         // A commit message's comment is a whole line: `Fixes #142` refers to an issue.

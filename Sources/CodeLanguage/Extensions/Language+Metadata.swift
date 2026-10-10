@@ -124,6 +124,8 @@ public extension Language {
         .hosts: Meta(name: "Hosts File", family: .shellLike, lineComment: "#", block: nil),
         .html: Meta(name: "HTML", family: .markup, lineComment: nil, block: BlockComment(open: "<!--", close: "-->")),
         .http: Meta(name: "HTTP Requests", family: .config, lineComment: "#", block: nil),
+        .staticheaders: Meta(name: "Static Headers", family: .config, lineComment: "#", block: nil),
+        .staticredirects: Meta(name: "Static Redirects", family: .config, lineComment: "#", block: nil),
         .idris: Meta(name: "Idris", family: .mlLike, lineComment: "--", block: BlockComment(open: "{-", close: "-}")),
         .ini: Meta(name: "INI", family: .config, lineComment: ";", block: nil),
         .java: Meta(name: "Java", family: .cLike, lineComment: "//", block: BlockComment(open: "/*", close: "*/")),

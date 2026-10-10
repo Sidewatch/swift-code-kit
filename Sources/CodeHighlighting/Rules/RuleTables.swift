@@ -197,6 +197,8 @@ enum RuleTables {
         case .reason: return reason
         case .cue: return cue
         case .dotenv: return dotenv
+        case .staticheaders: return staticheaders
+        case .staticredirects: return staticredirects
         case .caddyfile: return caddyfile
         case .mediawiki: return mediawiki
         case .hiveql: return hiveql

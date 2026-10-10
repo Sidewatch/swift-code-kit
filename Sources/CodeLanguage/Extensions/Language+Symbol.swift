@@ -51,6 +51,10 @@ public extension Language {
             return "key"
         case .http:
             return "network"
+        case .staticheaders:
+            return "list.bullet.rectangle"
+        case .staticredirects:
+            return "arrow.uturn.right"
         // Build files and packaging.
         case .makefile, .cmake, .gradle, .just, .starlark, .meson, .ninja:
             return "hammer"

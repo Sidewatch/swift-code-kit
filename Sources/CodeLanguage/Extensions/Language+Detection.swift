@@ -683,6 +683,8 @@ public extension Language {
         "deno.lock": .json,
         "deps.edn": .clojure,
         "devcontainer.json": .jsonc,
+        "_headers": .staticheaders,
+        "_redirects": .staticredirects,
         "dockerfile": .dockerfile,
         "fastfile": .ruby,
         "flake.lock": .json,
