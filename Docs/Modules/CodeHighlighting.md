@@ -79,6 +79,13 @@ let language = CodeLanguage.Language.detect(for: fileURL)
 let highlighter: CodeHighlighter = TreeSitterHighlighter(language: language)
     ?? SyntaxHighlighter(language: language, colors: MyColors())
 highlighter.highlight(textView.textStorage!, in: editedRange)   // main thread
+
+// Or let one shared cache choose the tier and build each highlighter once. It never waits on a
+// grammar compile: the regex tier stands in until the grammar is ready, then it calls back.
+let cache = HighlighterCache(colors: MyColors())                 // main actor
+cache.onGrammarReady = { language in /* re-highlight editors showing `language` */ }
+cache.highlighter(for: language).highlight(textView.textStorage!, in: editedRange)
+cache.clear()   // after a theme change: the next request builds against the new colours
 ```
 
 ### Incremental highlighting for large files

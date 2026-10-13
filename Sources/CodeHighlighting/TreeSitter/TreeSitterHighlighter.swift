@@ -374,10 +374,6 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// the regex ``SyntaxHighlighter``.
     public static func supports(_ language: CodeLanguage.Language) -> Bool { grammar(for: language) != nil }
 
-    /// How many grammars loaded successfully (a startup sanity check: 0 usually
-    /// means the `.bundle` query resources weren't shipped next to the executable).
-    public static var loadedCount: Int { grammarBuilders.count }
-
     /// The loaded tree-sitter language object for `language`. Internal for tests
     /// (lets them compile hand-written queries against a bundled grammar).
     static func tsLanguage(for language: CodeLanguage.Language) -> SwiftTreeSitter.Language? {

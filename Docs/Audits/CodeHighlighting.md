@@ -58,7 +58,7 @@ map was missing `Rules/`, `Models/`, `Extensions/`, `SymbolKind`, `OutlineNode`,
 ## Known non-issues (do not "fix" these again)
 
 - `ResolvingQueryCursor` / `next()` deprecation warnings (3 sites): SwiftTreeSitter asks for `ResolvingQueryMatchSequence`. Deliberately left — the migration touches the hot query loop and wants its own measured change.
-- `TreeSitterHighlighter.loadedCount` has no caller — public startup sanity check, kept.
+- `TreeSitterHighlighter.loadedCount` had no caller — removed 13 Oct 2026.
 - `CommentKeywords.regex` is a `try!` on a literal pattern — fine.
 - Grammar queries cannot load under `swift test` (Bundle.main); paint is proven by `Sidewatch --dump-captures` / `--probe-highlight-coverage`.
 
