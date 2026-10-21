@@ -11,6 +11,7 @@
 
 import Foundation
 import CodeLanguage
+import FoundationExtensions
 
 /// Parses every source file in the project and maps symbol names to their definitions, for
 /// cross-file Go to Definition, hover docs and completion. Built on a background queue and
@@ -142,19 +143,20 @@ public final class ProjectSymbolIndex {
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .isDirectoryKey]
         let skip = skipDirs  // read once: the scan should see one consistent list
         let excluded = isExcluded
-        outer: for root in roots {
-            guard let en = fm.enumerator(at: root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) else { continue }
-            for case let url as URL in en {
-                if skip.contains(url.lastPathComponent) { en.skipDescendants(); continue }
+        // `walk`, not `enumerator(at:)`: a project opened through a link is a root that IS a symbolic
+        // link, which the plain enumerator treats as a file and lists nothing under.
+        for root in roots where count <= 5000 {
+            fm.walk(root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) { url in
+                if skip.contains(url.lastPathComponent) { return .skipDescendants }
                 if let excluded {
                     let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-                    if excluded(root, url, isDir) { if isDir { en.skipDescendants() }; continue }
+                    if excluded(root, url, isDir) { return isDir ? .skipDescendants : .next }
                 }
                 let lang = CodeLanguage.Language.detect(for: url)
-                guard SymbolQueries.sources[lang] != nil else { continue }
+                guard SymbolQueries.sources[lang] != nil else { return .next }
                 let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                guard size > 0, size < 500_000 else { continue }
-                guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+                guard size > 0, size < 500_000 else { return .next }
+                guard let text = try? String(contentsOf: url, encoding: .utf8) else { return .next }
                 var names = Set<String>()
                 let syms = TreeSitterHighlighter.symbols(in: text, language: lang)
                 let owners = SymbolOwners.owners(in: syms)
@@ -171,7 +173,7 @@ public final class ProjectSymbolIndex {
                     urls[path] = url
                 }
                 count += 1
-                if count > 5000 { break outer }  // safety cap for very large trees
+                return count > 5000 ? .stop : .next  // safety cap for very large trees
             }
         }
         return ScanResult(defs: map, fileNames: files, fileURLs: urls)

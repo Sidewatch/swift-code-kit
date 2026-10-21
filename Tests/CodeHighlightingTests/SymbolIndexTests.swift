@@ -163,6 +163,26 @@ final class SymbolIndexTests: XCTestCase {
         XCTAssertEqual(idx.definitions(of: "nonexistent").count, 0)
     }
 
+    /// A project opened through a link: the root IS a symbolic link, which `enumerator(at:)` lists
+    /// nothing under. The definitions are found, spelled under the link as the project was opened.
+    func testARootThatIsALinkIsIndexedUnderItsOwnSpelling() throws {
+        try XCTSkipUnless(TreeSitterHighlighter.supports(.python))
+        let dir = makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let real = dir.appendingPathComponent("real")
+        try FileManager.default.createDirectory(at: real.appendingPathComponent("pkg"), withIntermediateDirectories: true)
+        try "def gamma():\n    pass\n".write(to: real.appendingPathComponent("pkg/g.py"), atomically: true, encoding: .utf8)
+        let link = dir.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+
+        let idx = ProjectSymbolIndex()
+        let built = expectation(description: "build completes")
+        idx.build(root: link) { built.fulfill() }
+        wait(for: [built], timeout: 10)
+
+        XCTAssertEqual(idx.definitions(of: "gamma").map(\.url.path), [link.appendingPathComponent("pkg/g.py").path])
+    }
+
     func testAllNamesListsEveryDefinedNameCaseInsensitively() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.python))
         let dir = makeTempDir()
