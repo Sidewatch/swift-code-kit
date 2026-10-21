@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import FoundationExtensions
 import CodeLanguage
 
 /// Outlines for HTML and the templates built on it (Vue, Svelte, Astro, Razor, ERB, EJS, JSP):
@@ -421,7 +422,7 @@ public enum MarkupOutline {
         }
         let collapsed = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         guard !collapsed.isEmpty else { return nil }
-        return collapsed.count > 80 ? String(collapsed.prefix(79)) + "…" : collapsed
+        return collapsed.clipped(to: 80)
     }
 
     /// The element's static id, unless it is computed by the template (`{x}`, `<%= x %>`, `@x`).
