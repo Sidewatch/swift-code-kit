@@ -104,6 +104,12 @@ highlighter.highlight(textView.textStorage!, in: editedRange)   // main thread
 
 Each module's full guide is `Docs/Modules/<Module>.md`.
 
+```swift
+// A Markdown fence's tag: a language name or an extension; nil leaves the block plain.
+Language(fenceTag: "python")   // .python
+Language(fenceTag: "rs")       // .rust
+```
+
 ## Notes
 
 The modules were separate packages until 27 September 2026 (`swift-code-language`, `swift-code-highlighting`); their commits are kept here, so `git log --follow` traces any file back through them.

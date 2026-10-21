@@ -11,7 +11,7 @@ Source code, understood: which language a file is, and syntax highlighting for i
 
 ### Module map
 - `Enums/` — enums with no behaviour beyond their cases and labels: HighlightFamily, Language
-- `Extensions/` — extensions on Foundation / stdlib / other types: Language+Detection, Language+Metadata, Language+Names (`names(for:)`: every extension and exact filename the detector answers a language from, for a caller that needs to enumerate them — a corpus check asking "is there a fixture for every name we claim?")
+- `Extensions/` — extensions on Foundation / stdlib / other types: Language+Detection, Language+Metadata, Language+Names (`names(for:)`: every extension and exact filename the detector answers a language from, for a caller that needs to enumerate them — a corpus check asking "is there a fixture for every name we claim?"), Language+FenceTag (`init?(fenceTag:)`: a Markdown fence's first word as a language name, then as an extension; plain text is nil)
 - `Models/` — value types — the shape of a thing, nothing else: BlockComment
 
 ## CodeHighlighting — `Sources/CodeHighlighting`
