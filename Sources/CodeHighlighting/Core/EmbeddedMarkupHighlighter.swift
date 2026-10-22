@@ -208,7 +208,7 @@ public final class EmbeddedMarkupHighlighter: CodeHighlighter {
             let r = NSIntersectionRange(hit.range, slice)
             guard r.length > 0 else { continue }
             let inside = holes.filter { NSEqualRanges(NSIntersectionRange($0, hit.range), $0) && !NSEqualRanges($0, hit.range) }
-            var colour = palette.firstIndex { $0 === hit.color } ?? palette.count
+            let colour = palette.firstIndex { $0 === hit.color } ?? palette.count
             if colour == palette.count { palette.append(hit.color) }
             for i in r.location..<NSMaxRange(r) where !inside.contains(where: { NSLocationInRange(i, $0) }) {
                 desired[i - slice.location] = colour
