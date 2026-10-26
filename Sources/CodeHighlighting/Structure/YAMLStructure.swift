@@ -31,10 +31,26 @@ public enum YAMLStructure {
 
     /// Every document of `text` (`---` separates them), in order.
     public static func documents(in text: String) -> [Value] {
-        guard let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return [] }
+        guard let root = parseRoot(text) else { return [] }
         let ns = text as NSString
         return documentBodies(root).map { convert($0, ns: ns) }
     }
+
+    /// The parse of `text` every reader shares. Unity marks an object a prefab instance overrides by
+    /// writing `stripped` after its document's tag and anchor (`--- !u!4 &7429 stripped`), which is
+    /// not YAML: the grammar's recovery then drops the file's FIRST object and reads that one as a
+    /// string. The word is parsed as spaces, so every offset (an edit site's range) stays the text's.
+    static func parseRoot(_ text: String) -> Node? {
+        var parsed = text
+        if text.contains(" stripped") {
+            parsed = unityStripped.stringByReplacingMatches(
+                in: text, range: NSRange(location: 0, length: (text as NSString).length), withTemplate: "$1         ")
+        }
+        return TreeSitterHighlighter.freshParseRoot(parsed, language: .yaml)
+    }
+
+    /// A Unity document start with its `stripped` marker: `--- !u!<class> &<file ID> stripped`.
+    private static let unityStripped = try! NSRegularExpression(pattern: "(?m)^(--- !u!\\d+ &-?\\d+) stripped(?=[ \\t]*\\r?$)")
 
     /// The whole stream as one value: a single document as itself, several as a sequence of them
     /// (what a structure tree shows, so no document after the first goes missing). A path into it

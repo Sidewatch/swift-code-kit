@@ -82,6 +82,15 @@ public final class ProjectSymbolIndex {
     }
     private nonisolated(unsafe) static var storedIsExcluded: (@Sendable (URL, URL, Bool) -> Bool)?
 
+    /// A host-supplied test of one folder on top of the name list, for a folder that is noise only
+    /// where it stands — a game engine's cache beside its project's marker (FileTools'
+    /// `EngineCaches.isCache`). A folder it answers true for is not descended into; nil skips nothing more.
+    public nonisolated static var skipsFolder: (@Sendable (URL) -> Bool)? {
+        get { skipLock.lock(); defer { skipLock.unlock() }; return storedSkipsFolder }
+        set { skipLock.lock(); defer { skipLock.unlock() }; storedSkipsFolder = newValue }
+    }
+    private nonisolated(unsafe) static var storedSkipsFolder: (@Sendable (URL) -> Bool)?
+
     /// A path key that stays stable across the file's deletion. `standardizedFileURL`
     /// alone is existence-dependent on macOS (`/private/var/...` is only collapsed
     /// to `/var/...` while the path exists), so a just-deleted file's key would
@@ -143,11 +152,12 @@ public final class ProjectSymbolIndex {
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey, .isDirectoryKey]
         let skip = skipDirs  // read once: the scan should see one consistent list
         let excluded = isExcluded
+        let skipsFolder = skipsFolder
         // `walk`, not `enumerator(at:)`: a project opened through a link is a root that IS a symbolic
         // link, which the plain enumerator treats as a file and lists nothing under.
         for root in roots where count <= 5000 {
             fm.walk(root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) { url in
-                if skip.contains(url.lastPathComponent) { return .skipDescendants }
+                if skip.contains(url.lastPathComponent) || skipsFolder?(url) == true { return .skipDescendants }
                 if let excluded {
                     let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
                     if excluded(root, url, isDir) { return isDir ? .skipDescendants : .next }

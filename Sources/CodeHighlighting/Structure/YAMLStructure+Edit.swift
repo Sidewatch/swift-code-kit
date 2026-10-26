@@ -25,7 +25,7 @@ extension YAMLStructure {
     /// The member at `path` in ``stream(of:)``'s value: in a file of several documents the first
     /// step picks the document by index. Nil when the path leads nowhere.
     public static func site(in text: String, path: [PathComponent]) -> EditSite? {
-        guard !path.isEmpty, let root = TreeSitterHighlighter.freshParseRoot(text, language: .yaml) else { return nil }
+        guard !path.isEmpty, let root = parseRoot(text) else { return nil }
         let ns = text as NSString
         let bodies = documentBodies(root)
         guard bodies.count > 1 else { return bodies.first.flatMap { find($0, path: path[...], ns: ns) } }

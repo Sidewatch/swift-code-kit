@@ -24,17 +24,13 @@ public extension Language {
         return detect(filename: filename).symbolName
     }
 
-    /// The glyph for a non-code file kind by its lower-cased extension, or nil for anything else.
+    /// The glyph for a non-code file kind by its lower-cased extension, or nil for anything else:
+    /// a ``FileKind``'s own, then the video and archive formats no preview opens, and lockfiles.
     static func symbolName(forKindExtension ext: String) -> String? {
+        if let kind = FileKind(extension: ext) { return kind.symbolName(forExtension: ext) }
         switch ext {
-        case "png", "jpg", "jpeg", "gif", "webp", "ico", "bmp", "tiff", "heic": return "photo"
-        case "svg": return "square.on.circle"
-        case "mp3", "wav", "m4a", "flac", "aac", "ogg", "aiff", "aif": return "waveform"
-        case "mp4", "mov", "m4v", "webm", "avi", "mkv": return "film"
-        case "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar": return "archivebox"
-        case "db", "sqlite", "sqlite3": return "cylinder"
-        case "ttf", "otf", "woff", "woff2": return "textformat"
-        case "pdf": return "doc.fill"
+        case "avi", "mkv": return "film"
+        case "gz", "tgz", "bz2", "xz", "7z", "rar": return "archivebox"
         case "lock": return "lock"
         default: return nil
         }

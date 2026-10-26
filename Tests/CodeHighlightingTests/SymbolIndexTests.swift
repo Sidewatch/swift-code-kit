@@ -227,6 +227,26 @@ final class SymbolIndexTests: XCTestCase {
         XCTAssertEqual(seenRoots, [dir.path], "the hook is told which root the path belongs to")
     }
 
+    func testBuildSkipsAFolderTheHostCallsNoise() throws {
+        try XCTSkipUnless(TreeSitterHighlighter.supports(.javascript))
+        let dir = makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let cache = dir.appendingPathComponent("Library/PackageCache")
+        try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        try "function fromAPackage() {}\n".write(to: cache.appendingPathComponent("dep.js"), atomically: true, encoding: .utf8)
+        try "function mine() {}\n".write(to: dir.appendingPathComponent("app.js"), atomically: true, encoding: .utf8)
+
+        ProjectSymbolIndex.skipsFolder = { $0.lastPathComponent == "Library" }
+        defer { ProjectSymbolIndex.skipsFolder = nil }
+        let idx = ProjectSymbolIndex()
+        let built = expectation(description: "build completes")
+        idx.build(root: dir) { built.fulfill() }
+        wait(for: [built], timeout: 10)
+
+        XCTAssertEqual(idx.definitions(of: "mine").count, 1)
+        XCTAssertEqual(idx.definitions(of: "fromAPackage").count, 0, "a folder the host calls noise is not descended into")
+    }
+
     func testBuildSkipsDependencyDirectories() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.javascript))
         let dir = makeTempDir()
