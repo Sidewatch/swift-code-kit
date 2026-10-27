@@ -120,6 +120,12 @@ extension RegexOutline {
                     #"^[ \t]+([A-Z]\w*)\*?(?:\[[^\]]*\])?[ \t]*=[ \t]*(?:ref[ \t]+|ptr[ \t]+)?(?:object|enum|tuple|concept|distinct)\b"#,
                     .type),
             ], scoping: .indentation)
+        // Luau: functions by their whole name (`Point.new`, `Point:length`), type aliases and type functions.
+        t[.luau] = Table(
+            rules: [
+                r(#"^[ \t]*(?:export[ \t]+)?type[ \t]+(?:function[ \t]+)?([A-Za-z_]\w*)"#, .type),
+                r(#"^[ \t]*(?:@[^\n]*?[ \t])?(?:local[ \t]+)?function[ \t]+([A-Za-z_][\w.:]*)"#, .function),
+            ], scoping: .indentation)
         t[.gdscript] = Table(
             rules: [
                 r(#"^[ \t]*class(?:_name)?[ \t]+(\w+)"#, .type),
@@ -448,6 +454,18 @@ extension RegexOutline {
                 r(#"^[ \t]*([^\s=:;#\[][^=:\n]*?)[ \t]*[=:]"#, .property, 2),
             ], scoping: .levels, continuation: .deeperIndent(keyLevel: 2))
         t[.ini] = ini
+        // Godot's scenes, resources and project files: each heading by what it names (a node's name, an external
+        // resource's path, a sub-resource's id, a connection's signal), a ConfigFile section by its own name,
+        // and the keys under each.
+        t[.gdresource] = Table(
+            rules: [
+                r(#"^\[node[ \t][^\n]*?\bname="((?:[^"\\\n]|\\.)*)""#, .module, 1),
+                r(#"^\[ext_resource[ \t][^\n]*?\bpath="([^"\n]*)""#, .module, 1),
+                r(#"^\[sub_resource[ \t][^\n]*?\bid="([^"\n]*)""#, .module, 1),
+                r(#"^\[connection[ \t][^\n]*?\bsignal="([^"\n]*)""#, .function, 1),
+                r(#"^\[([A-Za-z_][\w/.-]*)\][ \t]*(?:;[^\n]*)?$"#, .module, 1),
+                r(#"^([^\s=;\[\]"{}]+)[ \t]*="#, .property, 2),
+            ], scoping: .levels)
         t[.editorconfig] = ini
         t[.gitconfig] = ini
         t[.systemd] = ini

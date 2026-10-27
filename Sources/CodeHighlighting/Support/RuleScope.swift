@@ -21,6 +21,9 @@ import FoundationExtensions
 /// A region pattern with a group named `region` (``marker(steppingOver:regions:within:)``) makes only that
 /// group's range a region: the scan's other matches, and the rest of a match, are text it steps over to stay
 /// in step, never regions.
+///
+/// A scan's `^` and `$` are a line's, as in every rule, so a rule's own pattern (`lineComment.0`, `//.*$`)
+/// passed as something to step over means the same in both.
 struct RuleScope {
     /// Finds the regions, each from an open delimiter to its close (included), or a bounded length.
     let region: NSRegularExpression
@@ -58,7 +61,7 @@ struct RuleScope {
             let payload = rest[rest.index(rest.startIndex, offsetBy: prefix.count)..<end]
             guard let data = Data(base64Encoded: String(payload)), let decoded = data.utf8String,
                 let separator = decoded.lastIndex(of: "\u{1}"), let reach = Int(decoded[decoded.index(after: separator)...]),
-                let regex = try? NSRegularExpression(pattern: String(decoded[..<separator]), options: [])
+                let regex = try? NSRegularExpression(pattern: String(decoded[..<separator]), options: .anchorsMatchLines)
             else { break }
             scopes.append(RuleScope(region: regex, reach: reach, regionGroupOnly: regex.pattern.contains("(?<\(regionGroup)>")))
             rest = rest[rest.index(after: end)...]

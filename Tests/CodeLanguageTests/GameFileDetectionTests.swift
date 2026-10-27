@@ -42,4 +42,22 @@ final class GameFileDetectionTests: XCTestCase {
         XCTAssertEqual(Language.detect(filename: "water.gdshader"), .glsl)
         XCTAssertEqual(Language.detect(filename: "noise.gdshaderinc"), .glsl)
     }
+
+    func testGodotsTextFormatsAreGodotResources() {
+        for name in [
+            "Main.tscn", "Theme.tres", "Exported.escn", "project.godot", "icon.svg.import", "game.gdextension", "lib.gdnlib",
+            "Script.gdns", "export_presets.cfg", "override.cfg",
+        ] {
+            XCTAssertEqual(Language.detect(filename: name), .gdresource, name)
+        }
+        XCTAssertEqual(Language.detect(filename: "tox.cfg"), .ini, "another .cfg stays INI")
+        XCTAssertEqual(Language.detect(filename: "player.gd"), .gdscript)
+    }
+
+    func testLuauIsItsOwnLanguage() {
+        for name in ["init.luau", "Main.server.luau", "Gui.client.luau"] {
+            XCTAssertEqual(Language.detect(filename: name), .luau, name)
+        }
+        XCTAssertEqual(Language.detect(filename: "init.lua"), .lua, "a .lua file stays Lua")
+    }
 }

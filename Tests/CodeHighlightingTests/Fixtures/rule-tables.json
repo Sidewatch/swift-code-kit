@@ -3366,6 +3366,40 @@
       "comment"
     ]
   ],
+  "lang:gdresource" : [
+    [
+      "\\b[A-Z][A-Za-z0-9_]*\\b",
+      "type"
+    ],
+    [
+      "\\b(?:ExtResource|SubResource)\\b",
+      "keyword"
+    ],
+    [
+      "(?#in:KD86KD9tKV5cWyg\/PHJlZ2lvbj5bQS1aYS16X11cdyopKSg\/Oig\/ISlbXHNcU10pezAsODB9KD86KT8BMTQ0)[A-Za-z_]\\w*",
+      "keyword"
+    ],
+    [
+      "\\b(true|false|null|nil|inf|inf_neg|nan)\\b",
+      "number"
+    ],
+    [
+      "-?\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b",
+      "number"
+    ],
+    [
+      "\\b\\w[\\w\/.@:-]*(?=[ \\t]*=)",
+      "property"
+    ],
+    [
+      "\"(?:[^\"\\\\]|\\\\[\\s\\S])*\"",
+      "string"
+    ],
+    [
+      ";.*$",
+      "comment"
+    ]
+  ],
   "lang:gdscript" : [
     [
       "[r&^]?(?:\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?''')|r\"[^\"\\n]*\"|r'[^'\\n]*'|[&^]?\"(?:[^\"\\\\\\n]|\\\\.)*\"|[&^]?'(?:[^'\\\\\\n]|\\\\.)*'",
@@ -6011,6 +6045,80 @@
     ],
     [
       "--.*$",
+      "comment"
+    ],
+    [
+      "--\\[\\[[\\s\\S]*?]]",
+      "comment"
+    ]
+  ],
+  "lang:luau" : [
+    [
+      "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "identifier"
+    ],
+    [
+      "\\b[A-Z][A-Za-z0-9_]*\\b",
+      "type"
+    ],
+    [
+      "\\b[a-zA-Z_]\\w*(?=[ \\t]*(?:<[A-Za-z_][\\w.]*(?:[ \\t]*,[ \\t]*[A-Za-z_][\\w.]*)*>[ \\t]*)?\\()",
+      "function"
+    ],
+    [
+      "\\b(?:type)[ \\t]+[A-Za-z_]\\w*",
+      "type"
+    ],
+    [
+      "\\b(?:and|break|continue|do|e(?:lse(?:if)?|nd)|f(?:or|unction)|i(?:f|n)|local|not|or|re(?:peat|turn)|then|until|while)\\b",
+      "keyword"
+    ],
+    [
+      "\\b(?:export(?=[ \\t]+type\\b)|type(?=[ \\t]+(?:function\\b|[A-Za-z_]))|const(?=[ \\t]+(?:function\\b|[A-Za-z_]))|read(?=[ \\t]+[\\w\\[])|write(?=[ \\t]+[\\w\\[]))",
+      "keyword"
+    ],
+    [
+      "\\b(?=[abnstuv])(?<=(?::|->)[ \\t]{0,8})(?:any|boolean|buffer|never|number|string|thread|unknown|vector)\\b",
+      "type"
+    ],
+    [
+      "\\b(true|false|nil)\\b",
+      "number"
+    ],
+    [
+      "@[A-Za-z_]\\w*|@\\[[ \\t]*[A-Za-z_]\\w*",
+      "attribute"
+    ],
+    [
+      "\\b\\d[\\d_.]*(?:[eE][+-]?[\\d_]+)?[A-Za-z_\\d]*|(?<![\\w.])\\.\\d[\\d_]*(?:[eE][+-]?[\\d_]+)?",
+      "number"
+    ],
+    [
+      "\"(?:[^\"\\\\\\n]|\\\\[\\s\\S])*\"",
+      "string"
+    ],
+    [
+      "'(?:[^'\\\\\\n]|\\\\[\\s\\S])*'",
+      "string"
+    ],
+    [
+      "\\[(=*)\\[[\\s\\S]*?\\]\\1\\]",
+      "string"
+    ],
+    [
+      "--\\[(=*)\\[[\\s\\S]*?\\]\\1\\]",
+      "comment"
+    ],
+    [
+      "(?:`)(?<!(?:\\})(?:`))(?:[^`\\\\{\\n]|\\\\[\\s\\S])*(?:`)?",
+      "string"
+    ],
+    [
+      "(?#in:KD86LS0oPzpcW1xbW1xzXFNdKj9cXVxdfFxbPVxbW1xzXFNdKj9cXT1cXXxcWz09XFtbXHNcU10qP1xdPT1cXXxcWz09PVxbW1xzXFNdKj9cXT09PVxdfFxbPT09PVxbW1xzXFNdKj9cXT09PT1cXSl8LS1bXlxuXSp8Iig\/OlteIlxcXG5dfFxcW1xzXFNdKSoifCcoPzpbXidcXFxuXXxcXFtcc1xTXSkqJ3xcW1xbW1xzXFNdKj9cXVxdfFxbPVxbW1xzXFNdKj9cXT1cXXxcWz09XFtbXHNcU10qP1xdPT1cXXxcWz09PVxbW1xzXFNdKj9cXT09PVxdfFxbPT09PVxbW1xzXFNdKj9cXT09PT1cXXwoPzxyZWdpb24+KD86YCkoPzooPzpceyg\/Oltee31gIidcbl18Iig\/OlteIlxcXG5dfFxcW1xzXFNdKSoifCcoPzpbXidcXFxuXXxcXFtcc1xTXSkqJ3xgKD86W15gXFx7XG5dfFxcLnxce1tee31gXG5dKlx9KSpgfFx7W157fWBcbl0qXH0pKlx9KXwoPzpbXmBcXHtcbl18XFxbXHNcU10pKSooPzpgKSkpKD86KD8hKVtcc1xTXSl7MCw0MDAwfSg\/Oik\/ATQwNjQ=)(?<=(?:\\}))(?!(?:\\}))(?:(?:(?:[^`\\\\{\\n]|\\\\[\\s\\S])+(?:`)?|(?:`)))",
+      "string"
+    ],
+    [
+      "--(?!\\[=*\\[).*$",
       "comment"
     ],
     [

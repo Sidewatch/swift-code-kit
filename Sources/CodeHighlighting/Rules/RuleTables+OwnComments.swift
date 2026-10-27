@@ -91,6 +91,8 @@ extension RuleTables {
         // An AsciiDoc comment is a line that starts with `//` (`////` fences a comment block): a URL's
         // `//` in the text is not one.
         .asciidoc: ("^//(?!//).*$", .comment),
+        // A Luau `--[[` or `--[==[` opens a long comment, which may end mid-line with code after it.
+        .luau: ("--(?!\\[=*\\[).*$", .comment),
         // A Mermaid `%%{init: …}%%` is a directive, not a comment (see `MermaidRules.swift`).
         .mermaid: mermaidComment,
     ]

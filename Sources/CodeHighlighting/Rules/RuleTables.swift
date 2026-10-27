@@ -157,6 +157,8 @@ enum RuleTables {
         case .sml: return sml
         case .gleam: return gleam
         case .gdscript: return gdscript
+        case .gdresource: return gdresource
+        case .luau: return luau
         case .thrift: return thrift
         case .wolfram: return wolfram
         case .latex: return latex

@@ -3,7 +3,6 @@
 //  CodeLanguage
 //
 //  Display name, comment tokens, and highlight family per language.
-//  GENERATED — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -98,6 +97,7 @@ public extension Language {
         .fortran: Meta(name: "Fortran", family: .plain, lineComment: "!", block: nil),
         .freemarker: Meta(name: "FreeMarker", family: .markup, lineComment: nil, block: BlockComment(open: "<#--", close: "-->")),
         .fsharp: Meta(name: "F#", family: .mlLike, lineComment: "//", block: BlockComment(open: "(*", close: "*)")),
+        .gdresource: Meta(name: "Godot Resource", family: .config, lineComment: ";", block: nil),
         .gdscript: Meta(name: "GDScript (Godot)", family: .shellLike, lineComment: "#", block: nil),
         .gettext: Meta(name: "Gettext", family: .config, lineComment: "#", block: nil),
         .gitattributes: Meta(name: "Git Attributes", family: .shellLike, lineComment: "#", block: nil),
@@ -151,6 +151,7 @@ public extension Language {
         .llvm: Meta(name: "LLVM IR", family: .plain, lineComment: ";", block: nil),
         .log: Meta(name: "Log File", family: .plain, lineComment: nil, block: nil),
         .lua: Meta(name: "Lua", family: .mlLike, lineComment: "--", block: BlockComment(open: "--[[", close: "]]")),
+        .luau: Meta(name: "Luau", family: .mlLike, lineComment: "--", block: BlockComment(open: "--[[", close: "]]")),
         .makefile: Meta(name: "Makefile", family: .shellLike, lineComment: "#", block: nil),
         .manifest: Meta(name: "Java Manifest", family: .config, lineComment: nil, block: nil),
         .markdown: Meta(name: "Markdown", family: .markup, lineComment: nil, block: BlockComment(open: "<!--", close: "-->")),

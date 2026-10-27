@@ -42,7 +42,7 @@ extension RuleTables {
     static let codeNames: Set<Language> = [
         .actionscript, .ada, .applescript, .awk, .cairo, .carbon, .coffeescript, .crystal, .cuda, .d, .dart,
         .elixir, .erlang, .fortran, .gleam, .glsl, .go, .gradle, .groovy, .hack, .haxe, .hlsl, .java, .javascript,
-        .julia, .kotlin, .lua, .matlab, .metal, .move, .nim, .objectivec, .objectivecpp, .odin, .opencl, .pascal,
+        .julia, .kotlin, .lua, .luau, .matlab, .metal, .move, .nim, .objectivec, .objectivecpp, .odin, .opencl, .pascal,
         .perl, .php, .powershell, .prolog, .python, .qsharp, .r, .raku, .ruby, .rust, .scala, .smalltalk,
         .solidity, .starlark, .swift, .systemverilog, .tcl, .typescript, .v, .vala, .vbscript, .verilog, .vhdl,
         .vyper, .wolfram, .zig, .c, .cpp, .csharp, .tsx, .jsx,

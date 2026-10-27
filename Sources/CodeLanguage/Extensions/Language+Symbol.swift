@@ -24,7 +24,7 @@ public extension Language {
         case .abap, .actionscript, .ada, .applescript, .awk, .c, .cairo, .carbon, .cfml, .clips, .clojure, .cobol,
             .coffeescript, .commonlisp, .cpp, .crystal, .csharp, .d, .dart, .elisp, .elixir, .elm, .erlang, .fennel,
             .fortran, .fsharp, .gdscript, .gleam, .go, .groovy, .hack, .haskell, .haxe, .java, .javascript, .jq, .jsx,
-            .kotlin, .lex, .lua, .move, .nim, .objectivec, .objectivecpp, .ocaml, .odin, .pascal, .perl, .php, .prolog,
+            .kotlin, .lex, .lua, .luau, .move, .nim, .objectivec, .objectivecpp, .ocaml, .odin, .pascal, .perl, .php, .prolog,
             .purescript, .python, .qsharp, .racket, .raku, .reason, .rego, .rescript, .ruby, .rust, .scala, .scheme,
             .smalltalk, .sml, .solidity, .tcl, .tsx, .typescript, .v, .vala, .vbnet, .vbscript, .vimscript, .vyper,
             .yacc, .zig:
@@ -45,7 +45,7 @@ public extension Language {
             return "curlybraces"
         // Configuration.
         case .yaml, .toml, .ini, .properties, .editorconfig, .xcconfig, .apacheconf, .nginx, .caddyfile, .hosts, .systemd,
-            .crontab, .manifest:
+            .crontab, .manifest, .gdresource:
             return "slider.horizontal.3"
         case .dotenv:
             return "key"

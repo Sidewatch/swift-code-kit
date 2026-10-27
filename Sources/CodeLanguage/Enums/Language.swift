@@ -3,7 +3,6 @@
 //  CodeLanguage
 //
 //  The set of source, markup, and config languages this package recognizes.
-//  GENERATED from a curated language catalog — edit the generator, not this file.
 //
 //  Created by David Sherlock on 7/9/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -134,6 +133,8 @@ public enum Language: String, CaseIterable, Sendable {
     case freemarker
     /// F#.
     case fsharp
+    /// Godot's text scenes, resources and project files (`.tscn`, `.tres`, `project.godot`, `.import`).
+    case gdresource
     /// GDScript (Godot).
     case gdscript
     /// Gettext translation catalogs (.po/.pot).
@@ -238,6 +239,8 @@ public enum Language: String, CaseIterable, Sendable {
     case log
     /// Lua.
     case lua
+    /// Luau (Roblox's typed Lua).
+    case luau
     /// Makefile.
     case makefile
     /// Java Manifest.

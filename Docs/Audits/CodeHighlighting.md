@@ -61,6 +61,14 @@ map was missing `Rules/`, `Models/`, `Extensions/`, `SymbolKind`, `OutlineNode`,
 - `TreeSitterHighlighter.loadedCount` had no caller — removed 13 Oct 2026.
 - `CommentKeywords.regex` is a `try!` on a literal pattern — fine.
 - Grammar queries cannot load under `swift test` (Bundle.main); paint is proven by `Sidewatch --dump-captures` / `--probe-highlight-coverage`.
+- Luau's long brackets in a scope scan's skip list are written out for levels 0 to 4 (`LuauRules`' `anyLevel`): a scan
+  joins its patterns into one, where the backreference form would name another pattern's group. A long string or
+  comment of level 5 or more is still painted whole by its own rule.
+- Luau's built-in type names (`number`, `string`…) are types only after `:` or `->`, so `string.format` stays the
+  library; inside a function type's brackets they stay plain, where Pygments and Shiki disagree and check nothing.
+- Godot Resource keeps two accepted oracle entries (`scripts/highlight-oracle/accepted/gdresource.json` in the app):
+  Shiki 3.23.0's grammar scopes a `type="…"` value and any `"res://…"` as code; Godot's variant parser reads both as
+  strings.
 
 ## History
 
@@ -82,3 +90,14 @@ map was missing `Rules/`, `Models/`, `Extensions/`, `SymbolKind`, `OutlineNode`,
   `StructureDepth.exceedsLimit(markup:)` — one linear pass counting tags, CDATA and comments skipped,
   leaving at the limit — and answer a one-row document that says so (4 ms at 50,000). Mutants: YAML and TOML
   unguarded each crash the test process (signal 11); XML unguarded returns nil after 167 s.
+- 27 Oct 2026 — Luau and Godot Resource: rule tables (`LuauRules`, `GDResourceRules`) and regex outlines written from
+  the official rules (luau.org's grammar and lexer and the Luau RFCs; Godot's TSCN format page and its variant
+  parser), and checked by the app's oracle against Pygments 2.21.0 and Shiki 3.23.0: Luau has no differences, Godot
+  two reasoned ones (above). `LuauRulesTests`, `GDResourceRulesTests` and the detection tests; 40 mutants, one per
+  rule, all caught. Fixed on the way: `RuleScope` compiled its scan without `.anchorsMatchLines`, so a rule's own
+  `.*$` comment passed as something to step over (Haxe's and SAS's `//`, Nix's `#`) matched only on a text's last
+  line, and Stata's `^` comment line only on its first. An apostrophe in a Haxe `//` comment, or a quote in a Nix `#`
+  comment, inverted every interpolated string after it (its text painted as code, the code between as string). The
+  scan now reads `^` and `$` as every rule does (`RuleScopeTests`; the old options fail both); the whole corpus is
+  unchanged (0 unexplained, 0 stale). New tests read paint through the shared `Tests/.../Support/PaintedKinds`; the
+  older test files keep their own marker palettes.

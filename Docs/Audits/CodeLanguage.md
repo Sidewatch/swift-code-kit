@@ -35,6 +35,8 @@ languages' fences; Zig, Python, Cairo, Prisma, Q#, Gleam and CUE correctly carry
 
 - `.plist` detects as XML while `.entitlements` detects as the `plist` language; both highlight through
   the XML grammar, and the XML answer for `.plist` is deliberate (binary plists exist).
+- A Roblox project may keep Luau in `.lua` files (Rojo accepts both); detection reads names only, so those stay Lua
+  and highlight through Lua's grammar. `.luau` is Luau.
 - Ruby's `=begin` / `=end` must start a line, so Toggle Block Comment produces a form Ruby rejects when
   wrapped inline; the token pair is still the right metadata.
 
@@ -42,3 +44,7 @@ languages' fences; Zig, Python, Cairo, Prisma, Q#, Gleam and CUE correctly carry
 
 - 17 Sep 2026 — full audit (app + all 20 libraries), Claude with David.
 - 18 Sep 2026 — logic review (every source and test file, line by line), Claude with David.
+- 27 Oct 2026 — Luau (`.luau`) and Godot Resource (`.tscn`, `.tres`, `.escn`, `.godot`, `.import`, `.gdextension`,
+  `.gdnlib`, `.gdns`, `export_presets.cfg`, `override.cfg`) added; any other `.cfg` stays INI. The "GENERATED — edit
+  the generator" headers on `Language.swift` and `Language+Metadata.swift` were removed: no generator exists in any
+  repository, and every language has been added by hand.
