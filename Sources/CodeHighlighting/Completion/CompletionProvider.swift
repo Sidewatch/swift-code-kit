@@ -54,12 +54,14 @@ public final class CompletionProvider {
     /// wires it to its highlight session's CACHED syntax tree — query-only,
     /// no parse), it replaces the static `TreeSitterHighlighter.symbols`
     /// path, whose fresh full parse per rebuild beachballs on huge files.
+    /// synchronous: called during `completions(for:text:language:)`, on the caller's thread.
     public var symbolsProvider: (() -> [Symbol])?
 
     /// The project-symbol tier's prefix query (the editor wires it to
     /// `ProjectSymbolIndex`). Takes the partial identifier, returns at most one
     /// definition per matching name. Nil (or an unbuilt index) just yields an
     /// empty tier — the other two still rank.
+    /// synchronous: called during `completions(for:text:language:)`, on the caller's thread.
     public var projectSymbolsProvider: ((String) -> [DefLocation])?
 
     /// Marks both cached candidate tiers stale. Cheap enough for every

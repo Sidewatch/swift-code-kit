@@ -59,6 +59,7 @@ public enum LanguageBuiltins {
         case .bash: return ["bash"]
         case .dart: return ["dart"]
         case .lua: return ["lua"]
+        case .luau: return ["luau"]
         case .sql: return ["sql"]
         case .scala: return ["scala"]
         case .elixir: return ["elixir"]

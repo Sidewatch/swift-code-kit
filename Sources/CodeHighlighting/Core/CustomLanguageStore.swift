@@ -30,6 +30,7 @@ public final class CustomLanguageStore {
 
     /// Loads `folder` immediately. `onSkip` receives one line per file that could not be read
     /// or decoded (the host logs it however it likes).
+    /// synchronous: `onSkip` is called while this init and `load()` read the folder, on the caller's thread.
     public init(folder: URL, onSkip: @escaping (String) -> Void = { _ in }) {
         self.folder = folder
         self.onSkip = onSkip

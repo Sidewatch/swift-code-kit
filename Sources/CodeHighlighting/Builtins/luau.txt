@@ -1,0 +1,194 @@
+# Luau (luau.org/library, read 27 Oct 2026): keywords, globals, and the math, table, string, coroutine, bit32, utf8,
+# os, debug, buffer and vector libraries. No io, goto, load, loadstring or dofile: Luau has none of them.
+# identifier<TAB>signature — bare lines (keywords) complete as names only and never hover. The first of two members
+# with one name keeps it (string.len before utf8.len and buffer.len).
+and
+break
+continue
+do
+else
+elseif
+end
+export
+false
+for
+function
+if
+in
+local
+nil
+not
+or
+repeat
+return
+then
+true
+until
+while
+assert	assert(value, message?) -> value — errors when value is false or nil
+error	error(obj, level?) — level 2 blames the caller
+gcinfo	gcinfo() -> number — kilobytes in use
+getfenv	getfenv(target?) -> table
+getmetatable	getmetatable(obj) -> table?
+next	next(t, i?) -> (key, value)?
+newproxy	newproxy(mt?) -> userdata
+print	print(...) — tostring each, tab-separated, newline
+rawequal	rawequal(a, b) -> boolean
+rawget	rawget(t, k) -> value? — skips __index
+rawlen	rawlen(t) -> number
+rawset	rawset(t, k, v) — skips __newindex
+select	select(i, ...) -> arguments from i on  ·  select('#', ...) -> count
+setfenv	setfenv(target, env)
+setmetatable	setmetatable(t, mt?) -> t
+tonumber	tonumber(s, base?) -> number?
+tostring	tostring(obj) -> string — honours __tostring
+type	type(obj) -> string  ·  type Name = … declares a type
+typeof	typeof(obj) -> string — a userdata's own type name too
+ipairs	ipairs(t) -> iterator over 1..n until the first nil
+pairs	pairs(t) -> iterator over every key and value
+pcall	pcall(f, ...) -> (ok, ...)
+xpcall	xpcall(f, handler, ...) -> (ok, ...)
+unpack	unpack(a, f?, t?) -> values
+require	require(path) -> module — provided by the host (Roblox, the Luau CLI)
+string	string — byte, char, find, format, gmatch, gsub, len, lower, match, rep, reverse, sub, upper, split, pack, unpack
+byte	string.byte(s, f?, t?) -> codes
+char	string.char(...) -> string from codes
+find	string.find(s, p, init?, plain?) -> start?, end?, captures  ·  table.find(t, v, init?) -> index?
+format	string.format(s, ...) -> string — %d %s %q %5.2f %x
+gmatch	string.gmatch(s, p) -> iterator over matches
+gsub	string.gsub(s, p, repl, max?) -> (string, count)
+len	string.len(s)  ·  #s  ·  utf8.len, buffer.len
+lower	string.lower(s)
+match	string.match(s, p, init?) -> captures
+rep	string.rep(s, n)
+reverse	string.reverse(s)
+sub	string.sub(s, f, t?) — 1-based, negative from the end
+upper	string.upper(s)
+split	string.split(s, sep?) -> {string}
+packsize	string.packsize(f) -> number
+table	table — concat, insert, remove, sort, pack, unpack, move, create, find, clear, freeze, isfrozen, clone
+concat	table.concat(a, sep?, f?, t?) -> string
+insert	table.insert(t, [i,] v)
+remove	table.remove(t, i?) -> value? — default last
+sort	table.sort(t, comp?) — in place, not stable
+pack	table.pack(...) -> {n = count, ...}  ·  string.pack(f, ...)
+move	table.move(a, f, t, d, tt?)
+create	table.create(n, v?) -> table  ·  buffer.create(size), vector.create(x, y, z)
+clear	table.clear(t)
+freeze	table.freeze(t) -> t — read-only from then on
+isfrozen	table.isfrozen(t) -> boolean
+clone	table.clone(t) -> table — shallow
+maxn	table.maxn(t) -> number
+foreach	table.foreach(t, f) — deprecated: use pairs
+foreachi	table.foreachi(t, f) — deprecated: use ipairs
+getn	table.getn(t) — deprecated: use #t
+math	math — abs, ceil, clamp, floor, max, min, round, sign, sqrt, random, noise, lerp, map, pi, huge, …
+abs	math.abs(n)  ·  vector.abs(v)
+acos	math.acos(n)
+asin	math.asin(n)
+atan	math.atan(n)
+atan2	math.atan2(y, x)
+ceil	math.ceil(n)  ·  vector.ceil(v)
+clamp	math.clamp(n, min, max)  ·  vector.clamp(v, min, max)
+cos	math.cos(n)
+cosh	math.cosh(n)
+deg	math.deg(n)
+exp	math.exp(n)
+floor	math.floor(n)  ·  vector.floor(v)
+fmod	math.fmod(x, y)
+frexp	math.frexp(n) -> (mantissa, exponent)
+huge	math.huge — infinity
+isfinite	math.isfinite(n) -> boolean
+isinf	math.isinf(n) -> boolean
+isnan	math.isnan(n) -> boolean
+ldexp	math.ldexp(s, e)
+lerp	math.lerp(a, b, t)
+log	math.log(n, base?)
+log10	math.log10(n)
+map	math.map(x, inmin, inmax, outmin, outmax)
+max	math.max(...)  ·  vector.max(...)
+min	math.min(...)  ·  vector.min(...)
+modf	math.modf(n) -> (integral, fraction)
+noise	math.noise(x, y?, z?) -> number — Perlin
+pi	math.pi
+pow	math.pow(x, y)
+rad	math.rad(n)
+random	math.random() -> [0, 1)  ·  math.random(n) -> [1, n]  ·  math.random(min, max)
+randomseed	math.randomseed(seed)
+round	math.round(n) — half away from zero
+sign	math.sign(n) -> -1, 0 or 1  ·  vector.sign(v)
+sin	math.sin(n)
+sinh	math.sinh(n)
+sqrt	math.sqrt(n)
+tan	math.tan(n)
+tanh	math.tanh(n)
+coroutine	coroutine — create, resume, yield, status, wrap, running, isyieldable, close
+resume	coroutine.resume(co, ...) -> (ok, ...)
+yield	coroutine.yield(...) -> ...
+status	coroutine.status(co) -> "running" | "suspended" | "normal" | "dead"
+wrap	coroutine.wrap(f) -> function
+running	coroutine.running() -> thread?
+isyieldable	coroutine.isyieldable() -> boolean
+close	coroutine.close(co) -> (ok, error?)
+bit32	bit32 — band, bor, bxor, bnot, lshift, rshift, arshift, lrotate, rrotate, extract, replace, btest, countlz, countrz, byteswap
+band	bit32.band(...)
+bor	bit32.bor(...)
+bxor	bit32.bxor(...)
+bnot	bit32.bnot(n)
+btest	bit32.btest(...) -> boolean
+lshift	bit32.lshift(n, i)
+rshift	bit32.rshift(n, i)
+arshift	bit32.arshift(n, i)
+lrotate	bit32.lrotate(n, i)
+rrotate	bit32.rrotate(n, i)
+extract	bit32.extract(n, f, w?)
+replace	bit32.replace(n, r, f, w?)
+countlz	bit32.countlz(n)
+countrz	bit32.countrz(n)
+byteswap	bit32.byteswap(n)
+utf8	utf8 — char, charpattern, codes, codepoint, len, offset
+codepoint	utf8.codepoint(s, i?, j?) -> codes
+codes	utf8.codes(s) -> iterator over (position, code)
+offset	utf8.offset(s, n, i?) -> number?
+os	os — clock, date, difftime, time
+clock	os.clock() -> CPU seconds
+date	os.date(format?, time?) -> string | table — "*t" for a table
+difftime	os.difftime(a, b) -> seconds
+time	os.time(t?) -> seconds since the epoch
+debug	debug — info, traceback
+info	debug.info(f | level, what) -> ... — "s" source, "l" line, "n" name, "a" arity, "f" function
+traceback	debug.traceback(msg?, level?) -> string
+buffer	buffer — create, fromstring, tostring, len, read/write i8 u8 i16 u16 i32 u32 f32 f64, readstring, writestring, copy, fill
+fromstring	buffer.fromstring(s) -> buffer
+readi8	buffer.readi8(b, offset)
+readu8	buffer.readu8(b, offset)
+readi16	buffer.readi16(b, offset)
+readu16	buffer.readu16(b, offset)
+readi32	buffer.readi32(b, offset)
+readu32	buffer.readu32(b, offset)
+readf32	buffer.readf32(b, offset)
+readf64	buffer.readf64(b, offset)
+writei8	buffer.writei8(b, offset, value)
+writeu8	buffer.writeu8(b, offset, value)
+writei16	buffer.writei16(b, offset, value)
+writeu16	buffer.writeu16(b, offset, value)
+writei32	buffer.writei32(b, offset, value)
+writeu32	buffer.writeu32(b, offset, value)
+writef32	buffer.writef32(b, offset, value)
+writef64	buffer.writef64(b, offset, value)
+readstring	buffer.readstring(b, offset, count) -> string
+writestring	buffer.writestring(b, offset, value, count?)
+readbits	buffer.readbits(b, bitOffset, bitCount) -> number
+writebits	buffer.writebits(b, bitOffset, bitCount, value)
+copy	buffer.copy(target, targetOffset, source, sourceOffset?, count?)
+fill	buffer.fill(b, offset, value, count?)
+vector	vector — create, magnitude, normalize, cross, dot, angle, floor, ceil, abs, sign, clamp, max, min, zero, one
+magnitude	vector.magnitude(v) -> number
+normalize	vector.normalize(v) -> vector
+cross	vector.cross(a, b) -> vector
+dot	vector.dot(a, b) -> number
+angle	vector.angle(a, b, axis?) -> number
+zero	vector.zero — (0, 0, 0)
+one	vector.one — (1, 1, 1)
+self	self — implicit first parameter of obj:method()
+...	... — varargs; {...} packs, select('#', ...) counts
