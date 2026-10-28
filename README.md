@@ -100,6 +100,13 @@ let language = CodeLanguage.Language.detect(for: fileURL)
 let highlighter: CodeHighlighter = TreeSitterHighlighter(language: language)
     ?? SyntaxHighlighter(language: language, colors: MyColors())
 highlighter.highlight(textView.textStorage!, in: editedRange)   // main thread
+
+// A big document: one session parses once and highlights the viewport from its cached tree. A pass never waits on a
+// grammar: an injected language not compiled yet stays in its host's colours, compiles in the background, and this
+// says when to paint again.
+let session = HighlightSession(language: language)
+session?.highlight(in: storage, text: storage.string, clip: viewportRange)
+TreeSitterHighlighter.onRequestedGrammarReady = { language in /* highlight the viewport again */ }
 ```
 
 Each module's full guide is `Docs/Modules/<Module>.md`.
