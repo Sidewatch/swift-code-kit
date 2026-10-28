@@ -92,6 +92,12 @@ public final class HighlightSession: @unchecked Sendable {
     /// that no longer matches the document. Guarded by ``stateLock``.
     private var generation = 0
 
+    /// The template tags in the session's text, found once per ``generation``. Main-thread only, like ``parser``.
+    private var templateTagMemo = TemplateTagMemo()
+
+    /// Test seam: how many times the session has searched its text for template tags.
+    var templateTagSearchesForTesting: Int { templateTagMemo.searches }
+
     /// Test seam: number of from-scratch parses performed (first highlight
     /// after init/invalidate, or a completed warm-up). A scroll-only workload
     /// must keep this at 1.
@@ -316,6 +322,8 @@ public final class HighlightSession: @unchecked Sendable {
             if tree != nil { fullParseCount += 1 }
         }
         let tree = self.tree
+        let units = mirror
+        let generation = self.generation
         stateLock.unlock()
         guard let tree else { return false }
         let ns = text as NSString
@@ -326,10 +334,17 @@ public final class HighlightSession: @unchecked Sendable {
         var hits = TreeSitterHighlighter.collectHits(
             grammar.highlights, tree: tree, source: ns,
             offset: 0, clip: clipped, nextBase: &base)
+        // Template tags are found once per edit, in the session's own copy of the text, and an injected language whose
+        // grammar is not compiled yet waits for it in the background: the host paints again when it lands.
         hits += TreeSitterHighlighter.collectInjectionHits(
             grammar, tree: tree, source: ns,
             offset: 0, clip: clipped, depth: 0,
-            nextBase: &base)
+            nextBase: &base,
+            templateTags: { [unowned self] source, ranges in
+                guard source === ns, units.count == ns.length else { return nil }  // the session's own text, in step
+                return self.templateTagMemo.tags(within: ranges, units: units, generation: generation)
+            },
+            awaitsGrammars: true)
         return TreeSitterHighlighter.applyResolved(
             hits: hits, clip: clipped,
             defaultColor: HighlightTheme.colors.foreground,

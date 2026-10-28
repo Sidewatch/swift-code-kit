@@ -176,8 +176,11 @@ public final class TreeSitterHighlighter: CodeHighlighter {
         // fenced code to the fence's language. Upstream's nvim `@text.*` captures map
         // to no colour here, so the extra re-captures the structure with this table's
         // roles, mirroring the regex tier's markdown palette.
+        // The inline grammar compiles with the block grammar, so a highlight that finds the block grammar ready never
+        // compiles the inline one on its own thread.
         m[.markdown] = {
-            g(
+            _ = markdownInlineGrammar
+            return g(
                 tree_sitter_markdown(), "TreeSitterMarkdown",
                 extra: """
                     (atx_heading (inline) @keyword)
@@ -214,6 +217,17 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     nonisolated(unsafe) private static var grammarsCompiling: Set<CodeLanguage.Language> = []
     /// Test seam: how many compiles have run in this process (guarded by `grammarCondition`).
     nonisolated(unsafe) private(set) static var grammarCompiles = 0
+    /// How many times the main thread asked for a grammar not compiled yet, and so compiled it or waited for its
+    /// compile (guarded by `grammarCondition`).
+    nonisolated(unsafe) private static var mainThreadGrammarWaits = 0
+
+    /// How many times the main thread has asked for a grammar not compiled yet — a compile, or a wait for one, on the
+    /// thread that must never wait. Test seam for a host that promises it never does.
+    public static var mainThreadGrammarWaitsForTesting: Int {
+        grammarCondition.lock()
+        defer { grammarCondition.unlock() }
+        return mainThreadGrammarWaits
+    }
 
     /// The compiled grammar for `language`, compiled on first request and cached; nil when there
     /// is no builder or its query does not compile. Must stay per-language: compiling every
@@ -223,6 +237,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// main thread 150–440 ms when a restored tab asked for its grammar mid-warm-up.
     static func grammar(for language: CodeLanguage.Language) -> Grammar? {
         grammarCondition.lock()
+        if Thread.isMainThread, grammarCache[language] == nil, grammarBuilders[language] != nil { mainThreadGrammarWaits += 1 }
         while grammarCache[language] == nil, grammarsCompiling.contains(language) { grammarCondition.wait() }
         if let hit = grammarCache[language] { grammarCondition.unlock(); return hit }
         guard let build = grammarBuilders[language] else { grammarCondition.unlock(); return nil }
@@ -257,6 +272,31 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             DispatchQueue.main.async { MainActor.assumeIsolated { then() } }
         }
     }
+
+    /// Languages compiling in the background for ``requestGrammar(_:)``.
+    @MainActor private static var requestedCompiles: Set<CodeLanguage.Language> = []
+
+    /// Called on the main queue when a grammar ``requestGrammar(_:)`` started compiling is ready, so a host can paint
+    /// again what it showed without it.
+    @MainActor public static var onRequestedGrammarReady: ((CodeLanguage.Language) -> Void)?
+
+    /// Whether `language`'s grammar is ready (or it has none); when it is not, its compile starts in the background,
+    /// once however often this is asked, and ``onRequestedGrammarReady`` says when it lands. For a highlight that must
+    /// not wait on a compile: an injected language in an editor's text, a fenced block on a rendered page.
+    @MainActor
+    public static func requestGrammar(_ language: CodeLanguage.Language) -> Bool {
+        if isGrammarReady(language) { return true }
+        if requestedCompiles.insert(language).inserted {
+            compileGrammarInBackground(language) {
+                requestedCompiles.remove(language)
+                onRequestedGrammarReady?(language)
+            }
+        }
+        return false
+    }
+
+    /// Whether ``requestGrammar(_:)`` has a compile of `language` under way. Test seam.
+    @MainActor static func isRequestedForTesting(_ language: CodeLanguage.Language) -> Bool { requestedCompiles.contains(language) }
 
     /// Whether `language` is being compiled on some thread right now. Test seam.
     static func isCompilingGrammar(_ language: CodeLanguage.Language) -> Bool {
@@ -348,24 +388,37 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     }
 
     /// Maps an injection language name (from injections.scm) to a bundled grammar.
-    private static func grammarForInjection(_ name: String) -> Grammar? {
-        switch name.lowercased() {
-        case "html": return grammar(for: .html)
-        case "css", "scss": return grammar(for: .css)
-        case "javascript", "js", "jsx": return grammar(for: .javascript)
-        case "typescript", "ts": return grammar(for: .typescript)
-        case "json": return grammar(for: .json)
-        case "python": return grammar(for: .python)
-        case "ruby": return grammar(for: .ruby)
-        case "bash", "sh", "shell": return grammar(for: .bash)
-        case "yaml": return grammar(for: .yaml)
-        case "markdown", "md": return grammar(for: .markdown)
+    /// The grammar an injection names. With `awaiting`, one not compiled yet is not compiled here: its compile starts
+    /// in the background (``requestGrammar(_:)``) and the injection goes uncoloured until the host paints again.
+    @MainActor
+    private static func grammarForInjection(_ name: String, awaiting: Bool = false) -> Grammar? {
+        let lowered = name.lowercased()
         // The block grammar's injections.scm tags every `(inline)` node with
-        // this pseudo-language; it resolves to the dedicated inline grammar.
-        case "markdown_inline",
-            "markdown-inline":
+        // this pseudo-language; it resolves to the dedicated inline grammar,
+        // compiled with the block grammar.
+        if lowered == "markdown_inline" || lowered == "markdown-inline" {
+            guard !awaiting || requestGrammar(.markdown) else { return nil }
             return markdownInlineGrammar
-        default: return grammar(for: CodeLanguage.Language(rawValue: name.lowercased()) ?? .plainText)
+        }
+        let language = injectedLanguage(lowered)
+        guard !awaiting || requestGrammar(language) else { return nil }
+        return grammar(for: language)
+    }
+
+    /// The language an injection's name means.
+    private static func injectedLanguage(_ name: String) -> CodeLanguage.Language {
+        switch name {
+        case "html": return .html
+        case "css", "scss": return .css
+        case "javascript", "js", "jsx": return .javascript
+        case "typescript", "ts": return .typescript
+        case "json": return .json
+        case "python": return .python
+        case "ruby": return .ruby
+        case "bash", "sh", "shell": return .bash
+        case "yaml": return .yaml
+        case "markdown", "md": return .markdown
+        default: return CodeLanguage.Language(rawValue: name) ?? .plainText
         }
     }
 
@@ -1075,25 +1128,33 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// depth-limited. All chunks of one language share a combined parse (see `injectionSites`),
     /// so ranges stay absolute within `ns`. Visits depth-first, each pass taking a later
     /// `nextBase` window so deeper and later passes win on overlap. Shared with ``HighlightSession``.
+    ///
+    /// `templateTags` finds a text's template tags when it can answer for that text (a session's memo of its own
+    /// document, so a pass does not read the whole text again); nil, or a nil answer, finds them here. With
+    /// `awaitsGrammars`, an injected language whose grammar is not compiled yet is left uncoloured and compiled in the
+    /// background (``requestGrammar(_:)``) — for a host that paints again when ``onRequestedGrammarReady`` says so.
     @MainActor
     static func collectInjectionHits(
         _ g: Grammar, tree: MutableTree, source ns: NSString,
         offset: Int, clip: NSRange, depth: Int,
-        nextBase: inout Int
+        nextBase: inout Int,
+        templateTags: ((NSString, [NSRange]) -> TemplateTags?)? = nil,
+        awaitsGrammars: Bool = false
     ) -> [Hit] {
         guard depth < 3 else { return [] }
         var hits: [Hit] = []
+        func tagRanges(_ ranges: [NSRange]) -> TemplateTags { templateTags?(ns, ranges) ?? templateTagRanges(in: ns, within: ranges) }
         // A top-level HTML document owns all of `ns`; injected HTML gets its ranges below.
         if depth == 0, g.templateTags {
             // Top-level .html: the JS is coloured; the markup parse itself is not masked here
             // (the incremental session owns that tree), so elements after a `<#` may stay plain.
-            let tags = templateTagRanges(in: ns, within: [NSRange(location: 0, length: ns.length)])
-            hits += templateTagHits(source: ns, tags: tags, offset: offset, clip: clip, nextBase: &nextBase)
+            let tags = tagRanges([NSRange(location: 0, length: ns.length)])
+            hits += templateTagHits(source: ns, tags: tags, offset: offset, clip: clip, nextBase: &nextBase, awaitsGrammars: awaitsGrammars)
         }
         guard let injQuery = g.injections else { return hits }
         let sourceClip = NSRange(location: max(0, clip.location - offset), length: clip.length)
         for site in injectionSites(injQuery, tree: tree, ns: ns, clip: sourceClip, separately: g.separateInjections) {
-            guard let sub = grammarForInjection(site.name) else { continue }
+            guard let sub = grammarForInjection(site.name, awaiting: awaitsGrammars) else { continue }
             guard
                 site.ranges.contains(where: {
                     NSIntersectionRange(NSRange(location: offset + $0.location, length: $0.length), clip).length > 0
@@ -1102,9 +1163,7 @@ public final class TreeSitterHighlighter: CodeHighlighter {
             // HTML with template tags is parsed from a copy with the tags blanked to spaces:
             // tree-sitter-html reads `<#` as a tag opening and produces no elements at all
             // for the rest of the section. Same UTF-16 length, so every position still holds.
-            let tags: (code: [NSRange], expressions: [NSRange], all: [NSRange]) =
-                sub.templateTags && g.htmlTemplateTags
-                ? templateTagRanges(in: ns, within: site.ranges) : (code: [], expressions: [], all: [])
+            let tags: TemplateTags = sub.templateTags && g.htmlTemplateTags ? tagRanges(site.ranges) : (code: [], expressions: [], all: [])
             // A site of one range (a Markdown inline, a Dockerfile command) parses as its own text: the same tree,
             // without placing the range in the whole document, which costs a scan from its start per site.
             if tags.all.isEmpty, site.ranges.count == 1, let only = site.ranges.first {
@@ -1113,7 +1172,8 @@ public final class TreeSitterHighlighter: CodeHighlighter {
                 hits += collectHits(
                     sub.highlights, tree: subTree, source: chunk, offset: offset + only.location, clip: clip, nextBase: &nextBase)
                 hits += collectInjectionHits(
-                    sub, tree: subTree, source: chunk, offset: offset + only.location, clip: clip, depth: depth + 1, nextBase: &nextBase)
+                    sub, tree: subTree, source: chunk, offset: offset + only.location, clip: clip, depth: depth + 1, nextBase: &nextBase,
+                    templateTags: templateTags, awaitsGrammars: awaitsGrammars)
                 continue
             }
             let markup: NSString = tags.all.isEmpty ? ns : maskingTemplateTags(ns, tags.all)
@@ -1123,9 +1183,11 @@ public final class TreeSitterHighlighter: CodeHighlighter {
                 offset: offset, clip: clip, nextBase: &nextBase)
             hits += collectInjectionHits(
                 sub, tree: subTree, source: markup, offset: offset,
-                clip: clip, depth: depth + 1, nextBase: &nextBase)
+                clip: clip, depth: depth + 1, nextBase: &nextBase,
+                templateTags: templateTags, awaitsGrammars: awaitsGrammars)
             if !tags.all.isEmpty {
-                hits += templateTagHits(source: ns, tags: tags, offset: offset, clip: clip, nextBase: &nextBase)
+                hits += templateTagHits(
+                    source: ns, tags: tags, offset: offset, clip: clip, nextBase: &nextBase, awaitsGrammars: awaitsGrammars)
             }
         }
         return hits
@@ -1141,7 +1203,38 @@ public final class TreeSitterHighlighter: CodeHighlighter {
 
     /// (`<# #>` fragments, `{{ }}` fragments, whole tags including delimiters), each ascending
     /// and non-overlapping.
-    static func templateTagRanges(in ns: NSString, within ranges: [NSRange]) -> (code: [NSRange], expressions: [NSRange], all: [NSRange]) {
+    /// What a template-tag search finds: `<# #>` code, `{{ }}` expressions, and the whole tags, each ascending.
+    typealias TemplateTags = (code: [NSRange], expressions: [NSRange], all: [NSRange])
+
+    /// ``templateTagRanges(in:within:)`` over `units`, a contiguous UTF-16 copy of the text: a range with no `<#` or
+    /// `{{` in it holds no tag and is passed over without the regex, and the rest are searched in a string made from
+    /// the copy, never read through a text storage a character at a time. `searched` says whether the regex ran.
+    static func templateTagRanges(inUnits units: [UInt16], within ranges: [NSRange]) -> (tags: TemplateTags, searched: Bool) {
+        let candidates = ranges.filter { mayHoldTemplateTag(units, in: $0) }
+        guard !candidates.isEmpty else { return ((code: [], expressions: [], all: []), false) }
+        let text = units.withUnsafeBufferPointer { buffer in
+            buffer.baseAddress.map { NSString(characters: $0, length: buffer.count) } ?? NSString()
+        }
+        return (templateTagRanges(in: text, within: candidates), true)
+    }
+
+    /// Whether `range` of `units` holds the opening of a template tag, `<#` or `{{`: every tag the regex finds begins
+    /// with one.
+    static func mayHoldTemplateTag(_ units: [UInt16], in range: NSRange) -> Bool {
+        let end = min(NSMaxRange(range), units.count)
+        guard range.location >= 0, end - range.location >= 2 else { return false }
+        return units.withUnsafeBufferPointer { buffer in
+            var previous = buffer[range.location]
+            for i in (range.location + 1)..<end {
+                let unit = buffer[i]
+                if (previous == 0x3C && unit == 0x23) || (previous == 0x7B && unit == 0x7B) { return true }
+                previous = unit
+            }
+            return false
+        }
+    }
+
+    static func templateTagRanges(in ns: NSString, within ranges: [NSRange]) -> TemplateTags {
         var code: [NSRange] = [], expressions: [NSRange] = [], all: [NSRange] = []
         let text = ns as String
         for r in ranges where r.length > 0 && NSMaxRange(r) <= ns.length {
@@ -1169,10 +1262,10 @@ public final class TreeSitterHighlighter: CodeHighlighter {
     /// as one combined document, each `{{ }}` expression on its own.
     @MainActor
     static func templateTagHits(
-        source ns: NSString, tags: (code: [NSRange], expressions: [NSRange], all: [NSRange]),
-        offset: Int, clip: NSRange, nextBase: inout Int
+        source ns: NSString, tags: TemplateTags, offset: Int, clip: NSRange, nextBase: inout Int, awaitsGrammars: Bool = false
     ) -> [Hit] {
-        guard !(tags.code.isEmpty && tags.expressions.isEmpty), let js = grammarForInjection("javascript") else { return [] }
+        guard !(tags.code.isEmpty && tags.expressions.isEmpty), let js = grammarForInjection("javascript", awaiting: awaitsGrammars)
+        else { return [] }
         func intersectsClip(_ rs: [NSRange]) -> Bool {
             rs.contains { NSIntersectionRange(NSRange(location: offset + $0.location, length: $0.length), clip).length > 0 }
         }

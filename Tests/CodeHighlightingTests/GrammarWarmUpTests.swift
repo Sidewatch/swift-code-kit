@@ -66,4 +66,47 @@ final class GrammarWarmUpTests: XCTestCase {
         wait(for: [done], timeout: 10)
         XCTAssertTrue(TreeSitterHighlighter.isGrammarReady(language))
     }
+
+    /// A grammar a highlight cannot wait for (an injected language, a fenced block): asked for before it is compiled,
+    /// it answers at once and compiles in the background, once however often it is asked, and says when it lands.
+    @MainActor
+    func testARequestNeverCompilesOnTheCallingThreadAndSaysWhenItLands() throws {
+        let language = CodeLanguage.Language.ruby
+        try XCTSkipUnless(TreeSitterHighlighter.grammarBuilders[language] != nil)
+        TreeSitterHighlighter.forgetGrammarForTesting(language)
+        var landings = 0
+        let landed = expectation(description: "landed")
+        TreeSitterHighlighter.onRequestedGrammarReady = {
+            if $0 == language {
+                landings += 1
+                landed.fulfill()
+            }
+        }
+        defer { TreeSitterHighlighter.onRequestedGrammarReady = nil }
+        let waitsBefore = TreeSitterHighlighter.mainThreadGrammarWaitsForTesting
+        XCTAssertFalse(TreeSitterHighlighter.requestGrammar(language), "not compiled: no wait, no grammar yet")
+        XCTAssertFalse(TreeSitterHighlighter.requestGrammar(language), "asked again while it compiles")
+        XCTAssertTrue(TreeSitterHighlighter.isRequestedForTesting(language))
+        wait(for: [landed], timeout: 30)
+        XCTAssertEqual(landings, 1, "one compile, one landing")
+        XCTAssertEqual(TreeSitterHighlighter.mainThreadGrammarWaitsForTesting, waitsBefore, "the main thread never compiled or waited")
+        XCTAssertTrue(TreeSitterHighlighter.requestGrammar(language), "ready now")
+        XCTAssertFalse(TreeSitterHighlighter.isRequestedForTesting(language))
+        XCTAssertTrue(TreeSitterHighlighter.requestGrammar(.plainText), "no grammar at all: nothing to wait for")
+    }
+
+    /// The main thread asking for a grammar not compiled yet is counted (it compiles, or waits for a compile): the
+    /// seam a host checks its promise against. A grammar already compiled, or a language with none, is not.
+    @MainActor
+    func testTheMainThreadAskingForAnUncompiledGrammarIsCounted() throws {
+        let language = CodeLanguage.Language.go
+        try XCTSkipUnless(TreeSitterHighlighter.grammarBuilders[language] != nil)
+        TreeSitterHighlighter.forgetGrammarForTesting(language)
+        let before = TreeSitterHighlighter.mainThreadGrammarWaitsForTesting
+        _ = TreeSitterHighlighter.grammar(for: language)
+        XCTAssertEqual(TreeSitterHighlighter.mainThreadGrammarWaitsForTesting, before + 1)
+        _ = TreeSitterHighlighter.grammar(for: language)
+        _ = TreeSitterHighlighter.grammar(for: .plainText)
+        XCTAssertEqual(TreeSitterHighlighter.mainThreadGrammarWaitsForTesting, before + 1, "compiled now, or none at all: no wait")
+    }
 }

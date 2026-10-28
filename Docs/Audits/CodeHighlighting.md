@@ -101,3 +101,22 @@ map was missing `Rules/`, `Models/`, `Extensions/`, `SymbolKind`, `OutlineNode`,
   scan now reads `^` and `$` as every rule does (`RuleScopeTests`; the old options fail both); the whole corpus is
   unchanged (0 unexplained, 0 stale). New tests read paint through the shared `Tests/.../Support/PaintedKinds`; the
   older test files keep their own marker palettes.
+- 29 Oct 2026 — two main-thread stalls found by Sidewatch's stall meter, fixed. (1) Every `HighlightSession` pass over a
+  top-level HTML document ran the template-tag regex (`templateTagRanges`) over the whole text, read through the text
+  storage a character at a time: 5.3–5.5 s a minimap slice on a 16 MB page (the same regex over a contiguous copy
+  takes 135 ms). The session finds the tags once per edit (`TemplateTagMemo`, keyed by its generation) in its own
+  UTF-16 mirror, and a range with no `<#` or `{{` is never searched (`mayHoldTemplateTag`); other callers search as
+  before. (2) An injected language's grammar compiled on the main thread when a pass met it before the launch warm-up
+  had (375 ms for Swift): `collectInjectionHits(awaitsGrammars:)` leaves it in the host's colours and
+  `requestGrammar(_:)` compiles it in the background, once, announcing it through `onRequestedGrammarReady`. Opt-in:
+  the session awaits; one-shot callers (Quick Look, snippets, dumps) still compile in place, since nothing would paint
+  them again. Markdown's inline grammar now compiles with its block grammar. Tests: `TemplateTagMemoTests` (4),
+  `HighlightSessionInjectionTests` (3: the session colours exactly as the searching highlighter, searched once per
+  edit; a tag-free page never searched; an uncompiled injection compiled in the background and coloured when it
+  lands), `GrammarWarmUpTests` (a request answers at once, compiles once, lands once); the shared
+  `Tests/.../Support/SourceGrammars` builds HTML and JavaScript from the source tree. Mutants, each run and restored:
+  the session compiling injections in the pass, the session asking no memo, the memo never forgetting a version,
+  every range searched, the injection lookup ignoring `awaiting`, requests not deduplicated — all caught. A test seam,
+  `mainThreadGrammarWaitsForTesting`, counts the main thread asking for a grammar not compiled yet (a compile or a wait
+  on the thread that must never wait); a host's harness holds its promise to it (Sidewatch's first-use check), and its
+  own test catches the count not being kept. 866 tests.

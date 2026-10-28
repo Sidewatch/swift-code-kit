@@ -5,7 +5,7 @@ Syntax highlighting for macOS `NSTextStorage`, with two backends behind one `Cod
 ## Features
 
 - **Tree-sitter highlighting** — `TreeSitterHighlighter` parses the whole buffer and applies each grammar's `highlights.scm` (later-pattern-wins precedence, `#eq?`/`#match?` predicates resolved), with recursive injection highlighting for embedded languages (CSS/JS in HTML, HTML in PHP, …)
-- **Incremental sessions** — `HighlightSession` keeps the parsed tree alive between highlight passes: the document parses **once**, viewport re-highlights while scrolling run the query against the cached tree (no re-parse), and `noteEdit(range:replacementLength:newText:)` re-parses **incrementally** via tree-sitter's `tree.edit`; `invalidate()` forces one fresh parse after a reload (injected sub-languages still re-parse per pass)
+- **Incremental sessions** — `HighlightSession` keeps the parsed tree alive between highlight passes: the document parses **once**, viewport re-highlights while scrolling run the query against the cached tree (no re-parse), and `noteEdit(range:replacementLength:newText:)` re-parses **incrementally** via tree-sitter's `tree.edit`; `invalidate()` forces one fresh parse after a reload (injected sub-languages still re-parse per pass; an injected language not compiled yet compiles in the background, never in a pass)
 - **Regex fallback** — `SyntaxHighlighter` colors an `NSTextStorage` in place with per-language rule tables plus family-level rules (c-like, ruby-like, lisp-like, ml-like, shell, markup, config, sql, tex, data) for everything else; strings and comments are resolved in one left-to-right scan so neither can repaint the other
 - **Custom languages** — `CustomLanguageDefinition` decodes a hand-written JSON file describing a niche language (comment markers, string delimiters, keyword lists, raw-regex patterns) and `SyntaxHighlighter(custom:colors:)` compiles it into the same rule tables the built-in languages use — see [Custom languages](#custom-languages)
 - **Symbol extraction** — `TreeSitterHighlighter.symbols(in:language:)` returns every definition (`Symbol`: name, `SymbolKind`, range, line) via the hand-written `SymbolQueries`, for outlines and Go-to-Symbol
@@ -105,7 +105,17 @@ session?.noteEdit(range: replacedRange, replacementLength: insertedLength, newTe
 
 // On reload / external change / language switch: drop the tree.
 session?.invalidate()
+
+// A session never compiles a grammar in a pass: an injected language (a Markdown fence, an HTML <script>) whose
+// grammar is not compiled yet stays in the host's colours, compiles in the background, and this says when to paint
+// again. The same request serves any highlight that must not wait (a rendered page's fenced block).
+TreeSitterHighlighter.onRequestedGrammarReady = { language in /* re-highlight what may hold `language` */ }
+if !TreeSitterHighlighter.requestGrammar(.swift) { /* show it plain for now */ }
 ```
+
+An HTML document's template tags (`<# #>`, `{{ }}`, WordPress's `wp.template`) are found once per edit, in the session's
+own copy of the text, and a document with no `<#` or `{{` is never searched: every pass used to search the whole text
+through its storage (5.5 s a pass at 16 MB).
 
 ### Outlines
 
