@@ -62,3 +62,30 @@ final class FileKindTests: XCTestCase {
         XCTAssertEqual(Language.symbolName(forExtension: "rar"), "archivebox")
     }
 }
+
+/// A file's kind by name, the one the file lists group by and draw their glyph from.
+final class FileKindByNameTests: XCTestCase {
+    func testEveryKindExtensionAndTheFormatsNoPreviewOpens() {
+        let expected: [String: FileKind] = [
+            "example.zip": .archive, "sample.whl": .archive, "sample.ipa": .archive, "sample.TAR": .archive,
+            "backup.tar.gz": .archive, "dist.7z": .archive, "logo.png": .image, "icon.svg": .image, "clip.mkv": .video,
+            "song.mp3": .audio, "font.woff2": .font, "app.sqlite": .database, "manual.pdf": .pdf, "scene.glb": .model,
+        ]
+        for (name, kind) in expected { XCTAssertEqual(Language.fileKind(forFilename: name), kind, name) }
+    }
+
+    func testCodeAndTextHaveNoKind() {
+        for name in ["main.swift", "README.md", "Package.resolved", "Cargo.lock", "LICENSE", ".env", "notes"] {
+            XCTAssertNil(Language.fileKind(forFilename: name), name)
+        }
+    }
+
+    /// The glyph and the kind agree for every kind extension.
+    func testTheGlyphFollowsTheKind() {
+        for name in ["a.zip", "a.gz", "a.rar", "a.mkv", "a.avi", "a.png", "a.ttf", "a.db", "a.pdf", "a.usdz", "a.flac"] {
+            guard let kind = Language.fileKind(forFilename: name) else { return XCTFail(name) }
+            let ext = (name as NSString).pathExtension
+            XCTAssertEqual(Language.symbolName(forFilename: name), kind.symbolName(forExtension: ext), name)
+        }
+    }
+}

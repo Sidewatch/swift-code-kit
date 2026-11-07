@@ -69,6 +69,9 @@ default:         break
 
 - Detection is **filename-only by design** — there is no shebang or content sniffing, so results are deterministic and free of I/O.
 - `HighlightFamily` is deliberately **coarse**: many languages only approximately fit their family. It exists to pick a *reasonable* fallback rule set, not to classify precisely.
+- `Language.fileKind(forFilename:)` is a non-code file's kind (a `FileKind`'s extensions, then the video and archive
+  formats no preview opens), the one answer a file list groups by and draws its glyph from, so a file is never an
+  archive by its icon and Plain Text by its group.
 - The `Language` catalog and its tables are kept by hand: a new language adds its case, its detection names, its metadata and its glyph (`symbolName` is an exhaustive switch, so a new case does not compile until it has one).
 
 ## For agents

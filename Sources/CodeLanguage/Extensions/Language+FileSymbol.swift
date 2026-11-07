@@ -2,7 +2,7 @@
 //  Language+FileSymbol.swift
 //  CodeLanguage
 //
-//  The SF Symbol for any file by its name: a few dotfiles, the non-code kinds, else its language's.
+//  The SF Symbol for any file by its name (a few dotfiles, the non-code kinds, else its language's), and its kind.
 //
 //  Created by David Sherlock on 9/27/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -27,11 +27,24 @@ public extension Language {
     /// The glyph for a non-code file kind by its lower-cased extension, or nil for anything else:
     /// a ``FileKind``'s own, then the video and archive formats no preview opens, and lockfiles.
     static func symbolName(forKindExtension ext: String) -> String? {
-        if let kind = FileKind(extension: ext) { return kind.symbolName(forExtension: ext) }
+        if let kind = fileKind(forExtension: ext) { return kind.symbolName(forExtension: ext) }
+        return ext == "lock" ? "lock" : nil
+    }
+
+    /// The kind of a non-code file named `filename`, or nil for code and text: a ``FileKind``'s own
+    /// extensions, then the video and archive formats no preview opens. The one answer a file list
+    /// groups by and draws its glyph from, so a file is never an archive by its icon and Plain Text
+    /// by its group.
+    static func fileKind(forFilename filename: String) -> FileKind? {
+        fileKind(forExtension: (filename.lowercased() as NSString).pathExtension)
+    }
+
+    /// ``fileKind(forFilename:)`` by a lower-cased extension.
+    static func fileKind(forExtension ext: String) -> FileKind? {
+        if let kind = FileKind(extension: ext) { return kind }
         switch ext {
-        case "avi", "mkv": return "film"
-        case "gz", "tgz", "bz2", "xz", "7z", "rar": return "archivebox"
-        case "lock": return "lock"
+        case "avi", "mkv": return .video
+        case "gz", "tgz", "bz2", "xz", "7z", "rar": return .archive
         default: return nil
         }
     }
