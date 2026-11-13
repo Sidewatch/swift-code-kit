@@ -350,7 +350,6 @@ public enum MarkupOutline {
             let attrs = ns.substring(with: m.range(at: 3))
             let line = lines.index(of: m.range.location) + 1
             var symbol: Int?
-            let depth = stack.filter { $0.name != "template" }.count
 
             if lower.count == 2, lower.hasPrefix("h"), let level = Int(lower.dropFirst()), (1...6).contains(level) {
                 let title = headingText(in: ns, after: NSMaxRange(m.range), level: level) ?? idValue(attrs) ?? lower
@@ -371,7 +370,9 @@ public enum MarkupOutline {
                 out.append(Symbol(name: "template", kind: .module, range: nameRange, line: line))
                 scopes.append(nil)
                 symbol = out.count - 1
-            } else if component, depth <= 2, isCustomComponent(name), seenComponents.insert(name).inserted {
+            } else if component, isCustomComponent(name), stack.lazy.filter({ $0.name != "template" }).count <= 2,
+                seenComponents.insert(name).inserted
+            {
                 out.append(Symbol(name: name, kind: .type, range: nameRange, line: line))
                 scopes.append(nil)
                 symbol = out.count - 1

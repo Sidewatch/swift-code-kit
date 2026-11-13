@@ -92,7 +92,7 @@ public enum YAMLStructure {
             return convert(inner, ns: ns, depth: depth)
         case "block_mapping", "flow_mapping":
             let pairs = namedChildren(node).filter { ["block_mapping_pair", "flow_pair"].contains($0.nodeType ?? "") }.map { pair -> Pair in
-                let key = pair.child(byFieldName: "key").map { keyName($0, ns: ns) } ?? ""
+                let key = pair.child(byFieldName: "key").map { keyName($0, ns: ns, depth: depth + 1) } ?? ""
                 let value = pair.child(byFieldName: "value").map { convert($0, ns: ns, depth: depth + 1) } ?? .null
                 return Pair(key: key, value: value)
             }
@@ -133,8 +133,10 @@ public enum YAMLStructure {
     /// The name of the mapping key `node`: a scalar as the string the file wrote (`1:` is the key
     /// "1", a block scalar without its final line break); a collection (`? [a, b]`) as its source
     /// on one line. The tree, its edits and the outline all name keys with it.
-    public static func keyName(_ node: Node, ns: NSString) -> String {
-        let value = convert(node, ns: ns)
+    /// `depth` is how deep the key already sits: a key that is itself a mapping with a mapping
+    /// for a key counts against the same limit as nested values.
+    public static func keyName(_ node: Node, ns: NSString, depth: Int = 0) -> String {
+        let value = convert(node, ns: ns, depth: depth)
         switch value {
         case .mapping, .sequence:
             return text(node, ns).split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" || $0 == "\r" }).joined(separator: " ")

@@ -38,6 +38,13 @@ final class DeepStructureTests: XCTestCase {
         XCTAssertGreaterThan(depth(value), 100, "the levels within the limit are read as nesting")
     }
 
+    func testMappingsNestedAsKeysCountAgainstTheSameLimit() throws {
+        try XCTSkipUnless(TreeSitterHighlighter.supports(.yaml))
+        // `{{{…a: 1}: 1}: 1}`: each mapping is the KEY of the one around it.
+        let text = String(repeating: "{", count: 20_000) + "a" + String(repeating: ": 1}", count: 20_000) + "\n"
+        XCTAssertNotNil(YAMLStructure.value(of: text), "read to the limit, not until the stack ran out")
+    }
+
     func testTenThousandNestedTOMLArraysAreReadToTheDepthLimit() throws {
         try XCTSkipUnless(TreeSitterHighlighter.supports(.toml))
         let text = "a = " + String(repeating: "[", count: 10_000) + String(repeating: "]", count: 10_000) + "\n"

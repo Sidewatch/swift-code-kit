@@ -24,8 +24,13 @@ public enum SymbolOwners {
     /// Name of the INNERMOST type whose scope contains `range` (nil when none does).
     /// `all` is one file's symbols, as `TreeSitterHighlighter.symbols` returns them.
     public static func enclosingType(of range: NSRange, in all: [Symbol]) -> String? {
+        innermost(containing: range, among: all.filter { typeKinds.contains($0.kind) })
+    }
+
+    /// The innermost of `types` (type symbols only) whose scope contains `range`.
+    private static func innermost(containing range: NSRange, among types: [Symbol]) -> String? {
         var best: Symbol?
-        for s in all where typeKinds.contains(s.kind) {
+        for s in types {
             guard let scope = s.scopeRange, NSLocationInRange(range.location, scope),
                 scope != range
             else { continue }
@@ -39,9 +44,13 @@ public enum SymbolOwners {
     /// companion to ``enclosingType(of:in:)`` (a member's owner is the innermost
     /// type whose scope contains its name).
     public static func owners(in all: [Symbol]) -> [Int: String] {
+        // The types are picked out once: a generated file's ten thousand members each ask only
+        // its few types, not every other symbol.
+        let types = all.filter { typeKinds.contains($0.kind) }
+        guard !types.isEmpty else { return [:] }
         var out: [Int: String] = [:]
         for (i, s) in all.enumerated() where !typeKinds.contains(s.kind) {
-            if let o = enclosingType(of: s.range, in: all) { out[i] = o }
+            if let o = innermost(containing: s.range, among: types) { out[i] = o }
         }
         return out
     }
